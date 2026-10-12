@@ -74,7 +74,16 @@ class LLM:
         ):
             raise ValueError("External APIs require exclusively synthetic evidence")
         key = hashlib.sha256(
-            (prompt_id + str(version) + self.model + canonical(pack)).encode()
+            canonical(
+                {
+                    "prompt_id": prompt_id,
+                    "version": version,
+                    "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
+                    "provider": self.provider,
+                    "model": self.model,
+                    "pack": pack,
+                }
+            ).encode()
         ).hexdigest()
         cached = self.cache / f"{self.provider}-{key}.json"
         lock = self.root / "ledger.lock"

@@ -65,3 +65,44 @@ def test_schema_file_matches_contract() -> None:
     assert (
         json.loads(Path("specs/schemas/claims.v1.json").read_text()) == Claims.model_json_schema()
     )
+
+
+def test_cache_key_has_unambiguous_fields_and_prompt_hash(tmp_path: Path) -> None:
+    llm = LLM(root=tmp_path)
+    llm.generate("x", 12, "original prompt", PACK)
+    llm.generate("x1", 2, "original prompt", PACK)
+    llm.generate("x", 12, "edited prompt", PACK)
+    assert llm.calls == 3
+    llm.generate("x", 12, "edited prompt", PACK)
+    assert llm.hits == 1
+
+
+def test_env_isolation_and_memoization(tmp_path: Path, monkeypatch) -> None:
+    import os
+
+    from dhf.config import load_env, setting
+
+    assert "ANTHROPIC_API_KEY" not in os.environ
+    assert "OPENAI_API_KEY" not in os.environ
+    assert setting("ANTHROPIC_API_KEY") == ""
+    path = tmp_path / "config.env"
+    path.write_text("SAMPLE=value\n")
+    monkeypatch.setenv("DHF_ENV_FILE", str(path))
+    assert setting("SAMPLE") == "value"
+    path.write_text("SAMPLE=changed\n")
+    assert setting("SAMPLE") == "value"
+    assert load_env.cache_info().hits > 0
+
+
+def test_real_provider_network_is_blocked(monkeypatch) -> None:
+    import socket
+
+    from openai import APIConnectionError
+
+    from dhf.llm.adapters.openai import OpenAIAdapter
+
+    with pytest.raises(OSError, match="Tests prohibit"):
+        socket.create_connection(("api.openai.com", 443))
+    monkeypatch.setenv("OPENAI_API_KEY", "dummy-not-a-real-key")
+    with pytest.raises(APIConnectionError):
+        OpenAIAdapter().complete("gpt-4.1-nano", "Return JSON claims.", PACK, 100)

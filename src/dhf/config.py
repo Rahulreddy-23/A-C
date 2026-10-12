@@ -1,17 +1,21 @@
-"""Local configuration. Never emit credentials."""
+"""Local configuration. Never emit credentials or mutate the process environment."""
 
 import os
+from functools import cache
 from pathlib import Path
 
 
-def load_env(path: Path = Path(".env")) -> None:
+@cache
+def load_env(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
     if path.exists():
         for line in path.read_text().splitlines():
             if line.strip() and not line.lstrip().startswith("#") and "=" in line:
                 key, value = line.split("=", 1)
-                os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+                values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
 
 
 def setting(name: str, default: str = "") -> str:
-    load_env()
-    return os.environ.get(name, default)
+    values = load_env(Path(os.environ.get("DHF_ENV_FILE", ".env")))
+    return os.environ.get(name, values.get(name, default))

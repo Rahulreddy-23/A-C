@@ -58,3 +58,27 @@ uv run dhf rtm --release 1.1    # out/rtm.md + JSON
 
 Only explicit or human-confirmed links count. Gap definitions live in YAML.
 G11 compares native requirement-change history with the last passed result time.
+
+Generate the system test report after ingesting evidence:
+
+```sh
+uv run dhf generate sstr --release 1.1
+```
+
+Documents and provenance manifests appear in `out/documents/`. SSTR summary tables
+use the latest result for each test case. AI text is typed and cited; suggested
+release conclusions and residual-anomaly rationale require review. Approval fields
+remain for human input. The default provider is `mock`, which copies source prose
+for offline workflow testing rather than judging evidence quality.
+
+The owner can compare one section with both paid providers, through the guarded
+LLM layer (synthetic evidence, ledger, cache and budget caps):
+
+```sh
+uv run dhf generate-section sstr purpose_scope --provider anthropic
+uv run dhf generate-section sstr purpose_scope --provider openai
+```
+
+Inspect `out/cross-provider/` for typed claims, citations and validation events.
+`dhf ingest --verbose` prints the complete change lists; normal output shows counts
+by artifact type and at most twenty changed IDs.

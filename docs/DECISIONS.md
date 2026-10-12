@@ -67,3 +67,9 @@ Append-only. Format: `ADR-NNN — Title` · date · status · context · decisio
 - **Context:** Trace quality must be measurable against independent planted issues and cope with retests.
 - **Decision:** Store rule predicates in YAML and evaluate only explicit/human-confirmed links. RTM joins requirements to components, completed PRs, units, tests and the latest result for each case in a release. G11 compares native history/change time to the last pass time. All summary statistics are deterministic.
 - **Consequences:** Sixteen findings exactly match eleven rule answer keys. Orphan tests still count in release totals but cannot improve requirement coverage. A retest replaces a case's prior result rather than inflating totals.
+
+## ADR-012 — Bounded evidence packs and section manifests
+2026-10-12 · Accepted
+- **Context:** Narrative source text can name artifacts outside a query's initial selection. Each prompt must stay bounded without discarding referenced context.
+- **Decision:** Named queries compute facts and expand source-body ID references. Partitioning preserves each artifact's referenced context within the conservative byte budget, failing explicitly on oversized artifacts. Claims pass the same unknown-ID, number, citation and kind rules on every provider. Sections store query fingerprints, cited revisions, rendered text and validation events.
+- **Consequences:** Retrieval timestamps cannot invalidate response caches. Deterministic Markdown has exact golden comparisons. Single-section CLI runs support the owner-run cross-provider check without paying for a complete document.

@@ -173,6 +173,7 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
                         "rule": rule["id"],
                         "artifact_id": a["id"],
                         "message": rule["title"],
+                        "action": rule.get("action", "Review the evidence gap."),
                         "source_url": a["source"]["url"],
                         "revision": a["source"]["revision"],
                     }

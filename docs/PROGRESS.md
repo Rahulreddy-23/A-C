@@ -1,15 +1,17 @@
 # Build Progress
 ## Status
-Current milestone: M3 (done) · Last updated: 2026-10-12 IST
+Current milestone: M4 (done) · Last updated: 2026-10-12 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
 | M0 | done | m0-done | 98aa27a | Local checks and GitHub Actions green |
 | M1 | done | m1-done | 6969c55 | Refreshed evidence in b74d84b after R-010 |
-| M2 | done | m2-done (refreshed) | b74d84b | Native ADO parity, including metadata stripped, verified |
+| M2 | done | m2-done (refreshed) | cfed7c3 | Native ADO parity, including metadata stripped, verified |
+| M3 | done | m3-done | eb0f00c | 16 exact gaps; RTM golden verified |
+| M4 | done | m4-done | see tag | 12-section SSTR and exact deterministic golden |
 ## Now / Next
-- Working on: M3 RTM, coverage and YAML-driven gap rules.
-- Next: M4 SSTR section generation, typed claim validation and manifests.
+- Working on: M4 checkpoint, including R-014/R-015 follow-ups.
+- Next: M5 DOCX tracked changes, docs PRs and readiness gate.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -63,3 +65,17 @@ Current milestone: M3 (done) · Last updated: 2026-10-12 IST
 | anthropic | $0 | $1.50 build / $4 hard stop |
 | openai | $0 | $1.50 build / $4 hard stop |
 
+
+### M4
+- `uv run pytest` → `31 passed in 24.58s` (offline HTTP contracts and all claim-validator rules).
+- `uv run ruff check .` → `All checks passed!`; `uv run ruff format --check .` → `68 files already formatted`.
+- `dhf ingest --source fixtures --db out/m4.sqlite` → `Snapshot 1: 248 artifacts, 473 links`; compact per-type added/changed/removed counts.
+- `dhf generate sstr --release 1.1 --db out/m4.sqlite` → `sstr: 12 sections → out/documents/sstr.md + manifest`; `Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0}`.
+- Golden deterministic summary: `{'release': '1.1', 'total': 40, 'passed': 39, 'failed': 1, 'blocked': 0, 'not_run': 0}`. Seven deterministic sections match `eval/golden/sstr_deterministic.json` exactly. Unknown IDs in rendered Markdown: zero, asserted against the graph.
+- Repeat generation produces byte-identical Markdown with zero new calls. Prompt budgets are enforced with referenced context retained; oversized artifacts fail explicitly.
+- `dhf generate-section sstr purpose_scope --db out/m4.sqlite` → `3 validated claims; $0.000000 → out/cross-provider/sstr-purpose_scope-mock.json`.
+- `dhf rtm --db out/m4.sqlite` → `35 RTM rows → out/rtm.md + out/rtm.json`; Markdown includes linked requirement, revision, components, units, changes, tests and latest results.
+- `dhf gaps --db out/m4.sqlite` → `16 deterministic gaps → out/gaps.md + out/gaps.json`; per-rule summary and recommended actions now come from YAML (R-014).
+
+### M4 pending live verification
+- Owner-run `dhf generate-section sstr purpose_scope --provider anthropic` and `--provider openai`: inspect source support, labels and provider parity. Both are guarded by the ledger/cache; no paid calls were made during build tests.

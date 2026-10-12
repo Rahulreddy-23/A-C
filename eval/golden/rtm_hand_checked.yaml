@@ -1,0 +1,26 @@
+# Manually derived from fixture requirement allocation, PR history and test links.
+SRS-001:
+  components: [COMP-01]
+  changes: [PR-1]
+  tests: [TC-001, TC-033]
+  outcomes: [Passed, Passed]
+SRS-012:
+  components: [COMP-06]
+  changes: [PR-6]
+  tests: []
+  outcomes: []
+SRS-021:
+  components: [COMP-03]
+  changes: [PR-3]
+  tests: [TC-021]
+  outcomes: [Passed]
+SRS-034:
+  components: [COMP-04]
+  changes: []
+  tests: []
+  outcomes: []
+SRS-035:
+  components: [COMP-05]
+  changes: []
+  tests: []
+  outcomes: []

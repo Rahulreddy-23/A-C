@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M2 (done) · Last updated: 2026-10-12 IST
+Current milestone: M3 (done) · Last updated: 2026-10-12 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -8,8 +8,8 @@ Current milestone: M2 (done) · Last updated: 2026-10-12 IST
 | M1 | done | m1-done | 6969c55 | Refreshed evidence in b74d84b after R-010 |
 | M2 | done | m2-done (refreshed) | b74d84b | Native ADO parity, including metadata stripped, verified |
 ## Now / Next
-- Working on: R-009/R-010/R-011 resolved; M2 checkpoint refreshed before M3 resumes.
-- Next: M3 deterministic traceability, coverage and gap rules.
+- Working on: M3 RTM, coverage and YAML-driven gap rules.
+- Next: M4 SSTR section generation, typed claim validation and manifests.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -42,6 +42,12 @@ Current milestone: M2 (done) · Last updated: 2026-10-12 IST
 - `PYTHONPATH=data/synthetic/code uv run pytest data/synthetic/code/tests` → `6 passed in 0.01s`. Dwell boundary, safe acknowledgement, inhibited sensor faults, atomic configuration and volume clamp verified.
 - `uv run ruff check .` → `All checks passed!`; format → `58 files already formatted`.
 - R-009/R-010/R-011 implementation: b74d84b; m2-done is re-tagged on the review-resolution checkpoint. Original c43b213 remains in dev history.
+### M3
+- `uv run dhf gaps` → `16 deterministic gaps → out/gaps.md + out/gaps.json`.
+- `uv run dhf rtm` → `35 RTM rows → out/rtm.md + out/rtm.json`.
+- `score_findings` over the ingested graph → `{'precision': 1.0, 'recall': 1.0, 'true_positive': 16, 'false_positive': 0, 'false_negative': 0}`.
+- `test_rtm_matches_hand_checked_rows` validates five independent boundary/example rows. Release 1.0 totals 40/38 passed/2 failed; release 1.1 totals 40/39 passed/1 failed; SRS test coverage is 31/35 (88.57%).
+- `uv run pytest` → `28 passed in 24.05s`; ruff → `All checks passed!`, `60 files already formatted`.
 ## Pending live verification
 - Paid-provider section parity — optional API keys; tests and demo use mock.
 - Real ADO M11 — needs a real org; not part of the offline build.

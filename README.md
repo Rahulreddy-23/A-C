@@ -50,3 +50,11 @@ run/result completion times and associated bugs. Related-link type pairs and are
 allocation are configured in `specs/ado_mapping.yaml`. Units also carry explicit
 `# Implements: SRS-...` source annotations. The optional fixture marker controls
 only the synthetic-data guard; no engineering fact depends on its JSON contents.
+
+```sh
+uv run dhf gaps                # out/gaps.md + JSON and coverage
+uv run dhf rtm --release 1.1    # out/rtm.md + JSON
+```
+
+Only explicit or human-confirmed links count. Gap definitions live in YAML.
+G11 compares native requirement-change history with the last passed result time.

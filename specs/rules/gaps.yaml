@@ -1,0 +1,12 @@
+rules:
+  - {id: G01, title: SRS has no verifying test, types: [software_req], op: missing_link, link: verifies, direction: in, peer_types: [test_case]}
+  - {id: G02, title: SRS has no implementing change, types: [software_req], op: missing_link, link: implements, direction: in, peer_types: [code_change]}
+  - {id: G03, title: Orphan code or PR, types: [code_change, software_unit], op: missing_link, link: implements, direction: out, peer_types: [software_req]}
+  - {id: G04, title: Test case has no requirement, types: [test_case], op: missing_link, link: verifies, direction: out, peer_types: [software_req]}
+  - {id: G05, title: Failed result has no defect, types: [test_result], attrs: {outcome: Failed}, op: missing_link, link: reports_defect, direction: out, peer_types: [defect]}
+  - {id: G06, title: Risk control has no realizing requirement, types: [risk_control], op: missing_link, link: implements, direction: in, peer_types: [software_req]}
+  - {id: G07, title: Risk-control requirement has no verification, types: [software_req], attrs: {risk_control: true}, op: missing_link, link: verifies, direction: in, peer_types: [test_case]}
+  - {id: G08, title: System requirement has no derived SRS, types: [system_req], op: missing_link, link: derives_from, direction: in, peer_types: [software_req]}
+  - {id: G09, title: SRS has no parent system requirement, types: [software_req], op: missing_link, link: derives_from, direction: out, peer_types: [system_req]}
+  - {id: G10, title: Open defect omitted from residual anomalies, types: [defect], attrs: {residual_listed: false}, not_attrs: {state: Closed}, op: match}
+  - {id: G11, title: Test passed against an older requirement revision, types: [test_case], op: outdated_verification}

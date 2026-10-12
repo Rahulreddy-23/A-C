@@ -61,3 +61,9 @@ Append-only. Format: `ADR-NNN — Title` · date · status · context · decisio
 - **Context:** Reviewer R-009 showed that fixture JSON descriptions hid real integration problems; R-010 required substantive source evidence for credible DHF drafts.
 - **Decision:** Normalize native rev/ChangedDate/revision-history, AreaPath, acceptance criteria, severity, state, residual-anomaly tags, test steps XML, completedDate, testRun, associatedBugs and PR work-item references. Configured work-item type pairs determine Related semantics. Extract explicit Implements annotations from unit source. Fixture metadata holds only the synthetic marker; stripping it changes no semantic graph data. Assigned fictional harm severities and their scale live in the risk fixture; sixteen safety modules now have substantive state, validation and recovery behavior.
 - **Consequences:** G11 derives staleness from native completion times/history, with no verified_revision field. Ordinary source narratives retain context, measurable acceptance criteria, test steps, anomaly impact and ADR reasoning. Source schemas and area/tag mappings remain configurable. R-011 contract fixes are included while this area is being changed.
+
+## ADR-011 — Declarative gaps and latest-result counts
+2026-10-12 · Accepted
+- **Context:** Trace quality must be measurable against independent planted issues and cope with retests.
+- **Decision:** Store rule predicates in YAML and evaluate only explicit/human-confirmed links. RTM joins requirements to components, completed PRs, units, tests and the latest result for each case in a release. G11 compares native history/change time to the last pass time. All summary statistics are deterministic.
+- **Consequences:** Sixteen findings exactly match eleven rule answer keys. Orphan tests still count in release totals but cannot improve requirement coverage. A retest replaces a case's prior result rather than inflating totals.

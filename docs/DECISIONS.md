@@ -31,3 +31,9 @@ Append-only. Format: `ADR-NNN — Title` · date · status · context · decisio
 - **Context:** No ADO org is available yet. ADO integration is mandatory and must be credible in the demo.
 - **Decision:** Build `tools/mock_ado/`, a stdlib HTTP server implementing the subset of the ADO REST API (api-version 7.1) we use, with real response shapes, real revision history, git-backed repos, clickable HTML pages, scenario injection, and a PAT guardrail that refuses product writes outside the docs repo. The product's ADO adapter is the real one and points at `ADO_BASE_URL`. One contract test suite runs against the mock, and against a real org via `pytest -m live_ado`.
 - **Consequences:** No dependency on credentials or network. The demo is deterministic and repeatable. Moving to a real org (M11) means changing config and running the seeder. Risk: the mock drifts from real ADO behavior, mitigated by following the official response shapes and running the live contract suite once an org exists.
+
+## ADR-006 — Conservative pre-call reservations
+2026-10-12 · Accepted
+- **Context:** Paid requests may fail after consumption; token estimates must not allow budget overruns.
+- **Decision:** Reserve cost using UTF-8 bytes as an upper bound on input tokens and the maximum output tokens. Persist under an exclusive file lock before the request; retain reservations after failures. The ledger reports reserved cost, not a fabricated invoice amount.
+- **Consequences:** Budget enforcement is conservative. Models and prices remain config; owner verifies live pricing before live checks. External requests reject evidence not explicitly synthetic.

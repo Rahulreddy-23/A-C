@@ -43,3 +43,10 @@ revisions and added/changed/removed IDs. Code units and signatures come from Pyt
 ASTs, SOUP versions from pinned dependency manifests, and implementation links
 from explicit ADO PR references and `AB#` commit messages. Real evidence lacking
 explicit synthetic metadata is rejected by the external-provider guard.
+
+ADO ingestion uses native revisions/history, ChangedDate, AreaPath, configured
+acceptance-criteria and severity fields, state, residual-anomaly tags, test steps,
+run/result completion times and associated bugs. Related-link type pairs and area
+allocation are configured in `specs/ado_mapping.yaml`. Units also carry explicit
+`# Implements: SRS-...` source annotations. The optional fixture marker controls
+only the synthetic-data guard; no engineering fact depends on its JSON contents.

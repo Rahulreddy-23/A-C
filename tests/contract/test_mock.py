@@ -91,7 +91,16 @@ def test_tests_git_pr_status_and_scenario_contract(ado_server) -> None:
             linked = c.get(
                 f"/_apis/git/repositories/kestrel-device-sw/pullrequests/{pr['pullRequestId']}/workitems"
             ).json()
-            assert linked["count"] == len(pr["workitems"])
+            assert linked["count"] == (
+                0
+                if pr["pullRequestId"] == 7
+                else len(
+                    yaml.safe_load(Path("data/synthetic/history.yaml").read_text())[
+                        pr["pullRequestId"] - 1
+                    ]["workitems"]
+                )
+            )
+            assert "workitems" not in pr and "statuses" not in pr
             assert (
                 c.get(f"/_git/kestrel-device-sw/pullrequest/{pr['pullRequestId']}").status_code
                 == 200
@@ -132,7 +141,7 @@ def test_tests_git_pr_status_and_scenario_contract(ado_server) -> None:
     assert git(["rev-parse", "HEAD"], ado_server.root / "seed-kestrel-device-sw") != head
     with client(ado_server) as c:
         assert c.get(f"/_apis/wit/workitems/{native}/revisions").json()["count"] == 2
-        assert c.get(f"/_apis/wit/workitems/{native}?rev=1").json()["rev"] == 1
+        assert c.get(f"/_apis/wit/workitems/{native}/revisions/1").json()["rev"] == 1
         assert c.get("/_apis/test/runs/3/results").json()["value"][0]["outcome"] == "Failed"
     assert apply_scenario("change_1", ado_server.root) == {"already_applied": "change_1"}
     history = git(["log", "--oneline"], ado_server.root / "seed-kestrel-device-sw")
@@ -167,3 +176,19 @@ def test_answer_key_is_exact() -> None:
     from mock_ado.validate import validate_dataset
 
     assert validate_dataset()["answer_key"] == "exact"
+
+
+def test_native_expand_revision_and_missing_resource_contract(ado_server) -> None:
+    with client(ado_server) as c:
+        state = read_state(ado_server.root)
+        native = state["ids"]["SRS-030"]
+        item = c.get(f"/_apis/wit/workitems/{native}").json()
+        assert "relations" not in item
+        assert c.get(f"/_apis/wit/workitems/{native}?$expand=relations").json()["relations"]
+        assert c.get(f"/_apis/wit/workitems/{native}/revisions/1").json()["rev"] == 1
+        batch = c.post("/_apis/wit/workitemsbatch", json={"ids": [native]}).json()["value"][0]
+        assert "relations" not in batch
+        assert (
+            c.get("/_apis/git/repositories/kestrel-device-sw/pullrequests/9999").status_code == 404
+        )
+        assert c.get("/_apis/test/runs/9999/results").status_code == 404

@@ -10,6 +10,8 @@ from pathlib import Path
 
 import yaml
 
+from dhf.ingest.native import fixture_item
+
 ROOT = Path("out/mock_ado")
 DATA = Path("data/synthetic")
 WORK_TYPES = {
@@ -44,7 +46,7 @@ def read_state(root: Path) -> dict:
 
 
 def payload(artifact: dict) -> str:
-    return artifact["body"] + "\nDHF-META:" + json.dumps(artifact["attributes"], sort_keys=True)
+    return artifact["body"] + '\nDHF-META:{"synthetic": true}'
 
 
 def init(root: Path = ROOT) -> dict:
@@ -58,32 +60,29 @@ def init(root: Path = ROOT) -> dict:
     ids = {a["id"]: i for i, a in enumerate(eligible, 1)}
     items = {}
     for a in eligible:
-        typ, tag = WORK_TYPES[a["type"]]
         attrs = a["attributes"]
-        item = {
-            "id": ids[a["id"]],
-            "rev": attrs.get("revision", 1),
-            "fields": {
-                "System.Id": ids[a["id"]],
-                "System.WorkItemType": typ,
-                "System.Title": a["title"],
-                "System.Description": payload(a),
-                "System.Tags": f"{tag}; DHF:{a['id']}",
-                "System.State": attrs.get("state", "Active"),
-                "System.ChangedDate": attrs.get("changed_at", "2026-09-20T12:00:00Z"),
-            },
-            "relations": [],
-        }
+        item = fixture_item(a, ids[a["id"]], mapping)
+        item.pop("_links")
+        item["fields"]["System.Description"] = payload(a)
         for edge in dataset["links"]:
             if edge["src"] == a["id"] and edge["dst"] in ids:
                 item["relations"].append(
                     {
                         "rel": mapping["relations"].get(edge["type"], "System.LinkTypes.Related"),
                         "url": f"_apis/wit/workitems/{ids[edge['dst']]}",
-                        "attributes": {"name": "DHF:" + edge["type"]},
+                        "attributes": {"name": "Related"},
                     }
                 )
-        items[str(item["id"])] = {"current": item, "history": [copy.deepcopy(item)]}
+        history = []
+        for revision in attrs.get(
+            "requirement_history",
+            [{"revision": item["rev"], "changed_at": item["fields"]["System.ChangedDate"]}],
+        ):
+            prior = copy.deepcopy(item)
+            prior["rev"] = revision["revision"]
+            prior["fields"]["System.ChangedDate"] = revision["changed_at"]
+            history.append(prior)
+        items[str(item["id"])] = {"current": item, "history": history}
     repo_root = root / "git"
     repo_root.mkdir(exist_ok=True)
     repos = []
@@ -161,12 +160,14 @@ def init(root: Path = ROOT) -> dict:
                             if e["src"] == r["id"] and e["type"] == "reports_defect"
                         ],
                         "testCaseTitle": r["title"],
+                        "testRun": {"id": str(rid)},
                     }
                 )
         runs.append(
             {
                 "id": rid,
-                "name": a["title"],
+                "name": a["title"] + (" retest" if a["attributes"]["is_retest"] else ""),
+                "buildConfiguration": {"platform": a["attributes"]["environment"]},
                 "state": "Completed",
                 "completedDate": a["attributes"]["completed_at"],
                 "comment": payload(a),
@@ -223,53 +224,33 @@ def apply_scenario(name: str, root: Path = ROOT) -> dict:
     edit = scenario["edit"]
     native = state["ids"][edit["id"]]
     item = state["items"][str(native)]["current"]
-    old_body, meta = item["fields"]["System.Description"].split("\nDHF-META:", 1)
-    attrs = json.loads(meta)
-    attrs.update(edit["attributes"])
-    attrs["revision"] = item["rev"] + 1
-    attrs["changed_at"] = scenario["run"]["completed_at"]
-    item["fields"]["System.Description"] = (
-        edit["body"] + "\nDHF-META:" + json.dumps(attrs, sort_keys=True)
-    )
+    item["fields"]["System.Description"] = edit["body"] + '\nDHF-META:{"synthetic": true}'
+    item["fields"][
+        yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())["fields"]["acceptance_criteria"]
+    ] = edit["attributes"]["acceptance_criteria"]
     item["rev"] += 1
     item["fields"]["System.ChangedDate"] = scenario["run"]["completed_at"]
     state["items"][str(native)]["history"].append(copy.deepcopy(item))
     state["prs"].append(commit_entry(root, scenario["pr"], state["ids"], scenario["code"]))
     run = scenario["run"]
-    attrs = {
-        "synthetic": True,
-        "release": run["release"],
-        "completed_at": run["completed_at"],
-        "environment": "Synthetic bench simulator",
-        "is_retest": True,
-    }
-    result_attrs = {
-        "synthetic": True,
-        "release": run["release"],
-        "completed_at": run["completed_at"],
-        "test_case": run["test_case"],
-        "outcome": run["outcome"],
-        "run": "RUN-3",
-        "verified_revision": 2,
-    }
     state["runs"].append(
         {
             "id": run["id"],
-            "name": "Occlusion change verification",
+            "name": "Release 1.1 occlusion retest",
             "state": "Completed",
             "completedDate": run["completed_at"],
-            "comment": "Occlusion change verification\nDHF-META:"
-            + json.dumps(attrs, sort_keys=True),
+            "buildConfiguration": {"platform": "Synthetic bench simulator"},
+            "comment": 'Occlusion change verification\nDHF-META:{"synthetic": true}',
             "results": [
                 {
                     "id": 21,
                     "testCase": {"id": str(state["ids"][run["test_case"]])},
+                    "testRun": {"id": str(run["id"])},
                     "testCaseTitle": "Result for TC-021",
                     "outcome": run["outcome"],
                     "completedDate": run["completed_at"],
                     "associatedBugs": [],
-                    "comment": "Result for TC-021\nDHF-META:"
-                    + json.dumps(result_attrs, sort_keys=True),
+                    "comment": "Result for TC-021",
                 }
             ],
         }

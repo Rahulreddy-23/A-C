@@ -54,7 +54,7 @@ def validate_dataset() -> dict:
         ]
         if results:
             latest = max(results, key=lambda a: a["attributes"]["completed_at"])
-            if latest["attributes"]["verified_revision"] < req["attributes"].get("revision", 1):
+            if latest["attributes"]["completed_at"] < req["attributes"].get("changed_at", ""):
                 observed["G11"].add(e["src"])
     key = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text())
     for rule, ids in observed.items():

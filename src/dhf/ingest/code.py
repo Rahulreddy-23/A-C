@@ -46,7 +46,25 @@ class PythonExtractor:
                 if isinstance(n, (ast.ClassDef, ast.Assign, ast.AnnAssign))
             ]
             unit = "UNIT-" + Path(path).stem
-            body = code.split("\n", 1)[1].rstrip()
+            body = "\n".join(
+                line
+                for line in code.splitlines()
+                if not line.startswith(("# DHF-COMPONENT:", "# Implements:"))
+            ).strip()
+            requirements = re.findall(
+                r"SRS-\d+",
+                "\n".join(line for line in code.splitlines() if line.startswith("# Implements:")),
+            )
+            links.extend(
+                {
+                    "src": unit,
+                    "dst": req,
+                    "type": "implements",
+                    "origin": "explicit",
+                    "evidence": "Implements code trace annotation",
+                }
+                for req in sorted(set(requirements))
+            )
             blob = hashlib.sha1(f"blob {len(code.encode())}\0".encode() + code.encode()).hexdigest()
             artifacts.append(
                 {

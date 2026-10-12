@@ -15,8 +15,11 @@ fields:
   tags: System.Tags
   state: System.State
   changed_at: System.ChangedDate
+  severity: Microsoft.VSTS.Common.Severity
+  acceptance_criteria: Microsoft.VSTS.CMMI.AcceptanceCriteria
+  steps: Microsoft.VSTS.TCM.Steps
+  area: System.AreaPath
 id_tag_prefix: 'DHF:'
-metadata_marker: 'DHF-META:'
 relations:
   derives_from: System.LinkTypes.Hierarchy-Reverse
   verifies: Microsoft.VSTS.Common.TestedBy-Reverse
@@ -24,7 +27,6 @@ relations:
   implements: System.LinkTypes.Related
   allocated_to: System.LinkTypes.Related
   reports_defect: System.LinkTypes.Related
-related_name_prefix: 'DHF:'
 components:
   COMP-01: UI
   COMP-02: Infusion Control
@@ -32,3 +34,28 @@ components:
   COMP-04: Alarm Manager
   COMP-05: Drug Library
   COMP-06: Logging & Comms
+area_components:
+  Kestrel\UI: COMP-01
+  Kestrel\Infusion Control: COMP-02
+  Kestrel\Sensor Monitoring: COMP-03
+  Kestrel\Alarm Manager: COMP-04
+  Kestrel\Drug Library: COMP-05
+  Kestrel\Logging & Comms: COMP-06
+tags:
+  risk_requirement: Risk-Control-Requirement
+  residual_anomaly: Residual-Anomaly
+  synthetic: Synthetic
+related_pairs:
+- src: risk_control
+  dst: hazard
+  type: mitigates
+- src: software_req
+  dst: risk_control
+  type: implements
+severity_values:
+  1 - Critical: 5
+  2 - High: 4
+  3 - Medium: 3
+  4 - Low: 2
+  5 - Negligible: 1
+release_pattern: Release ([0-9]+\.[0-9]+)

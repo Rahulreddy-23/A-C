@@ -49,7 +49,9 @@ class Handler(BaseHTTPRequestHandler):
         with self.server.lock:
             try:
                 self.route(method)
-            except (KeyError, ValueError, json.JSONDecodeError):
+            except (KeyError, StopIteration):
+                self.respond({"message": "Resource not found"}, 404)
+            except (ValueError, json.JSONDecodeError):
                 self.respond({"message": "Invalid or missing resource"}, 400)
 
     def route(self, method: str) -> None:
@@ -74,7 +76,7 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         data = json.loads(self.rfile.read(length)) if length else {}
 
-        def item_url(item: dict) -> dict:
+        def item_url(item: dict, expanded: bool = False) -> dict:
             value = copy.deepcopy(item)
             value["url"] = f"{base}/_apis/wit/workitems/{value['id']}"
             value["_links"] = {
@@ -82,7 +84,12 @@ class Handler(BaseHTTPRequestHandler):
             }
             for relation in value["relations"]:
                 relation["url"] = f"{base}/" + relation["url"]
+            if not expanded:
+                value.pop("relations", None)
             return value
+
+        def public_pr(pr: dict) -> dict:
+            return {k: v for k, v in pr.items() if k not in ("workitems", "statuses")}
 
         def collection(values: list) -> None:
             skip = int(query.get("$skip", ["0"])[0])
@@ -121,21 +128,29 @@ class Handler(BaseHTTPRequestHandler):
         if path.endswith("/workitemsbatch") and method == "POST":
             if len(data["ids"]) > 200:
                 return self.respond({"message": "Maximum batch size 200"}, 400)
-            return collection([item_url(state["items"][str(i)]["current"]) for i in data["ids"]])
-        match = re.search(r"/workitems/(\d+)(/revisions)?$", path)
+            return collection(
+                [
+                    item_url(
+                        state["items"][str(i)]["current"],
+                        str(data.get("$expand", "")).lower() in ("relations", "all"),
+                    )
+                    for i in data["ids"]
+                ]
+            )
+        match = re.search(r"/workitems/(\d+)(/revisions)?(?:/(\d+))?$", path)
         if match and method == "GET":
             entry = state["items"].get(match[1])
             if entry is None:
                 return self.respond({"message": "Work item not found"}, 404)
-            if match[2]:
-                return collection([item_url(v) for v in entry["history"]])
-            revision = query.get("rev")
+            expanded = query.get("$expand", [""])[0].lower() in ("relations", "all")
+            if match[2] and not match[3]:
+                return collection([item_url(v, expanded) for v in entry["history"]])
             value = (
-                next((v for v in entry["history"] if v["rev"] == int(revision[0])), None)
-                if revision
+                next(v for v in entry["history"] if v["rev"] == int(match[3]))
+                if match[3]
                 else entry["current"]
             )
-            return self.respond(item_url(value))
+            return self.respond(item_url(value, expanded))
         if "/_workitems/edit/" in path:
             native = path.rsplit("/", 1)[1]
             entry = state["items"].get(native)
@@ -147,7 +162,7 @@ class Handler(BaseHTTPRequestHandler):
                 "<h1>"
                 + html.escape(item["fields"]["System.Title"])
                 + "</h1><pre>"
-                + html.escape(json.dumps(item_url(item), indent=2))
+                + html.escape(json.dumps(item_url(item, True), indent=2))
                 + "</pre><h2>Revision history</h2>"
                 + "".join(f'<a href="?rev={v["rev"]}">r{v["rev"]}</a> ' for v in entry["history"]),
                 is_html=True,
@@ -183,7 +198,7 @@ class Handler(BaseHTTPRequestHandler):
                         write_state(self.server.root, state)
                         return self.respond(status, 201)
                     return collection(pr["statuses"])
-                return self.respond(pr)
+                return self.respond(public_pr(pr))
             if method == "POST":
                 pr = {
                     "pullRequestId": max((p["pullRequestId"] for p in state["prs"]), default=0) + 1,
@@ -201,9 +216,11 @@ class Handler(BaseHTTPRequestHandler):
                 }
                 state["prs"].append(pr)
                 write_state(self.server.root, state)
-                return self.respond(pr, 201)
+                return self.respond(public_pr(pr), 201)
             status = query.get("searchCriteria.status", ["active"])[0]
-            return collection([p for p in prs if status == "all" or p["status"] == status])
+            return collection(
+                [public_pr(p) for p in prs if status == "all" or p["status"] == status]
+            )
         match = re.search(r"/_git/([^/]+)/pullrequest/(\d+)$", path)
         if match:
             pr = next(

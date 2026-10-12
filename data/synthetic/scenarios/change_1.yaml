@@ -1,9 +1,13 @@
 id: change_1
 edit:
   id: SRS-021
-  body: Detect occlusion when pressure exceeds the revised configured threshold.
+  body: The Sensor Monitoring component shall detect downstream occlusion when pressure
+    remains above 75 kPa, stop output and request a latched critical alarm. A bounded
+    dwell filters transient spikes without hiding sustained occlusion.
   attributes:
-    threshold: 75
+    acceptance_criteria: With downstream pressure held above 75 kPa for 3 s, output
+      is stopped and a critical alarm is latched within 3 s. Boundary and invalid-sample
+      tests are required.
 code:
   path: kestrel/sensor_pressure.py
   old: '80.0'

@@ -76,3 +76,78 @@ def test_ast_extractor_real_data_not_synthetic() -> None:
     )
     assert data["artifacts"][0]["attributes"]["synthetic"] is False
     assert data["artifacts"][0]["attributes"]["signatures"] == ["def sample(a: int) -> int"]
+
+
+def test_metadata_stripped_equivalent_graph(ado_server, tmp_path: Path) -> None:
+    from mock_ado.state import read_state, write_state
+
+    ado = ADO(f"http://127.0.0.1:{ado_server.server_port}/kestrel-org", "Kestrel", "mock-app-token")
+    try:
+        before = ado.ingest(tmp_path / "clones")
+        state = read_state(ado_server.root)
+        for entry in state["items"].values():
+            for item in [entry["current"], *entry["history"]]:
+                item["fields"]["System.Description"] = item["fields"]["System.Description"].split(
+                    "\nDHF-META:", 1
+                )[0]
+        for run in state["runs"]:
+            run["comment"] = run["comment"].split("\nDHF-META:", 1)[0]
+            for result in run["results"]:
+                result["comment"] = result["comment"].split("\nDHF-META:", 1)[0]
+        write_state(ado_server.root, state)
+        after = ado.ingest(tmp_path / "clones")
+        assert semantic(before) == semantic(after)
+        srs = next(a for a in after["artifacts"] if a["id"] == "SRS-021")
+        assert srs["attributes"]["component"] == "COMP-03"
+        assert "80 kPa" in srs["attributes"]["acceptance_criteria"]
+        hazard = next(a for a in after["artifacts"] if a["id"] == "HAZ-01")
+        assert hazard["attributes"]["severity"] == 5
+        assert all("verified_revision" not in a["attributes"] for a in after["artifacts"])
+    finally:
+        ado.close()
+
+
+def test_enriched_fixture_quality_and_native_revision_history() -> None:
+    graph = ingest_fixtures()
+    nodes = {a["id"]: a for a in graph["artifacts"]}
+    assert nodes["HAZ-01"]["attributes"]["severity"] == 5
+    assert nodes["HAZ-05"]["attributes"]["severity"] == 5
+    for a in nodes.values():
+        if a["type"] == "software_req":
+            assert a["body"] != a["attributes"]["acceptance_criteria"]
+            assert len(a["body"]) > 100
+        if a["type"] == "test_case":
+            assert a["attributes"]["steps"][0]["action"]
+            assert a["attributes"]["steps"][0]["expected"]
+        if a["type"] == "hazard":
+            assert all(
+                term in a["body"] for term in ("Foreseeable harm:", "Cause sequence:", "Severity")
+            )
+        if a["type"] == "defect":
+            assert a["attributes"]["severity"] and "Impact assessment:" in a["body"]
+    assert nodes["SRS-030"]["attributes"]["requirement_history"] == [
+        {"revision": 1, "changed_at": "2026-09-20T12:00:00Z"},
+        {"revision": 2, "changed_at": "2026-10-04T12:00:00Z"},
+    ]
+    assert len(Path("data/synthetic/prd.md").read_text().split()) >= 200
+    assert len(Path("data/synthetic/sad_v1.md").read_text().split()) >= 400
+    for name in (
+        "sensor_pressure",
+        "infusion_bounds",
+        "alarm_latch",
+        "drug_limits",
+        "sensor_air",
+        "sensor_filter",
+        "sensor_calibration",
+        "infusion_motor",
+        "infusion_volume",
+        "alarm_priority",
+        "alarm_audio",
+        "drug_lookup",
+        "comms_frame",
+        "comms_timeout",
+        "log_events",
+        "log_digest",
+    ):
+        count = len(Path(f"data/synthetic/code/kestrel/{name}.py").read_text().splitlines())
+        assert 30 <= count <= 120, (name, count)

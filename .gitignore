@@ -1,0 +1,17 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# confidential source material — never commit
+docs/*.pdf
+
+# generated
+out/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+tools/seed_ado/.state*.json
+.DS_Store

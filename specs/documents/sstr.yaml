@@ -1,6 +1,6 @@
 id: sstr
 title: Software System Test Report
-spec_version: 2
+spec_version: 3
 standard_refs:
 - IEC 62304 5.7
 - IEC 62304 5.8
@@ -13,7 +13,7 @@ sections:
   title: Purpose and scope
   mode: ai
   query: purpose_scope
-  prompt: sstr.purpose@1
+  prompt: sstr.purpose@2
   output_schema: claims.v1
   allowed_kinds:
   - sourced
@@ -70,7 +70,7 @@ sections:
   title: Failed tests and anomaly assessment
   mode: ai
   query: failed_results_with_defects
-  prompt: sstr.anomaly_assessment@1
+  prompt: sstr.anomaly_assessment@2
   output_schema: claims.v1
   allowed_kinds:
   - sourced
@@ -93,7 +93,7 @@ sections:
   title: Known residual anomalies
   mode: ai
   query: residual_anomalies
-  prompt: sstr.residual@1
+  prompt: sstr.residual@2
   output_schema: claims.v1
   allowed_kinds:
   - suggested
@@ -118,7 +118,7 @@ sections:
   title: Conclusion and release readiness
   mode: ai
   query: release_readiness_facts
-  prompt: sstr.conclusion@1
+  prompt: sstr.conclusion@2
   output_schema: claims.v1
   allowed_kinds:
   - suggested

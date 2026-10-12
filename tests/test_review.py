@@ -57,6 +57,8 @@ def test_word_redlines_comments_and_hyperlinks(tmp_path: Path) -> None:
             for n in xml.xpath("//w:ins|//w:del", namespaces=ns)
         )
         assert xml.xpath("//w:hyperlink", namespaces=ns)
+        assert xml.xpath("//w:hyperlink/w:ins/w:r", namespaces=ns)
+        assert not xml.xpath("//w:ins//w:hyperlink", namespaces=ns)
         assert xml.xpath('//w:highlight[@w:val="yellow"]', namespaces=ns)
         assert xml.xpath('//w:highlight[@w:val="cyan"]', namespaces=ns)
         for c in comments:
@@ -162,3 +164,17 @@ def test_clone_location_never_reuses_a_different_remote(tmp_path: Path) -> None:
     assert isolated != root and isolated.parent == root.parent
     assert git_command(["remote", "get-url", "origin"], root) == "/fictional/repo-a.git"
     assert clone_location(root, "/fictional/repo-b.git") == isolated
+
+
+def test_comments_are_reserved_for_review_items_and_include_basis(tmp_path: Path) -> None:
+    source = "# Draft\n\nRecorded [SRS-021](http://localhost/item).\n"
+    assert render_docx(source, tmp_path / "sourced.docx")["comments"] == 0
+    inferred = (
+        source + "\n**[Inferred]** Reasoning [SRS-021](http://localhost/item)[^basis]\n\n"
+        "[^basis]: Basis: SRS-021; confidence 0.8.\n"
+    )
+    assert render_docx(inferred, tmp_path / "inferred.docx")["comments"] == 1
+    with ZipFile(tmp_path / "inferred.docx") as archive:
+        assert b"confidence 0.8" in archive.read("word/comments.xml")
+    manual = source + "\nAI drafting unavailable (refusal) — author manually.\n"
+    assert render_docx(manual, tmp_path / "manual.docx")["comments"] == 1

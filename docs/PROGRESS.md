@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M6 (in progress) · Last updated: 2026-10-12 IST
+Current milestone: M5 (refreshed) · Development paused by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -11,8 +11,8 @@ Current milestone: M6 (in progress) · Last updated: 2026-10-12 IST
 | M4 | done | m4-done | bfae4d5 | 12-section SSTR and exact deterministic golden |
 | M5 | done | m5-done | 4c29a5f implementation | Docs PR/readiness, real OOXML redlines, live-review fixes |
 ## Now / Next
-- Working on: M6 SAD/SDD specifications and deterministic design evidence.
-- Next: M6 SAD/SDD, local diagrams and component consistency.
+- Working on: completed M5 blocker fixes; development stops at the owner’s request.
+- Next: resume M6 only after the owner instructs. Unfinished M6 work is preserved in stash e1736bb3469388f8a6abf2d2a11d4c3d19617726 (`Paused M6 for R-025 R-026`). It has no completed milestone tag and still needs verification.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -77,6 +77,19 @@ Current milestone: M6 (in progress) · Last updated: 2026-10-12 IST
 
 - Full review-fix regression: `uv run pytest` → `41 passed in 32.44s`; ruff check/format clean. M5 remains in progress; its visual and CLI acceptance is still to finish.
 
+
+### M5
+- `dhf ingest --source ado --db out/m5-acceptance.sqlite` → `Snapshot 3: 248 artifacts, 473 links`; added/changed/removed all zero.
+- `dhf generate sstr --release 1.1 --db out/m5-acceptance.sqlite --open-pr` → 12 sections, zero validation rejects/downgrades/coercions/normalizations; PR 10 visible via API and HTML, 9 readiness blockers. The isolated HTTP server used port 54064; acceptance URL is historical test evidence.
+- `dhf check sstr --pr-id 10` → exit 1, `ready: false`, 9 blockers. After a test-only human edit with explicit dispositions: exit 0, `ready: true`, zero blockers; PR status succeeded. Test tooling simulated owner merge; product never merges.
+- `dhf baseline sstr --pr-id 10` → `sstr-v2`; md/docx/manifest exist in docs Git branch. DOCX hash matches the published manifest.
+- OOXML round-trip tests prove real insertions/deletions, cited comments, highlights and hyperlinks. Local bundled LibreOffice rendered the final 11-page fresh SSTR and one-page redline; all PNG pages inspected, no layout overflow. Redline sample reports 2 insertions, 1 deletion and 2 comments; fresh drafts have no artificial full-document insertion. Desktop Word UI remains unverified.
+- R-016/R-017/R-021/R-022: bounded one-call synthesis, claim caps, human-labelled properties, linked table IDs, short displayed revisions and prompt examples verified. Seven deterministic sections match the revised golden exactly.
+- R-023: sanitized SDK-error/CLI tests and cumulative token accounting verified; pre-fix token counts cannot be reconstructed.
+- R-024: exact unique source URL citations normalize with audit events; lookalikes remain rejected. Mini defaults and prices updated without editing .env. First guarded anomaly check: `6 validated claims; $0.001052`; inspection found a false missing-link statement. Injecting explicit defect links and revising instructions produced `5 validated claims; $0.000960` with the sourced result/defect association citing both IDs and zero validation events. Prose still needs human review.
+
+- Final M5 regression: `uv run pytest -q` → `45 passed in 34.44s`; ruff → `All checks passed!`, `73 files already formatted`.
+
 ## Pending live verification
 - Full-document paid-provider narrative review remains optional; single-section OpenAI and Anthropic checks are recorded below. Tests and offline demo use mock.
 - Real ADO M11 — needs a real org; not part of the offline build.
@@ -92,14 +105,13 @@ Current milestone: M6 (in progress) · Last updated: 2026-10-12 IST
 | anthropic | $0.0137161 actual + $0.0096725 reserved | $1.50 build / $4 hard stop |
 | openai | $0.0023408 actual + $0.0021046 reserved | $1.50 build / $4 hard stop |
 
-### M5
-- `dhf ingest --source ado --db out/m5-acceptance.sqlite` → `Snapshot 3: 248 artifacts, 473 links`; added/changed/removed all zero.
-- `dhf generate sstr --release 1.1 --db out/m5-acceptance.sqlite --open-pr` → 12 sections, zero validation rejects/downgrades/coercions/normalizations; PR 10 visible via API and HTML, 9 readiness blockers. The isolated HTTP server used port 54064; acceptance URL is historical test evidence.
-- `dhf check sstr --pr-id 10` → exit 1, `ready: false`, 9 blockers. After a test-only human edit with explicit dispositions: exit 0, `ready: true`, zero blockers; PR status succeeded. Test tooling simulated owner merge; product never merges.
-- `dhf baseline sstr --pr-id 10` → `sstr-v2`; md/docx/manifest exist in docs Git branch. DOCX hash matches the published manifest.
-- OOXML round-trip tests prove real insertions/deletions, cited comments, highlights and hyperlinks. Local bundled LibreOffice rendered the final 11-page fresh SSTR and one-page redline; all PNG pages inspected, no layout overflow. Redline sample reports 2 insertions, 1 deletion and 2 comments; fresh drafts have no artificial full-document insertion. Desktop Word UI remains unverified.
-- R-016/R-017/R-021/R-022: bounded one-call synthesis, claim caps, human-labelled properties, linked table IDs, short displayed revisions and prompt examples verified. Seven deterministic sections match the revised golden exactly.
-- R-023: sanitized SDK-error/CLI tests and cumulative token accounting verified; pre-fix token counts cannot be reconstructed.
-- R-024: exact unique source URL citations normalize with audit events; lookalikes remain rejected. Mini defaults and prices updated without editing .env. First guarded anomaly check: `6 validated claims; $0.001052`; inspection found a false missing-link statement. Injecting explicit defect links and revising instructions produced `5 validated claims; $0.000960` with the sourced result/defect association citing both IDs and zero validation events. Prose still needs human review.
-
-- Final M5 regression: `uv run pytest -q` → `45 passed in 34.44s`; ruff → `All checks passed!`, `73 files already formatted`.
+### M5 refresh — R-025/R-026 (plus touched-area R-027/R-028)
+- `uv run pytest -q -s` → `52 passed in 39.34s`; exact HTTP scenario regression: `redline: 46/744 paragraphs; 15/175 rows; {'insertions': 30, 'deletions': 16, 'comments': 7}`. Changes are under 10%, confined to affected rows/sections; hyperlink-only changes have zero tracked edits.
+- `uv run ruff check .` → `All checks passed!`; `ruff format --check .` → `75 files already formatted`.
+- CLI acceptance on a fresh isolated mock: `dhf ingest --source ado --db out/m5-refresh.sqlite` → snapshot 1, 248 artifacts/473 links; `dhf generate sstr` → 12 sections, zero validation events.
+- `apply_scenario('change_1')` → `{'applied': 'change_1', 'revision': 2, 'pr': 8, 'run': 3}`. Re-ingest → snapshot 2, 251 artifacts/476 links; three added and two changed (`SRS-021`, `UNIT-sensor_pressure`), zero removed.
+- `dhf generate sstr --db out/m5-refresh.sqlite --open-pr` → 12 sections, zero validation events; mock docs PR 9, nine ordinary unresolved human/suggestion blockers. `AI unavailable sections: 0`; summary `total: 40, passed: 38, failed: 2`. No paid calls were made. The acceptance server is now stopped.
+- `out/redline-check/sstr-change_1.docx` rendered locally to 12 PNG pages; every page inspected. Requirement revision, unit revisions, latest result and summary changes are visible; unaffected table cells retain their normal text. Nested tracked hyperlink runs fixed a local-render blank-label defect. Desktop Word UI remains unverified.
+- Synthesis reduction is tested with artificially expanded source narratives, preserves critical evidence and gap facts, records omitted IDs/injected counts/excerpts, and is deterministic. Separate failure tests cover evidence_over_budget, invalid_output and budget_exceeded with safe internal messages.
+- R-027: sourced citations remain hyperlinks without comments. Review comments retain basis/confidence; placeholders receive a review comment. Scenario redline has seven comments. R-028: only the conclusion carries conclusion-specific instructions; all SSTR prompt versions are now 2.
+- Paused M6 smoke test had one unverified allocation expectation; it is not counted as acceptance evidence. Resume by inspecting/applying the preserved stash and resolving conflicts with these M5 fixes, then verify M6 fully.

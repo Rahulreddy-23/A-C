@@ -16,6 +16,12 @@ from dhf.generate.validator import ID_PATTERN, validate_claims
 from dhf.graph.queries import fingerprint, prompt_pack, query
 from dhf.llm import LLM, BudgetExceeded, canonical
 from dhf.llm.errors import DraftingUnavailable
+from dhf.llm.tokens import estimate_tokens
+from dhf.models import strict_claims_schema
+
+
+class EvidenceOverBudget(ValueError):
+    """Only deterministic internal budget messages, never provider response text."""
 
 
 def sha(text: str) -> str:
@@ -42,11 +48,11 @@ def load_prompt(reference: str) -> dict:
 
 
 def partition_pack(pack: dict, budget: int) -> list[dict]:
-    """Conservative byte-based token bound; never silently discard evidence."""
+    """Token-estimated evidence bound; never silently discard evidence."""
     groups = []
     current = {"facts": pack["facts"], "evidence": []}
-    if len(canonical(current).encode()) > budget:
-        raise ValueError("Section facts exceed prompt budget; split the named query")
+    if estimate_tokens(canonical(current)) > budget:
+        raise EvidenceOverBudget("Section facts exceed prompt budget; split the named query")
     nodes = {a["id"]: a for a in pack["evidence"]}
 
     def context(a: dict) -> list[dict]:
@@ -67,19 +73,91 @@ def partition_pack(pack: dict, budget: int) -> list[dict]:
             continue
         expanded = {item["id"]: item for item in [*current["evidence"], *context(a)]}
         candidate = {"facts": pack["facts"], "evidence": list(expanded.values())}
-        if len(canonical(candidate).encode()) > budget:
+        if estimate_tokens(canonical(candidate)) > budget:
             if not current["evidence"]:
-                raise ValueError("Single artifact and context exceed prompt budget; split by unit")
+                raise EvidenceOverBudget(
+                    "Single artifact and context exceed prompt budget; split by unit"
+                )
             groups.append(current)
             current = {"facts": pack["facts"], "evidence": context(a)}
-            if len(canonical(current).encode()) > budget:
-                raise ValueError("Single artifact and context exceed prompt budget")
+            if estimate_tokens(canonical(current)) > budget:
+                raise EvidenceOverBudget("Single artifact and context exceed prompt budget")
         else:
             current = candidate
         seen.update(item["id"] for item in current["evidence"])
     if current["evidence"] or not groups:
         groups.append(current)
     return groups
+
+
+def reduce_synthesis(model_pack: dict, source_pack: dict, budget: int) -> tuple[dict, dict]:
+    """Deterministic context reduction; adverse outcomes and defects retain priority."""
+    if estimate_tokens(canonical(model_pack)) <= budget:
+        return model_pack, {"reduced": False}
+    sources = {a["id"]: a for a in source_pack["evidence"]}
+    priority = [
+        a
+        for a in model_pack["evidence"]
+        if sources[a["id"]]["type"] == "defect"
+        or (
+            sources[a["id"]]["type"] == "test_result"
+            and sources[a["id"]]["attributes"].get("outcome") in ("Failed", "Blocked")
+        )
+    ]
+    if not priority:
+        priority = model_pack["evidence"]
+    priority_ids = {a["id"] for a in priority}
+    omitted = [a for a in model_pack["evidence"] if a["id"] not in priority_ids]
+    facts = {
+        **model_pack["facts"],
+        "summarized_context_counts": dict(Counter(sources[a["id"]]["type"] for a in omitted)),
+    }
+    reduced = {"facts": facts, "evidence": priority}
+    audit = {
+        "reduced": True,
+        "omitted_context_ids": [a["id"] for a in omitted],
+        "original_tokens": estimate_tokens(canonical(model_pack)),
+        "excerpted_ids": [],
+        "injected_facts": facts,
+    }
+    # Preserve full narratives in the manifest; compact only the provider view.
+    for limit in (512, 256, 128, 0):
+        if estimate_tokens(canonical(reduced)) <= budget:
+            break
+        reduced = {
+            "facts": facts,
+            "evidence": [
+                {
+                    "id": a["id"],
+                    "title": a["title"],
+                    "revision": a["revision"],
+                    "body": a["body"][:limit],
+                    "body_excerpt": True,
+                    "attributes": a["attributes"],
+                    "properties": {
+                        k: v
+                        for k, v in a["properties"].items()
+                        if k
+                        in (
+                            "Status",
+                            "Severity",
+                            "Outcome",
+                            "Test case",
+                            "Run",
+                            "Listed as residual anomaly",
+                        )
+                    },
+                }
+                for a in priority
+            ],
+        }
+        audit["excerpted_ids"] = [a["id"] for a in priority]
+    audit["reduced_tokens"] = estimate_tokens(canonical(reduced))
+    if audit["reduced_tokens"] > budget:
+        raise EvidenceOverBudget(
+            "Critical evidence and gap facts exceed the synthesis token budget"
+        )
+    return reduced, audit
 
 
 def render_section(section: dict, pack: dict, claims: list[dict]) -> str:
@@ -107,7 +185,10 @@ def render_section(section: dict, pack: dict, claims: list[dict]) -> str:
             if id not in nodes:
                 return match[0]
             a = nodes[id]
-            return f"[{id}]({a['source']['url']})" + match[0][len(id) :]
+            label = id + (
+                "@" + rev(a["source"]["revision"]) if a["source"]["system"] == "git" else ""
+            )
+            return f"[{label}]({a['source']['url']})" + match[0][len(id) :]
 
         return ID_PATTERN.sub(link, text)
 
@@ -135,11 +216,13 @@ def finish_section(
         for kind in ("rejected", "downgraded", "coerced", "normalized")
     }
     if section["mode"] == "ai":
-        capped = validate_claims(
-            {"claims": claims}, pack, section["allowed_kinds"], section.get("max_claims", 6)
+        # Each chunk is validated against exactly its injected facts and evidence.
+        # Enforce the global cap without revalidating against unreduced query facts.
+        limit = section.get("max_claims", 6)
+        validation["rejected"].extend(
+            {"claim_index": index, "reason": "max_claims"} for index in range(limit, len(claims))
         )
-        validation["rejected"].extend(capped["validation"]["rejected"])
-        claims = capped["claims"]
+        claims = claims[:limit]
     ids = (
         {a["id"] for a in pack["evidence"]}
         if section["mode"] == "deterministic"
@@ -184,12 +267,16 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
     if section["mode"] == "ai":
         prompt = load_prompt(section["prompt"])
         prompts = [{k: prompt[k] for k in ("id", "version", "sha256")}]
-        budget = prompt["max_input_tokens"] - len(prompt["body"].encode())
+        budget = (
+            prompt["max_input_tokens"]
+            - estimate_tokens(prompt["body"] + canonical(strict_claims_schema()))
+            - 512
+        )
+        reduction = {"reduced": False}
         try:
             model_pack = prompt_pack(pack)
             if section.get("synthesis"):
-                if len(canonical(model_pack).encode()) > budget:
-                    raise ValueError("Synthesis evidence exceeds its single-call budget")
+                model_pack, reduction = reduce_synthesis(model_pack, pack, budget)
                 chunks = [model_pack]
             else:
                 chunks = partition_pack(model_pack, budget)
@@ -207,7 +294,7 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
                 )
                 chunk_ids = {a["id"] for a in chunk["evidence"]}
                 validation_pack = {
-                    "facts": pack["facts"],
+                    "facts": chunk["facts"],
                     "evidence": [a for a in pack["evidence"] if a["id"] in chunk_ids],
                 }
                 responses.append(validate_claims(raw, validation_pack, section["allowed_kinds"]))
@@ -215,11 +302,25 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
             return finish_section(section, pack, [], prompts, exc.details)
         except (BudgetExceeded, ValidationError, json.JSONDecodeError, ValueError) as exc:
             reason = (
-                "budget_exceeded" if isinstance(exc, BudgetExceeded) else "invalid_output_or_budget"
+                "budget_exceeded"
+                if isinstance(exc, BudgetExceeded)
+                else (
+                    "evidence_over_budget"
+                    if isinstance(exc, EvidenceOverBudget)
+                    else "invalid_output"
+                )
             )
             failure = DraftingUnavailable(reason, llm.provider, error_type=type(exc).__name__)
+            failure.details["internal_message"] = (
+                str(exc)
+                if isinstance(exc, (BudgetExceeded, EvidenceOverBudget))
+                else "Generated output failed local parsing or validation"
+            )
             return finish_section(section, pack, [], prompts, failure.details)
-    return finish_section(section, pack, responses, prompts)
+    result = finish_section(section, pack, responses, prompts)
+    if section["mode"] == "ai":
+        result["evidence_reduction"] = reduction
+    return result
 
 
 def assemble(spec: dict, graph: dict, params: dict, sections: list[dict], context: dict) -> dict:

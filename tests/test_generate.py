@@ -61,10 +61,11 @@ def test_sstr_generation_citations_manifest_and_cache(tmp_path: Path) -> None:
 
 def test_prompt_bound_is_enforced_without_truncation() -> None:
     pack = {"facts": {}, "evidence": [{"id": str(i), "body": "x" * 20} for i in range(10)]}
-    chunks = partition_pack(pack, 150)
+    chunks = partition_pack(pack, 50)
+    assert len(chunks) > 1
     assert [a["id"] for chunk in chunks for a in chunk["evidence"]] == [str(i) for i in range(10)]
     with pytest.raises(ValueError, match="Single artifact"):
-        partition_pack({"facts": {}, "evidence": [{"id": "SRS-001", "body": "x" * 200}]}, 100)
+        partition_pack({"facts": {}, "evidence": [{"id": "SRS-001", "body": "x" * 600}]}, 100)
 
 
 def test_claim_limit_is_validated_and_audited() -> None:
@@ -176,3 +177,36 @@ def test_exact_url_citations_are_normalized_but_lookalikes_rejected() -> None:
             "to": "RES-2-008",
         }
     ]
+
+
+@pytest.mark.parametrize("kind", ["evidence_over_budget", "invalid_output", "budget_exceeded"])
+def test_local_drafting_failures_have_distinct_safe_reasons(
+    tmp_path: Path, monkeypatch, kind: str
+) -> None:
+    import dhf.generate as generation
+    from dhf.llm import BudgetExceeded
+
+    section = generation.load_spec("sstr")["sections"][0]
+    llm = LLM(root=tmp_path)
+    if kind == "evidence_over_budget":
+        original = generation.load_prompt
+        monkeypatch.setattr(
+            generation,
+            "load_prompt",
+            lambda reference: {
+                **original(reference),
+                "max_input_tokens": 1,
+            },
+        )
+    else:
+
+        def fail(*args, **kwargs):
+            if kind == "budget_exceeded":
+                raise BudgetExceeded("LLM budget cap reached")
+            return {"claims": "malformed"}
+
+        monkeypatch.setattr(llm, "generate", fail)
+    result = generation.generate_section(section, ingest_fixtures(), {"release": "1.1"}, llm)
+    assert result["status"] == "ai_unavailable"
+    assert result["ai_unavailable"]["reason"] == kind
+    assert result["ai_unavailable"]["internal_message"]

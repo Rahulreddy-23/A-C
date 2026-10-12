@@ -13,6 +13,7 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 from dhf.llm import canonical
+from dhf.models.values import ID_PATTERN
 
 AUTHOR = "DHF Assistant (AI draft)"
 LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
@@ -53,16 +54,53 @@ def paragraph_diff(previous: str, current: str) -> list[dict]:
     if not previous:
         return [{"change": "equal", "block": b} for b in after]
     diff = []
-    matcher = SequenceMatcher(a=[canonical(b) for b in before], b=[canonical(b) for b in after])
+
+    def key(block: dict) -> str:
+        if block["type"] == "table":
+            return canonical(["table", [visible(cell) for cell in block["rows"][0]]])
+        return canonical([block["type"], visible(block["text"])])
+
+    matcher = SequenceMatcher(a=[key(b) for b in before], b=[key(b) for b in after])
     for op, a, b, c, d in matcher.get_opcodes():
         if op in ("delete", "replace"):
             diff.extend({"change": "delete", "block": item} for item in before[a:b])
         if op in ("insert", "replace", "equal"):
-            diff.extend(
-                {"change": "equal" if op == "equal" else "insert", "block": item}
-                for item in after[c:d]
-            )
+            for offset, item in enumerate(after[c:d]):
+                entry = {"change": "equal" if op == "equal" else "insert", "block": item}
+                if op == "equal" and item["type"] == "table":
+                    entry["previous_rows"] = before[a + offset]["rows"]
+                diff.append(entry)
     return diff
+
+
+def visible(text: str) -> str:
+    """Hyperlink destinations are provenance, not visible document changes."""
+    return LINK.sub(lambda match: match[1], text).replace("**", "")
+
+
+def table_diff(previous: list[list[str]], current: list[list[str]]) -> list[dict]:
+    """Align rows by their first visible identifier; changes are per cell."""
+
+    def key(row: list[str]) -> str:
+        for cell in row:
+            ids = ID_PATTERN.findall(visible(cell))
+            if ids:
+                return visible(row[0]).split("@", 1)[0] + ":" + ids[0].rstrip(".")
+        return visible(row[0])
+
+    rows = []
+    matcher = SequenceMatcher(a=[key(r) for r in previous], b=[key(r) for r in current])
+    for op, a, b, c, d in matcher.get_opcodes():
+        if op in ("delete", "replace"):
+            rows.extend({"cells": r, "change": "delete"} for r in previous[a:b])
+        if op in ("insert", "replace"):
+            rows.extend({"cells": r, "change": "insert"} for r in current[c:d])
+        elif op == "equal":
+            rows.extend(
+                {"cells": current[c + i], "previous": previous[a + i], "change": "equal"}
+                for i in range(d - c)
+            )
+    return rows
 
 
 def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str = "") -> dict:
@@ -89,24 +127,32 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
     doc.settings.element.append(OxmlElement("w:trackRevisions"))
     counts = {"insertions": 0, "deletions": 0, "comments": 0}
     change_id = 0
+    footnotes = dict(re.findall(r"^\[\^([^\]]+)\]:\s*(.+)$", markdown, re.M))
 
     def revision(p, change: str) -> None:
         nonlocal change_id
         if change == "equal":
             return
         tag = "w:del" if change == "delete" else "w:ins"
-        mark = OxmlElement(tag)
-        mark.set(qn("w:id"), str(change_id))
-        mark.set(qn("w:author"), AUTHOR)
-        mark.set(qn("w:date"), timestamp)
-        change_id += 1
         for child in list(p._p):
             if child.tag in (qn("w:r"), qn("w:hyperlink")):
+                mark = OxmlElement(tag)
+                mark.set(qn("w:id"), str(change_id))
+                mark.set(qn("w:author"), AUTHOR)
+                mark.set(qn("w:date"), timestamp)
+                change_id += 1
                 if change == "delete":
                     for text in child.iter(qn("w:t")):
                         text.tag = qn("w:delText")
-                mark.append(child)
-        p._p.append(mark)
+                if child.tag == qn("w:hyperlink"):
+                    # Keep the hyperlink outside revision markup. Word and LibreOffice
+                    # both display link runs wrapped by an inner insertion/deletion.
+                    for run in list(child):
+                        mark.append(run)
+                    child.append(mark)
+                else:
+                    child.addprevious(mark)
+                    mark.append(child)
         counts["deletions" if change == "delete" else "insertions"] += 1
 
     def content(p, text: str, change: str, small: bool = False) -> None:
@@ -121,10 +167,16 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
         note = []
         inferred = "[Inferred]" in text
         suggested = "[Suggested" in text
+        manual = "AI drafting unavailable" in text or "Human input required" in text
         if inferred:
             note.append("AI-inferred from the cited evidence; review the stated basis.")
+            for reference in re.findall(r"\[\^([^\]]+)\]", text):
+                if reference in footnotes:
+                    note.append(footnotes[reference])
         if suggested:
             note.append("REVIEW REQUIRED: AI suggestion; no approval is implied.")
+        if manual:
+            note.append("REVIEW REQUIRED: human authoring remains incomplete.")
 
         def add_text(value: str) -> None:
             run = p.add_run(value)
@@ -165,7 +217,7 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
             p._p.append(hyperlink)
             cursor = match.end()
         add_text(clean[cursor:])
-        if note and change != "delete":
+        if (inferred or suggested or manual) and change != "delete":
             doc.add_comment(anchor, "\n".join(note), author=AUTHOR, initials="AI")
             counts["comments"] += 1
         revision(p, change)
@@ -194,7 +246,9 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
             widths = [int(available * w / sum(weights)) for w in weights]
             for col, width in zip(table.columns, widths, strict=True):
                 col.width = width
-            for idx, values in enumerate(block["rows"]):
+            compared = table_diff(item.get("previous_rows", []), block["rows"])
+            for idx, row in enumerate(compared):
+                values = row["cells"]
                 cells = table.add_row().cells
                 if idx == 0:
                     cells[0]._tc.getparent().get_or_add_trPr().append(OxmlElement("w:tblHeader"))
@@ -216,7 +270,13 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
                     props.append(shading)
                     cell.paragraphs[0].paragraph_format.space_after = Pt(3)
                     cell.paragraphs[0].paragraph_format.space_before = Pt(2)
-                    content(cell.paragraphs[0], value, change, small=True)
+                    cell_change = row["change"] if item.get("previous_rows") else change
+                    old = row.get("previous", values)[col_index]
+                    if cell_change == "equal" and visible(old) != visible(value):
+                        content(cell.paragraphs[0], old, "delete", small=True)
+                        content(cell.add_paragraph(), value, "insert", small=True)
+                    else:
+                        content(cell.paragraphs[0], value, cell_change, small=True)
                     if idx == 0:
                         for r in cell.paragraphs[0].runs:
                             r.bold = True

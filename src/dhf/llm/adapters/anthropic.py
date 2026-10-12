@@ -8,7 +8,10 @@ from dhf.models import strict_claims_schema
 
 class AnthropicAdapter:
     def complete(self, model: str, prompt: str, pack: dict, limit: int) -> dict:
-        response = Anthropic(api_key=setting("ANTHROPIC_API_KEY"), max_retries=0).messages.create(
+        api_key = setting("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("Missing ANTHROPIC_API_KEY; configure it in .env")
+        response = Anthropic(api_key=api_key, max_retries=0).messages.create(
             model=model,
             max_tokens=limit,
             system=prompt,

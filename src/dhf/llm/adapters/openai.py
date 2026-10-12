@@ -8,7 +8,10 @@ from dhf.models import strict_claims_schema
 
 class OpenAIAdapter:
     def complete(self, model: str, prompt: str, pack: dict, limit: int) -> dict:
-        response = OpenAI(api_key=setting("OPENAI_API_KEY"), max_retries=0).chat.completions.create(
+        api_key = setting("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("Missing OPENAI_API_KEY; configure it in .env")
+        response = OpenAI(api_key=api_key, max_retries=0).chat.completions.create(
             model=model,
             max_completion_tokens=limit,
             temperature=0,

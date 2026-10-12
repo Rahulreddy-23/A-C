@@ -143,6 +143,8 @@ def test_actual_cost_reconciliation_and_failure_reservation(tmp_path: Path, monk
 
 
 def test_provider_contracts_thinking_strict_json_and_usage(monkeypatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-anthropic")
+    monkeypatch.setenv("OPENAI_API_KEY", "fake-openai")
     from types import SimpleNamespace as NS
 
     import dhf.llm.adapters.anthropic as aa
@@ -189,6 +191,8 @@ def test_provider_contracts_thinking_strict_json_and_usage(monkeypatch) -> None:
 
 
 def test_provider_truncation_and_refusal_fail_closed(monkeypatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "fake-anthropic")
+    monkeypatch.setenv("OPENAI_API_KEY", "fake-openai")
     from types import SimpleNamespace as NS
 
     import dhf.llm.adapters.anthropic as aa
@@ -211,3 +215,57 @@ def test_provider_truncation_and_refusal_fail_closed(monkeypatch) -> None:
     )
     with pytest.raises(ValueError, match="truncated"):
         oa.OpenAIAdapter().complete("test", "p", PACK, 4000)
+
+
+def test_provider_keys_from_env_file_and_missing_key_fail_fast(tmp_path: Path, monkeypatch) -> None:
+    from types import SimpleNamespace as NS
+
+    import dhf.llm.adapters.anthropic as aa
+    import dhf.llm.adapters.openai as oa
+
+    for adapter, key in [
+        (aa.AnthropicAdapter(), "ANTHROPIC_API_KEY"),
+        (oa.OpenAIAdapter(), "OPENAI_API_KEY"),
+    ]:
+        with pytest.raises(ValueError, match="Missing " + key):
+            adapter.complete("test", "p", PACK, 4000)
+    env = tmp_path / "fake.env"
+    env.write_text("ANTHROPIC_API_KEY=fake-anthropic\nOPENAI_API_KEY=fake-openai\n")
+    monkeypatch.setenv("DHF_ENV_FILE", str(env))
+    received = {}
+
+    def anthropic_factory(**kwargs):
+        received["anthropic"] = kwargs["api_key"]
+        return NS(
+            messages=NS(
+                create=lambda **_: NS(
+                    stop_reason="end_turn",
+                    content=[NS(type="text", text='{"claims":[]}')],
+                    usage=NS(input_tokens=1, output_tokens=1),
+                )
+            )
+        )
+
+    def openai_factory(**kwargs):
+        received["openai"] = kwargs["api_key"]
+        return NS(
+            chat=NS(
+                completions=NS(
+                    create=lambda **_: NS(
+                        choices=[
+                            NS(
+                                finish_reason="stop",
+                                message=NS(refusal=None, content='{"claims":[]}'),
+                            )
+                        ],
+                        usage=NS(prompt_tokens=1, completion_tokens=1),
+                    )
+                )
+            )
+        )
+
+    monkeypatch.setattr(aa, "Anthropic", anthropic_factory)
+    monkeypatch.setattr(oa, "OpenAI", openai_factory)
+    aa.AnthropicAdapter().complete("test", "p", PACK, 4000)
+    oa.OpenAIAdapter().complete("test", "p", PACK, 4000)
+    assert received == {"anthropic": "fake-anthropic", "openai": "fake-openai"}

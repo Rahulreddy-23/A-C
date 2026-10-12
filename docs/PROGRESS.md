@@ -5,9 +5,10 @@ Current milestone: M2 (done) · Last updated: 2026-10-12 IST
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
 | M0 | done | m0-done | 98aa27a | Local checks and GitHub Actions green |
-| M1 | done | m1-done | 6969c55 | 17 tests; all 11 answer keys exact |
+| M1 | done | m1-done | 6969c55 | Refreshed evidence in b74d84b after R-010 |
+| M2 | done | m2-done (refreshed) | b74d84b | Native ADO parity, including metadata stripped, verified |
 ## Now / Next
-- Working on: M2 verified and ready to checkpoint.
+- Working on: R-009/R-010/R-011 resolved; M2 checkpoint refreshed before M3 resumes.
 - Next: M3 deterministic traceability, coverage and gap rules.
 ## Acceptance evidence
 ### M0
@@ -34,6 +35,13 @@ Current milestone: M2 (done) · Last updated: 2026-10-12 IST
 - `test_fixture_http_graph_parity_and_exact_changes`: all artifact bodies/attributes/content hashes, types, source systems/revisions and trace endpoints match. Only URL/native ID, retrieval time and source-specific link-evidence description are normalized. Re-ingest is unchanged; scenario changes exactly SRS-021 and UNIT-sensor_pressure and adds PR-8, RUN-3, RES-3-021. Snapshots survive SQLite reopen.
 - Real-source AST extraction lacks the synthetic flag; hash tampering and source-write attempts are rejected.
 - R-008 fixed in 4064754; fake env-file keys reach both SDK client constructors, missing keys fail before transport.
+### M2 review refresh — R-009, R-010, R-011
+- `uv run pytest` → `25 passed in 24.29s`. This is the exact M2 tree; paused M3 prototypes are excluded.
+- `test_metadata_stripped_equivalent_graph` passes: removing all DHF-META blobs preserves artifact semantics, hashes, source revisions and typed trace links. Native severity 5, Sensor Monitoring allocation and occlusion acceptance criteria remain present.
+- `uv run python -m mock_ado.validate` → `{'artifacts': 248, 'links': 473, 'answer_key': 'exact', 'rules': 11}`.
+- `PYTHONPATH=data/synthetic/code uv run pytest data/synthetic/code/tests` → `6 passed in 0.01s`. Dwell boundary, safe acknowledgement, inhibited sensor faults, atomic configuration and volume clamp verified.
+- `uv run ruff check .` → `All checks passed!`; format → `58 files already formatted`.
+- R-009/R-010/R-011 implementation: b74d84b; m2-done is re-tagged on the review-resolution checkpoint. Original c43b213 remains in dev history.
 ## Pending live verification
 - Paid-provider section parity — optional API keys; tests and demo use mock.
 - Real ADO M11 — needs a real org; not part of the offline build.
@@ -41,7 +49,7 @@ Current milestone: M2 (done) · Last updated: 2026-10-12 IST
 ## Deviations from BRIEF (with reason)
 - Synthetic fixture has 20 units and 4 unverified SRS (including risk control SRS-012), meeting the approximate sizes and at-least gap requirements.
 - Local contract tests require sandbox elevation for loopback bind. The test fixture still blocks all external sockets.
-- Default ADO stable IDs and synthetic metadata use standard tags/descriptions, avoiding custom server fields. Mapping stays in YAML.
+- Default ADO fields, native revisions/history, area allocation and residual tags are mapped in YAML. Optional fixture metadata now holds only a synthetic marker; all product facts come from native evidence (ADR-010 supersedes ADR-008).
 - uv was absent; installed inside ignored `out/bin` for this workstation. CI uses setup-uv.
 ## LLM spend (from out/ledger.json)
 | Provider | Spent | Cap |

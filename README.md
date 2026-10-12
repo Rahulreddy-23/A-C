@@ -16,3 +16,19 @@ Tests use mock LLM responses and never call paid APIs. Provider model names and
 prices are configurable; verify current pricing before enabling live calls.
 Budget accounting reserves a conservative upper-bound cost before each request,
 including failed requests. Cache hits are free. Paid calls require synthetic evidence.
+
+The synthetic ADO backend uses real local bare Git repos and loopback HTTP:
+
+```sh
+uv run mock-ado init
+uv run mock-ado serve --port 8089
+# In another terminal:
+uv run mock-ado apply-scenario change_1
+uv run mock-ado reset
+```
+
+REST uses Basic-auth mock PATs from `.env.example`. Only the seed token can
+invoke admin endpoints. The app token is refused source writes, and a Git
+pre-receive hook independently rejects product pushes to the device repo.
+Browser pages are public and contain only synthetic data. Run contract tests
+with loopback sockets permitted; external network is blocked by the test fixture.

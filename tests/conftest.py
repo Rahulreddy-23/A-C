@@ -62,3 +62,18 @@ def isolate_configuration_and_network(tmp_path, monkeypatch):
     monkeypatch.setattr(socket, "getaddrinfo", resolve)
     yield
     load_env.cache_clear()
+
+
+@pytest.fixture()
+def ado_server(tmp_path):
+    import threading
+
+    from mock_ado.server import Server
+
+    server = Server(tmp_path / "mock", port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    yield server
+    server.shutdown()
+    server.server_close()
+    thread.join()

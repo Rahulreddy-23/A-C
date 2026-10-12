@@ -1,0 +1,51 @@
+id: change_1
+edit:
+  id: SRS-021
+  body: Detect occlusion when pressure exceeds the revised configured threshold.
+  attributes:
+    threshold: 75
+code:
+  path: kestrel/sensor_pressure.py
+  old: '80.0'
+  new: '75.0'
+pr:
+  id: PR-8
+  native_id: 8
+  title: Adjust occlusion threshold
+  workitems:
+  - SRS-021
+  files:
+  - kestrel/sensor_pressure.py
+run:
+  id: 3
+  release: '1.1'
+  test_case: TC-021
+  outcome: Failed
+  completed_at: '2026-10-12T18:00:00Z'
+expected_changed:
+- SRS-021
+- UNIT-sensor_pressure
+- PR-8
+- RUN-3
+- RES-3-021
+expected_sections:
+  sad:
+  - components
+  - interfaces
+  - allocation
+  - architecture
+  sdd:
+  - units
+  - unit_trace
+  sstr:
+  - references
+  - results_summary
+  - results_by_requirement
+  - anomaly_assessment
+  - retest_results
+  - verification_gaps
+  - release_conclusion
+  - evidence_index
+  sfmea:
+  - risk_table
+  - failure_modes

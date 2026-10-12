@@ -1,0 +1,4709 @@
+artifacts:
+- id: UN-001
+  type: user_need
+  title: Set and monitor infusion
+  body: Set and monitor infusion
+  attributes:
+    synthetic: true
+- id: UN-002
+  type: user_need
+  title: Limit delivered volume
+  body: Limit delivered volume
+  attributes:
+    synthetic: true
+- id: UN-003
+  type: user_need
+  title: Detect unsafe sensor conditions
+  body: Detect unsafe sensor conditions
+  attributes:
+    synthetic: true
+- id: UN-004
+  type: user_need
+  title: Alert operators
+  body: Alert operators
+  attributes:
+    synthetic: true
+- id: UN-005
+  type: user_need
+  title: Use configured drug limits
+  body: Use configured drug limits
+  attributes:
+    synthetic: true
+- id: UN-006
+  type: user_need
+  title: Retain audit evidence
+  body: Retain audit evidence
+  attributes:
+    synthetic: true
+- id: SYS-001
+  type: system_req
+  title: 'System obligation: Set and monitor infusion'
+  body: 'System obligation: Set and monitor infusion'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-002
+  type: system_req
+  title: 'System obligation: Limit delivered volume'
+  body: 'System obligation: Limit delivered volume'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-003
+  type: system_req
+  title: 'System obligation: Detect unsafe sensor conditions'
+  body: 'System obligation: Detect unsafe sensor conditions'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-004
+  type: system_req
+  title: 'System obligation: Alert operators'
+  body: 'System obligation: Alert operators'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-005
+  type: system_req
+  title: 'System obligation: Use configured drug limits'
+  body: 'System obligation: Use configured drug limits'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-006
+  type: system_req
+  title: 'System obligation: Retain audit evidence'
+  body: 'System obligation: Retain audit evidence'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-007
+  type: system_req
+  title: 'System obligation: Set and monitor infusion'
+  body: 'System obligation: Set and monitor infusion'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-008
+  type: system_req
+  title: 'System obligation: Limit delivered volume'
+  body: 'System obligation: Limit delivered volume'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-009
+  type: system_req
+  title: 'System obligation: Detect unsafe sensor conditions'
+  body: 'System obligation: Detect unsafe sensor conditions'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-010
+  type: system_req
+  title: 'System obligation: Alert operators'
+  body: 'System obligation: Alert operators'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-011
+  type: system_req
+  title: 'System obligation: Use configured drug limits'
+  body: 'System obligation: Use configured drug limits'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-012
+  type: system_req
+  title: 'System obligation: Retain audit evidence'
+  body: 'System obligation: Retain audit evidence'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-013
+  type: system_req
+  title: 'System obligation: Set and monitor infusion'
+  body: 'System obligation: Set and monitor infusion'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-014
+  type: system_req
+  title: 'System obligation: Limit delivered volume'
+  body: 'System obligation: Limit delivered volume'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SYS-015
+  type: system_req
+  title: 'System obligation: Detect unsafe sensor conditions'
+  body: 'System obligation: Detect unsafe sensor conditions'
+  attributes:
+    synthetic: true
+    safety_class: C
+- id: SRS-001
+  type: software_req
+  title: Flow bounds
+  body: Reject flow outside configured bounds.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Reject flow outside configured bounds.
+    component: COMP-01
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-002
+  type: software_req
+  title: Volume limit
+  body: Stop when delivered volume reaches configured target.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Stop when delivered volume reaches configured target.
+    component: COMP-02
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-003
+  type: software_req
+  title: Start interlock
+  body: Reject start when configuration is invalid.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Reject start when configuration is invalid.
+    component: COMP-03
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-004
+  type: software_req
+  title: Pause control
+  body: Pause motor output on operator request.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Pause motor output on operator request.
+    component: COMP-04
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-005
+  type: software_req
+  title: Stop control
+  body: Stop output and preserve delivered volume.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Stop output and preserve delivered volume.
+    component: COMP-05
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-006
+  type: software_req
+  title: Rate conversion
+  body: Convert flow into motor pulse intervals.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Convert flow into motor pulse intervals.
+    component: COMP-06
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-007
+  type: software_req
+  title: Dose calculation
+  body: Calculate dose from concentration and volume.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Calculate dose from concentration and volume.
+    component: COMP-01
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-008
+  type: software_req
+  title: Air detection
+  body: Stop infusion when air sensor exceeds the configured limit.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Stop infusion when air sensor exceeds the configured limit.
+    component: COMP-02
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-009
+  type: software_req
+  title: Pressure sampling
+  body: Validate pressure readings before use.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Validate pressure readings before use.
+    component: COMP-03
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-010
+  type: software_req
+  title: Sensor diagnostics
+  body: Latch a fault when the sensor disconnects.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Latch a fault when the sensor disconnects.
+    component: COMP-04
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-011
+  type: software_req
+  title: Alarm priority
+  body: Prioritize critical faults over advisories.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Prioritize critical faults over advisories.
+    component: COMP-05
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-012
+  type: software_req
+  title: Alarm latch
+  body: Keep critical alarms active until acknowledged safely.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Keep critical alarms active until acknowledged safely.
+    component: COMP-06
+    risk_control: true
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-013
+  type: software_req
+  title: Alarm acknowledgement
+  body: Record acknowledgement without clearing an active unsafe condition.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Record acknowledgement without clearing an active unsafe
+      condition.
+    component: COMP-01
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-014
+  type: software_req
+  title: Audible alarm
+  body: Schedule audible alerts while critical alarms remain active.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Schedule audible alerts while critical alarms remain active.
+    component: COMP-02
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-015
+  type: software_req
+  title: Display status
+  body: Show operating mode and delivered volume.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Show operating mode and delivered volume.
+    component: COMP-03
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-016
+  type: software_req
+  title: Input validation
+  body: Reject malformed operator entries.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Reject malformed operator entries.
+    component: COMP-04
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-017
+  type: software_req
+  title: Configuration confirmation
+  body: Require confirmation before applying a new configuration.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Require confirmation before applying a new configuration.
+    component: COMP-05
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-018
+  type: software_req
+  title: Drug limit validation
+  body: Reject doses outside library limits.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Reject doses outside library limits.
+    component: COMP-06
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-019
+  type: software_req
+  title: Drug lookup
+  body: Find configured drug records by stable key.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Find configured drug records by stable key.
+    component: COMP-01
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-020
+  type: software_req
+  title: Library checksum
+  body: Reject a library with invalid checksum.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Reject a library with invalid checksum.
+    component: COMP-02
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-021
+  type: software_req
+  title: Occlusion threshold
+  body: Detect occlusion when pressure exceeds the configured threshold.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Detect occlusion when pressure exceeds the configured threshold.
+    component: COMP-03
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-022
+  type: software_req
+  title: Pressure filtering
+  body: Filter pressure samples over the configured window.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Filter pressure samples over the configured window.
+    component: COMP-03
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-023
+  type: software_req
+  title: Sensor calibration
+  body: Apply calibration offset to valid readings.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Apply calibration offset to valid readings.
+    component: COMP-03
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-024
+  type: software_req
+  title: Event persistence
+  body: Append ordered events to the audit log.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Append ordered events to the audit log.
+    component: COMP-06
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-025
+  type: software_req
+  title: Log integrity
+  body: Detect modified log records using content digests.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Detect modified log records using content digests.
+    component: COMP-01
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-026
+  type: software_req
+  title: Communication framing
+  body: Validate incoming message framing.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Validate incoming message framing.
+    component: COMP-02
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-027
+  type: software_req
+  title: Communication timeout
+  body: Signal a timeout when a response is overdue.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Signal a timeout when a response is overdue.
+    component: COMP-03
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-028
+  type: software_req
+  title: Delivery estimation
+  body: Integrate commanded flow over elapsed time.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Integrate commanded flow over elapsed time.
+    component: COMP-04
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-029
+  type: software_req
+  title: Watchdog
+  body: Stop output when watchdog heartbeat expires.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Stop output when watchdog heartbeat expires.
+    component: COMP-05
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-030
+  type: software_req
+  title: Power loss recovery
+  body: Restore only the last validated configuration.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Restore only the last validated configuration.
+    component: COMP-06
+    risk_control: false
+    revision: 2
+    changed_at: '2026-10-02T12:00:00Z'
+- id: SRS-031
+  type: software_req
+  title: Time validation
+  body: Reject decreasing event timestamps.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Reject decreasing event timestamps.
+    component: COMP-01
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-032
+  type: software_req
+  title: Residual anomaly display
+  body: Expose known residual anomalies to the operator.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Expose known residual anomalies to the operator.
+    component: COMP-02
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-033
+  type: software_req
+  title: Export audit records
+  body: Export selected audit records on request.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Export selected audit records on request.
+    component: COMP-03
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-034
+  type: software_req
+  title: Service access policy
+  body: Require authorized service mode for calibration.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Require authorized service mode for calibration.
+    component: COMP-04
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: SRS-035
+  type: software_req
+  title: Localization selection
+  body: Select the configured display language.
+  attributes:
+    synthetic: true
+    acceptance_criteria: Select the configured display language.
+    component: COMP-05
+    risk_control: false
+    revision: 1
+    changed_at: '2026-09-20T12:00:00Z'
+- id: HAZ-01
+  type: hazard
+  title: Over infusion
+  body: Over infusion
+  attributes:
+    synthetic: true
+    severity: 2
+    safety_class: C
+- id: HAZ-02
+  type: hazard
+  title: Under infusion
+  body: Under infusion
+  attributes:
+    synthetic: true
+    severity: 3
+    safety_class: C
+- id: HAZ-03
+  type: hazard
+  title: Air delivery
+  body: Air delivery
+  attributes:
+    synthetic: true
+    severity: 4
+    safety_class: C
+- id: HAZ-04
+  type: hazard
+  title: Undetected occlusion
+  body: Undetected occlusion
+  attributes:
+    synthetic: true
+    severity: 5
+    safety_class: C
+- id: HAZ-05
+  type: hazard
+  title: Alarm unavailable
+  body: Alarm unavailable
+  attributes:
+    synthetic: true
+    severity: 1
+    safety_class: C
+- id: HAZ-06
+  type: hazard
+  title: Incorrect drug limit
+  body: Incorrect drug limit
+  attributes:
+    synthetic: true
+    severity: 2
+    safety_class: C
+- id: HAZ-07
+  type: hazard
+  title: Lost audit evidence
+  body: Lost audit evidence
+  attributes:
+    synthetic: true
+    severity: 3
+    safety_class: C
+- id: HAZ-08
+  type: hazard
+  title: Unintended restart
+  body: Unintended restart
+  attributes:
+    synthetic: true
+    severity: 4
+    safety_class: C
+- id: RC-01
+  type: risk_control
+  title: 'Control 1: Flow bounds'
+  body: 'Control 1: Flow bounds'
+  attributes:
+    synthetic: true
+    hazard: HAZ-01
+- id: RC-02
+  type: risk_control
+  title: 'Control 2: Volume limit'
+  body: 'Control 2: Volume limit'
+  attributes:
+    synthetic: true
+    hazard: HAZ-02
+- id: RC-03
+  type: risk_control
+  title: 'Control 3: Start interlock'
+  body: 'Control 3: Start interlock'
+  attributes:
+    synthetic: true
+    hazard: HAZ-03
+- id: RC-04
+  type: risk_control
+  title: 'Control 4: Pause control'
+  body: 'Control 4: Pause control'
+  attributes:
+    synthetic: true
+    hazard: HAZ-04
+- id: RC-05
+  type: risk_control
+  title: 'Control 5: Stop control'
+  body: 'Control 5: Stop control'
+  attributes:
+    synthetic: true
+    hazard: HAZ-05
+- id: RC-06
+  type: risk_control
+  title: 'Control 6: Rate conversion'
+  body: 'Control 6: Rate conversion'
+  attributes:
+    synthetic: true
+    hazard: HAZ-06
+- id: RC-07
+  type: risk_control
+  title: 'Control 7: Dose calculation'
+  body: 'Control 7: Dose calculation'
+  attributes:
+    synthetic: true
+    hazard: HAZ-07
+- id: RC-08
+  type: risk_control
+  title: 'Control 8: Air detection'
+  body: 'Control 8: Air detection'
+  attributes:
+    synthetic: true
+    hazard: HAZ-08
+- id: RC-09
+  type: risk_control
+  title: 'Control 9: Pressure sampling'
+  body: 'Control 9: Pressure sampling'
+  attributes:
+    synthetic: true
+    hazard: HAZ-01
+- id: RC-10
+  type: risk_control
+  title: 'Control 10: Sensor diagnostics'
+  body: 'Control 10: Sensor diagnostics'
+  attributes:
+    synthetic: true
+    hazard: HAZ-02
+- id: RC-11
+  type: risk_control
+  title: 'Control 11: Alarm priority'
+  body: 'Control 11: Alarm priority'
+  attributes:
+    synthetic: true
+    hazard: HAZ-03
+- id: RC-12
+  type: risk_control
+  title: 'Control 12: Alarm latch'
+  body: 'Control 12: Alarm latch'
+  attributes:
+    synthetic: true
+    hazard: HAZ-04
+- id: COMP-01
+  type: component
+  title: UI
+  body: UI
+  attributes:
+    synthetic: true
+    responsibility: Set and monitor infusion
+    safety_class: B
+- id: COMP-02
+  type: component
+  title: Infusion Control
+  body: Infusion Control
+  attributes:
+    synthetic: true
+    responsibility: Limit delivered volume
+    safety_class: C
+- id: COMP-03
+  type: component
+  title: Sensor Monitoring
+  body: Sensor Monitoring
+  attributes:
+    synthetic: true
+    responsibility: Detect unsafe sensor conditions
+    safety_class: C
+- id: COMP-04
+  type: component
+  title: Alarm Manager
+  body: Alarm Manager
+  attributes:
+    synthetic: true
+    responsibility: Alert operators
+    safety_class: C
+- id: COMP-05
+  type: component
+  title: Drug Library
+  body: Drug Library
+  attributes:
+    synthetic: true
+    responsibility: Use configured drug limits
+    safety_class: C
+- id: COMP-06
+  type: component
+  title: Logging & Comms
+  body: Logging & Comms
+  attributes:
+    synthetic: true
+    responsibility: Retain audit evidence
+    safety_class: C
+- id: UNIT-ui_status
+  type: software_unit
+  title: ui_status
+  body: "def status(mode: str, volume: float) -> dict:\n    return {\"mode\": mode,\
+    \ \"delivered_ml\": max(0.0, volume)}"
+  attributes:
+    synthetic: true
+    component: COMP-01
+    path: kestrel/ui_status.py
+- id: UNIT-ui_input
+  type: software_unit
+  title: ui_input
+  body: "def parse_rate(value: str, maximum: float) -> float:\n    rate = float(value)\n\
+    \    if not 0 < rate <= maximum:\n        raise ValueError(\"Invalid rate\")\n\
+    \    return rate"
+  attributes:
+    synthetic: true
+    component: COMP-01
+    path: kestrel/ui_input.py
+- id: UNIT-ui_confirm
+  type: software_unit
+  title: ui_confirm
+  body: "def confirm(current: dict, proposed: dict, accepted: bool) -> dict:\n   \
+    \ return dict(proposed if accepted else current)"
+  attributes:
+    synthetic: true
+    component: COMP-01
+    path: kestrel/ui_confirm.py
+- id: UNIT-infusion_bounds
+  type: software_unit
+  title: infusion_bounds
+  body: "def within_bounds(rate: float, minimum: float, maximum: float) -> bool:\n\
+    \    return minimum <= rate <= maximum"
+  attributes:
+    synthetic: true
+    component: COMP-02
+    path: kestrel/infusion_bounds.py
+- id: UNIT-infusion_volume
+  type: software_unit
+  title: infusion_volume
+  body: "def target_reached(delivered: float, target: float) -> bool:\n    return\
+    \ delivered >= target"
+  attributes:
+    synthetic: true
+    component: COMP-02
+    path: kestrel/infusion_volume.py
+- id: UNIT-infusion_motor
+  type: software_unit
+  title: infusion_motor
+  body: "def pulse_interval(rate: float, pulses_per_ml: int) -> float:\n    if rate\
+    \ <= 0 or pulses_per_ml <= 0:\n        raise ValueError(\"Positive rate and calibration\
+    \ required\")\n    return 3600.0 / (rate * pulses_per_ml)"
+  attributes:
+    synthetic: true
+    component: COMP-02
+    path: kestrel/infusion_motor.py
+- id: UNIT-sensor_pressure
+  type: software_unit
+  title: sensor_pressure
+  body: "def occluded(pressure: float, threshold: float = 80.0) -> bool:\n    if pressure\
+    \ < 0:\n        raise ValueError(\"Invalid pressure\")\n    return pressure >\
+    \ threshold"
+  attributes:
+    synthetic: true
+    component: COMP-03
+    path: kestrel/sensor_pressure.py
+- id: UNIT-sensor_air
+  type: software_unit
+  title: sensor_air
+  body: "def air_detected(reading: float, limit: float) -> bool:\n    return reading\
+    \ > limit"
+  attributes:
+    synthetic: true
+    component: COMP-03
+    path: kestrel/sensor_air.py
+- id: UNIT-sensor_filter
+  type: software_unit
+  title: sensor_filter
+  body: "def average(samples: list[float]) -> float:\n    if not samples:\n      \
+    \  raise ValueError(\"No samples\")\n    return sum(samples) / len(samples)"
+  attributes:
+    synthetic: true
+    component: COMP-03
+    path: kestrel/sensor_filter.py
+- id: UNIT-sensor_calibration
+  type: software_unit
+  title: sensor_calibration
+  body: "def calibrated(reading: float, offset: float) -> float:\n    return reading\
+    \ + offset"
+  attributes:
+    synthetic: true
+    component: COMP-03
+    path: kestrel/sensor_calibration.py
+- id: UNIT-alarm_priority
+  type: software_unit
+  title: alarm_priority
+  body: "def highest(alarms: list[dict]) -> dict | None:\n    return max(alarms, key=lambda\
+    \ a: a[\"priority\"], default=None)"
+  attributes:
+    synthetic: true
+    component: COMP-04
+    path: kestrel/alarm_priority.py
+- id: UNIT-alarm_latch
+  type: software_unit
+  title: alarm_latch
+  body: "def latched(active: bool, acknowledged: bool, unsafe: bool) -> bool:\n  \
+    \  return unsafe or (active and not acknowledged)"
+  attributes:
+    synthetic: true
+    component: COMP-04
+    path: kestrel/alarm_latch.py
+- id: UNIT-alarm_audio
+  type: software_unit
+  title: alarm_audio
+  body: "def audible(critical: bool, muted: bool) -> bool:\n    return critical and\
+    \ not muted"
+  attributes:
+    synthetic: true
+    component: COMP-04
+    path: kestrel/alarm_audio.py
+- id: UNIT-drug_limits
+  type: software_unit
+  title: drug_limits
+  body: "def valid_dose(dose: float, minimum: float, maximum: float) -> bool:\n  \
+    \  return minimum <= dose <= maximum"
+  attributes:
+    synthetic: true
+    component: COMP-05
+    path: kestrel/drug_limits.py
+- id: UNIT-drug_lookup
+  type: software_unit
+  title: drug_lookup
+  body: "def lookup(library: dict, key: str) -> dict:\n    if key not in library:\n\
+    \        raise KeyError(key)\n    return dict(library[key])"
+  attributes:
+    synthetic: true
+    component: COMP-05
+    path: kestrel/drug_lookup.py
+- id: UNIT-log_events
+  type: software_unit
+  title: log_events
+  body: "def append_event(events: list[dict], event: dict) -> list[dict]:\n    if\
+    \ events and event[\"time\"] < events[-1][\"time\"]:\n        raise ValueError(\"\
+    Decreasing timestamp\")\n    return [*events, dict(event)]"
+  attributes:
+    synthetic: true
+    component: COMP-06
+    path: kestrel/log_events.py
+- id: UNIT-log_digest
+  type: software_unit
+  title: log_digest
+  body: "import hashlib\ndef digest(payload: bytes) -> str:\n    return hashlib.sha256(payload).hexdigest()"
+  attributes:
+    synthetic: true
+    component: COMP-06
+    path: kestrel/log_digest.py
+- id: UNIT-comms_frame
+  type: software_unit
+  title: comms_frame
+  body: "def valid_frame(payload: bytes) -> bool:\n    return payload.startswith(b\"\
+    KIC:\") and payload.endswith(b\"\\n\")"
+  attributes:
+    synthetic: true
+    component: COMP-06
+    path: kestrel/comms_frame.py
+- id: UNIT-comms_timeout
+  type: software_unit
+  title: comms_timeout
+  body: "def overdue(now: float, last: float, timeout: float) -> bool:\n    return\
+    \ now - last > timeout"
+  attributes:
+    synthetic: true
+    component: COMP-06
+    path: kestrel/comms_timeout.py
+- id: UNIT-diagnostics_orphan
+  type: software_unit
+  title: diagnostics_orphan
+  body: "def diagnostic_summary(values: list[float]) -> dict:\n    return {\"count\"\
+    : len(values), \"maximum\": max(values, default=0.0)}"
+  attributes:
+    synthetic: true
+    component: COMP-06
+    path: kestrel/diagnostics_orphan.py
+- id: PR-1
+  type: code_change
+  title: Implement UI
+  body: Implement UI
+  attributes:
+    synthetic: true
+    component: COMP-01
+- id: PR-2
+  type: code_change
+  title: Implement Infusion Control
+  body: Implement Infusion Control
+  attributes:
+    synthetic: true
+    component: COMP-02
+- id: PR-3
+  type: code_change
+  title: Implement Sensor Monitoring
+  body: Implement Sensor Monitoring
+  attributes:
+    synthetic: true
+    component: COMP-03
+- id: PR-4
+  type: code_change
+  title: Implement Alarm Manager
+  body: Implement Alarm Manager
+  attributes:
+    synthetic: true
+    component: COMP-04
+- id: PR-5
+  type: code_change
+  title: Implement Drug Library
+  body: Implement Drug Library
+  attributes:
+    synthetic: true
+    component: COMP-05
+- id: PR-6
+  type: code_change
+  title: Implement Logging & Comms
+  body: Implement Logging & Comms
+  attributes:
+    synthetic: true
+    component: COMP-06
+- id: PR-7
+  type: code_change
+  title: Add diagnostic summary
+  body: Add diagnostic summary
+  attributes:
+    synthetic: true
+    component: COMP-06
+- id: TC-001
+  type: test_case
+  title: System test 1
+  body: System test 1
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-002
+  type: test_case
+  title: System test 2
+  body: System test 2
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-003
+  type: test_case
+  title: System test 3
+  body: System test 3
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-004
+  type: test_case
+  title: System test 4
+  body: System test 4
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-005
+  type: test_case
+  title: System test 5
+  body: System test 5
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-006
+  type: test_case
+  title: System test 6
+  body: System test 6
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-007
+  type: test_case
+  title: System test 7
+  body: System test 7
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-008
+  type: test_case
+  title: System test 8
+  body: System test 8
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-009
+  type: test_case
+  title: System test 9
+  body: System test 9
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-010
+  type: test_case
+  title: System test 10
+  body: System test 10
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-011
+  type: test_case
+  title: System test 11
+  body: System test 11
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-012
+  type: test_case
+  title: System test 12
+  body: System test 12
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-013
+  type: test_case
+  title: System test 13
+  body: System test 13
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-014
+  type: test_case
+  title: System test 14
+  body: System test 14
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-015
+  type: test_case
+  title: System test 15
+  body: System test 15
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-016
+  type: test_case
+  title: System test 16
+  body: System test 16
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-017
+  type: test_case
+  title: System test 17
+  body: System test 17
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-018
+  type: test_case
+  title: System test 18
+  body: System test 18
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-019
+  type: test_case
+  title: System test 19
+  body: System test 19
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-020
+  type: test_case
+  title: System test 20
+  body: System test 20
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-021
+  type: test_case
+  title: System test 21
+  body: System test 21
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-022
+  type: test_case
+  title: System test 22
+  body: System test 22
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-023
+  type: test_case
+  title: System test 23
+  body: System test 23
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-024
+  type: test_case
+  title: System test 24
+  body: System test 24
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-025
+  type: test_case
+  title: System test 25
+  body: System test 25
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-026
+  type: test_case
+  title: System test 26
+  body: System test 26
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-027
+  type: test_case
+  title: System test 27
+  body: System test 27
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-028
+  type: test_case
+  title: System test 28
+  body: System test 28
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-029
+  type: test_case
+  title: System test 29
+  body: System test 29
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-030
+  type: test_case
+  title: System test 30
+  body: System test 30
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-031
+  type: test_case
+  title: System test 31
+  body: System test 31
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-032
+  type: test_case
+  title: System test 32
+  body: System test 32
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-033
+  type: test_case
+  title: System test 33
+  body: System test 33
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-034
+  type: test_case
+  title: System test 34
+  body: System test 34
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-035
+  type: test_case
+  title: System test 35
+  body: System test 35
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-036
+  type: test_case
+  title: System test 36
+  body: System test 36
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-037
+  type: test_case
+  title: System test 37
+  body: System test 37
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-038
+  type: test_case
+  title: System test 38
+  body: System test 38
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-039
+  type: test_case
+  title: System test 39
+  body: System test 39
+  attributes:
+    synthetic: true
+    level: system
+- id: TC-040
+  type: test_case
+  title: System test 40
+  body: System test 40
+  attributes:
+    synthetic: true
+    level: system
+- id: BUG-01
+  type: defect
+  title: Fictional anomaly 1
+  body: Fictional anomaly 1
+  attributes:
+    synthetic: true
+    state: Active
+    residual_listed: true
+- id: BUG-02
+  type: defect
+  title: Fictional anomaly 2
+  body: Fictional anomaly 2
+  attributes:
+    synthetic: true
+    state: Active
+    residual_listed: true
+- id: BUG-03
+  type: defect
+  title: Fictional anomaly 3
+  body: Fictional anomaly 3
+  attributes:
+    synthetic: true
+    state: Active
+    residual_listed: false
+- id: BUG-04
+  type: defect
+  title: Fictional anomaly 4
+  body: Fictional anomaly 4
+  attributes:
+    synthetic: true
+    state: Closed
+    residual_listed: true
+- id: BUG-05
+  type: defect
+  title: Fictional anomaly 5
+  body: Fictional anomaly 5
+  attributes:
+    synthetic: true
+    state: Closed
+    residual_listed: true
+- id: RUN-1
+  type: test_run
+  title: Release 1.0 verification
+  body: Release 1.0 verification
+  attributes:
+    synthetic: true
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    environment: Synthetic bench simulator
+    is_retest: false
+- id: RES-1-001
+  type: test_result
+  title: Result for TC-001
+  body: Result for TC-001
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-001
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-002
+  type: test_result
+  title: Result for TC-002
+  body: Result for TC-002
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-002
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-003
+  type: test_result
+  title: Result for TC-003
+  body: Result for TC-003
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-003
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-004
+  type: test_result
+  title: Result for TC-004
+  body: Result for TC-004
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-004
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-005
+  type: test_result
+  title: Result for TC-005
+  body: Result for TC-005
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-005
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-006
+  type: test_result
+  title: Result for TC-006
+  body: Result for TC-006
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-006
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-007
+  type: test_result
+  title: Result for TC-007
+  body: Result for TC-007
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-007
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-008
+  type: test_result
+  title: Result for TC-008
+  body: Result for TC-008
+  attributes:
+    synthetic: true
+    outcome: Failed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-008
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-009
+  type: test_result
+  title: Result for TC-009
+  body: Result for TC-009
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-009
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-010
+  type: test_result
+  title: Result for TC-010
+  body: Result for TC-010
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-010
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-011
+  type: test_result
+  title: Result for TC-011
+  body: Result for TC-011
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-011
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-012
+  type: test_result
+  title: Result for TC-012
+  body: Result for TC-012
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-012
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-013
+  type: test_result
+  title: Result for TC-013
+  body: Result for TC-013
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-013
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-014
+  type: test_result
+  title: Result for TC-014
+  body: Result for TC-014
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-014
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-015
+  type: test_result
+  title: Result for TC-015
+  body: Result for TC-015
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-015
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-016
+  type: test_result
+  title: Result for TC-016
+  body: Result for TC-016
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-016
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-017
+  type: test_result
+  title: Result for TC-017
+  body: Result for TC-017
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-017
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-018
+  type: test_result
+  title: Result for TC-018
+  body: Result for TC-018
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-018
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-019
+  type: test_result
+  title: Result for TC-019
+  body: Result for TC-019
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-019
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-020
+  type: test_result
+  title: Result for TC-020
+  body: Result for TC-020
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-020
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-021
+  type: test_result
+  title: Result for TC-021
+  body: Result for TC-021
+  attributes:
+    synthetic: true
+    outcome: Failed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-021
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-022
+  type: test_result
+  title: Result for TC-022
+  body: Result for TC-022
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-022
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-023
+  type: test_result
+  title: Result for TC-023
+  body: Result for TC-023
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-023
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-024
+  type: test_result
+  title: Result for TC-024
+  body: Result for TC-024
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-024
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-025
+  type: test_result
+  title: Result for TC-025
+  body: Result for TC-025
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-025
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-026
+  type: test_result
+  title: Result for TC-026
+  body: Result for TC-026
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-026
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-027
+  type: test_result
+  title: Result for TC-027
+  body: Result for TC-027
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-027
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-028
+  type: test_result
+  title: Result for TC-028
+  body: Result for TC-028
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-028
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-029
+  type: test_result
+  title: Result for TC-029
+  body: Result for TC-029
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-029
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-030
+  type: test_result
+  title: Result for TC-030
+  body: Result for TC-030
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-030
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-031
+  type: test_result
+  title: Result for TC-031
+  body: Result for TC-031
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-031
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-032
+  type: test_result
+  title: Result for TC-032
+  body: Result for TC-032
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-032
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-033
+  type: test_result
+  title: Result for TC-033
+  body: Result for TC-033
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-033
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-034
+  type: test_result
+  title: Result for TC-034
+  body: Result for TC-034
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-034
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-035
+  type: test_result
+  title: Result for TC-035
+  body: Result for TC-035
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-035
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-036
+  type: test_result
+  title: Result for TC-036
+  body: Result for TC-036
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-036
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-037
+  type: test_result
+  title: Result for TC-037
+  body: Result for TC-037
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-037
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-038
+  type: test_result
+  title: Result for TC-038
+  body: Result for TC-038
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-038
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-039
+  type: test_result
+  title: Result for TC-039
+  body: Result for TC-039
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-039
+    verified_revision: 1
+    run: RUN-1
+- id: RES-1-040
+  type: test_result
+  title: Result for TC-040
+  body: Result for TC-040
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.0'
+    completed_at: '2026-10-01T10:00:00Z'
+    test_case: TC-040
+    verified_revision: 1
+    run: RUN-1
+- id: RUN-2
+  type: test_run
+  title: Release 1.1 verification
+  body: Release 1.1 verification
+  attributes:
+    synthetic: true
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    environment: Synthetic bench simulator
+    is_retest: true
+- id: RES-2-001
+  type: test_result
+  title: Result for TC-001
+  body: Result for TC-001
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-001
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-002
+  type: test_result
+  title: Result for TC-002
+  body: Result for TC-002
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-002
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-003
+  type: test_result
+  title: Result for TC-003
+  body: Result for TC-003
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-003
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-004
+  type: test_result
+  title: Result for TC-004
+  body: Result for TC-004
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-004
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-005
+  type: test_result
+  title: Result for TC-005
+  body: Result for TC-005
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-005
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-006
+  type: test_result
+  title: Result for TC-006
+  body: Result for TC-006
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-006
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-007
+  type: test_result
+  title: Result for TC-007
+  body: Result for TC-007
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-007
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-008
+  type: test_result
+  title: Result for TC-008
+  body: Result for TC-008
+  attributes:
+    synthetic: true
+    outcome: Failed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-008
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-009
+  type: test_result
+  title: Result for TC-009
+  body: Result for TC-009
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-009
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-010
+  type: test_result
+  title: Result for TC-010
+  body: Result for TC-010
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-010
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-011
+  type: test_result
+  title: Result for TC-011
+  body: Result for TC-011
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-011
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-012
+  type: test_result
+  title: Result for TC-012
+  body: Result for TC-012
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-012
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-013
+  type: test_result
+  title: Result for TC-013
+  body: Result for TC-013
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-013
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-014
+  type: test_result
+  title: Result for TC-014
+  body: Result for TC-014
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-014
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-015
+  type: test_result
+  title: Result for TC-015
+  body: Result for TC-015
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-015
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-016
+  type: test_result
+  title: Result for TC-016
+  body: Result for TC-016
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-016
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-017
+  type: test_result
+  title: Result for TC-017
+  body: Result for TC-017
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-017
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-018
+  type: test_result
+  title: Result for TC-018
+  body: Result for TC-018
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-018
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-019
+  type: test_result
+  title: Result for TC-019
+  body: Result for TC-019
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-019
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-020
+  type: test_result
+  title: Result for TC-020
+  body: Result for TC-020
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-020
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-021
+  type: test_result
+  title: Result for TC-021
+  body: Result for TC-021
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-021
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-022
+  type: test_result
+  title: Result for TC-022
+  body: Result for TC-022
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-022
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-023
+  type: test_result
+  title: Result for TC-023
+  body: Result for TC-023
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-023
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-024
+  type: test_result
+  title: Result for TC-024
+  body: Result for TC-024
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-024
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-025
+  type: test_result
+  title: Result for TC-025
+  body: Result for TC-025
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-025
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-026
+  type: test_result
+  title: Result for TC-026
+  body: Result for TC-026
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-026
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-027
+  type: test_result
+  title: Result for TC-027
+  body: Result for TC-027
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-027
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-028
+  type: test_result
+  title: Result for TC-028
+  body: Result for TC-028
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-028
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-029
+  type: test_result
+  title: Result for TC-029
+  body: Result for TC-029
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-029
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-030
+  type: test_result
+  title: Result for TC-030
+  body: Result for TC-030
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-030
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-031
+  type: test_result
+  title: Result for TC-031
+  body: Result for TC-031
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-031
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-032
+  type: test_result
+  title: Result for TC-032
+  body: Result for TC-032
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-032
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-033
+  type: test_result
+  title: Result for TC-033
+  body: Result for TC-033
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-033
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-034
+  type: test_result
+  title: Result for TC-034
+  body: Result for TC-034
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-034
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-035
+  type: test_result
+  title: Result for TC-035
+  body: Result for TC-035
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-035
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-036
+  type: test_result
+  title: Result for TC-036
+  body: Result for TC-036
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-036
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-037
+  type: test_result
+  title: Result for TC-037
+  body: Result for TC-037
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-037
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-038
+  type: test_result
+  title: Result for TC-038
+  body: Result for TC-038
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-038
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-039
+  type: test_result
+  title: Result for TC-039
+  body: Result for TC-039
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-039
+    verified_revision: 1
+    run: RUN-2
+- id: RES-2-040
+  type: test_result
+  title: Result for TC-040
+  body: Result for TC-040
+  attributes:
+    synthetic: true
+    outcome: Passed
+    release: '1.1'
+    completed_at: '2026-10-03T10:00:00Z'
+    test_case: TC-040
+    verified_revision: 1
+    run: RUN-2
+- id: SOUP-01
+  type: soup
+  title: attrs
+  body: attrs
+  attributes:
+    synthetic: true
+    version: 24.2.0
+- id: SOUP-02
+  type: soup
+  title: cattrs
+  body: cattrs
+  attributes:
+    synthetic: true
+    version: 24.1.2
+- id: SOUP-03
+  type: soup
+  title: crcmod
+  body: crcmod
+  attributes:
+    synthetic: true
+    version: '1.7'
+- id: SOUP-04
+  type: soup
+  title: pyserial
+  body: pyserial
+  attributes:
+    synthetic: true
+    version: '3.5'
+- id: SOUP-05
+  type: soup
+  title: packaging
+  body: packaging
+  attributes:
+    synthetic: true
+    version: '24.1'
+- id: ADR-01
+  type: adr
+  title: Latch critical alarms
+  body: Latch critical alarms
+  attributes:
+    synthetic: true
+- id: ADR-02
+  type: adr
+  title: Use explicit validated configuration
+  body: Use explicit validated configuration
+  attributes:
+    synthetic: true
+- id: REV-01
+  type: review
+  title: Previous design review
+  body: Previous design review
+  attributes:
+    synthetic: true
+    date: '2026-09-25'
+    participants:
+    - Synthetic Reviewer A
+    - Synthetic Reviewer B
+    baseline: SAD v1.0
+    review_type: architecture
+- id: ACT-01
+  type: action_item
+  title: Review action 1
+  body: Review action 1
+  attributes:
+    synthetic: true
+    state: Closed
+- id: ACT-02
+  type: action_item
+  title: Review action 2
+  body: Review action 2
+  attributes:
+    synthetic: true
+    state: Closed
+- id: ACT-03
+  type: action_item
+  title: Review action 3
+  body: Review action 3
+  attributes:
+    synthetic: true
+    state: Active
+- id: ACT-04
+  type: action_item
+  title: Review action 4
+  body: Review action 4
+  attributes:
+    synthetic: true
+    state: Active
+links:
+- src: SYS-001
+  dst: UN-001
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-002
+  dst: UN-002
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-003
+  dst: UN-003
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-004
+  dst: UN-004
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-005
+  dst: UN-005
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-006
+  dst: UN-006
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-007
+  dst: UN-001
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-008
+  dst: UN-002
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-009
+  dst: UN-003
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-010
+  dst: UN-004
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-011
+  dst: UN-005
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-012
+  dst: UN-006
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-013
+  dst: UN-001
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-014
+  dst: UN-002
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SYS-015
+  dst: UN-003
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-001
+  dst: SYS-001
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-001
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-002
+  dst: SYS-002
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-002
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-003
+  dst: SYS-003
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-003
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-004
+  dst: SYS-004
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-004
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-005
+  dst: SYS-005
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-005
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-006
+  dst: SYS-006
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-006
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-007
+  dst: SYS-007
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-007
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-008
+  dst: SYS-008
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-008
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-009
+  dst: SYS-009
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-009
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-010
+  dst: SYS-010
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-010
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-011
+  dst: SYS-011
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-011
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-012
+  dst: SYS-012
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-012
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-013
+  dst: SYS-013
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-013
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-014
+  dst: SYS-014
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-014
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-015
+  dst: SYS-001
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-015
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-016
+  dst: SYS-002
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-016
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-017
+  dst: SYS-003
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-017
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-018
+  dst: SYS-004
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-018
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-019
+  dst: SYS-005
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-019
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-020
+  dst: SYS-006
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-020
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-021
+  dst: SYS-007
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-021
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-022
+  dst: SYS-008
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-022
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-023
+  dst: SYS-009
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-023
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-024
+  dst: SYS-010
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-024
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-025
+  dst: SYS-011
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-025
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-026
+  dst: SYS-012
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-026
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-027
+  dst: SYS-013
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-027
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-028
+  dst: SYS-014
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-028
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-029
+  dst: SYS-001
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-029
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-030
+  dst: SYS-002
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-030
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-031
+  dst: SYS-003
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-031
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-032
+  dst: SYS-004
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-032
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-033
+  dst: SYS-005
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-033
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-034
+  dst: SYS-006
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-034
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-035
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-01
+  dst: HAZ-01
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-001
+  dst: RC-01
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-02
+  dst: HAZ-02
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-002
+  dst: RC-02
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-03
+  dst: HAZ-03
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-003
+  dst: RC-03
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-04
+  dst: HAZ-04
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-004
+  dst: RC-04
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-05
+  dst: HAZ-05
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-005
+  dst: RC-05
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-06
+  dst: HAZ-06
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-006
+  dst: RC-06
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-07
+  dst: HAZ-07
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-007
+  dst: RC-07
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-08
+  dst: HAZ-08
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-008
+  dst: RC-08
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-09
+  dst: HAZ-01
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-009
+  dst: RC-09
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-10
+  dst: HAZ-02
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-010
+  dst: RC-10
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-11
+  dst: HAZ-03
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: SRS-011
+  dst: RC-11
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RC-12
+  dst: HAZ-04
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_status
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_input
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_confirm
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_bounds
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_volume
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_motor
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_priority
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_latch
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_audio
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_limits
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_lookup
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_events
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_digest
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_frame
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_timeout
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-diagnostics_orphan
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-1
+  dst: SRS-001
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-1
+  dst: SRS-007
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-1
+  dst: SRS-013
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-1
+  dst: SRS-019
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-1
+  dst: SRS-025
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-1
+  dst: SRS-031
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_status
+  dst: SRS-001
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_status
+  dst: SRS-007
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_status
+  dst: SRS-013
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_status
+  dst: SRS-019
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_status
+  dst: SRS-025
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_status
+  dst: SRS-031
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_input
+  dst: SRS-001
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_input
+  dst: SRS-007
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_input
+  dst: SRS-013
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_input
+  dst: SRS-019
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_input
+  dst: SRS-025
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_input
+  dst: SRS-031
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_confirm
+  dst: SRS-001
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_confirm
+  dst: SRS-007
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_confirm
+  dst: SRS-013
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_confirm
+  dst: SRS-019
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_confirm
+  dst: SRS-025
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-ui_confirm
+  dst: SRS-031
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-2
+  dst: SRS-002
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-2
+  dst: SRS-008
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-2
+  dst: SRS-014
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-2
+  dst: SRS-020
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-2
+  dst: SRS-026
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-2
+  dst: SRS-032
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_bounds
+  dst: SRS-002
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_bounds
+  dst: SRS-008
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_bounds
+  dst: SRS-014
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_bounds
+  dst: SRS-020
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_bounds
+  dst: SRS-026
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_bounds
+  dst: SRS-032
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_volume
+  dst: SRS-002
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_volume
+  dst: SRS-008
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_volume
+  dst: SRS-014
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_volume
+  dst: SRS-020
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_volume
+  dst: SRS-026
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_volume
+  dst: SRS-032
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_motor
+  dst: SRS-002
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_motor
+  dst: SRS-008
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_motor
+  dst: SRS-014
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_motor
+  dst: SRS-020
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_motor
+  dst: SRS-026
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-infusion_motor
+  dst: SRS-032
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-3
+  dst: SRS-003
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-3
+  dst: SRS-009
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-3
+  dst: SRS-015
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-3
+  dst: SRS-021
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-3
+  dst: SRS-022
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-3
+  dst: SRS-023
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-3
+  dst: SRS-027
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-3
+  dst: SRS-033
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: SRS-003
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: SRS-009
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: SRS-015
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: SRS-021
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: SRS-022
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: SRS-023
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: SRS-027
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_pressure
+  dst: SRS-033
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: SRS-003
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: SRS-009
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: SRS-015
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: SRS-021
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: SRS-022
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: SRS-023
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: SRS-027
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_air
+  dst: SRS-033
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: SRS-003
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: SRS-009
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: SRS-015
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: SRS-021
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: SRS-022
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: SRS-023
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: SRS-027
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_filter
+  dst: SRS-033
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: SRS-003
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: SRS-009
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: SRS-015
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: SRS-021
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: SRS-022
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: SRS-023
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: SRS-027
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-sensor_calibration
+  dst: SRS-033
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-4
+  dst: SRS-004
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-4
+  dst: SRS-010
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-4
+  dst: SRS-016
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-4
+  dst: SRS-028
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_priority
+  dst: SRS-004
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_priority
+  dst: SRS-010
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_priority
+  dst: SRS-016
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_priority
+  dst: SRS-028
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_latch
+  dst: SRS-004
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_latch
+  dst: SRS-010
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_latch
+  dst: SRS-016
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_latch
+  dst: SRS-028
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_audio
+  dst: SRS-004
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_audio
+  dst: SRS-010
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_audio
+  dst: SRS-016
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-alarm_audio
+  dst: SRS-028
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-5
+  dst: SRS-005
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-5
+  dst: SRS-011
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-5
+  dst: SRS-017
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-5
+  dst: SRS-029
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_limits
+  dst: SRS-005
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_limits
+  dst: SRS-011
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_limits
+  dst: SRS-017
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_limits
+  dst: SRS-029
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_lookup
+  dst: SRS-005
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_lookup
+  dst: SRS-011
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_lookup
+  dst: SRS-017
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-drug_lookup
+  dst: SRS-029
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-6
+  dst: SRS-006
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-6
+  dst: SRS-012
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-6
+  dst: SRS-018
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-6
+  dst: SRS-024
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: PR-6
+  dst: SRS-030
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_events
+  dst: SRS-006
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_events
+  dst: SRS-012
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_events
+  dst: SRS-018
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_events
+  dst: SRS-024
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_events
+  dst: SRS-030
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_digest
+  dst: SRS-006
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_digest
+  dst: SRS-012
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_digest
+  dst: SRS-018
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_digest
+  dst: SRS-024
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-log_digest
+  dst: SRS-030
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_frame
+  dst: SRS-006
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_frame
+  dst: SRS-012
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_frame
+  dst: SRS-018
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_frame
+  dst: SRS-024
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_frame
+  dst: SRS-030
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_timeout
+  dst: SRS-006
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_timeout
+  dst: SRS-012
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_timeout
+  dst: SRS-018
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_timeout
+  dst: SRS-024
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: UNIT-comms_timeout
+  dst: SRS-030
+  type: implements
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-001
+  dst: SRS-001
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-002
+  dst: SRS-002
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-003
+  dst: SRS-003
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-004
+  dst: SRS-004
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-005
+  dst: SRS-005
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-006
+  dst: SRS-006
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-007
+  dst: SRS-007
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-008
+  dst: SRS-008
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-009
+  dst: SRS-009
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-010
+  dst: SRS-010
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-011
+  dst: SRS-011
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-012
+  dst: SRS-011
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-013
+  dst: SRS-013
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-014
+  dst: SRS-014
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-015
+  dst: SRS-015
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-016
+  dst: SRS-016
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-017
+  dst: SRS-017
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-018
+  dst: SRS-018
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-019
+  dst: SRS-019
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-020
+  dst: SRS-020
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-021
+  dst: SRS-021
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-022
+  dst: SRS-022
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-023
+  dst: SRS-023
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-024
+  dst: SRS-024
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-025
+  dst: SRS-025
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-026
+  dst: SRS-026
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-027
+  dst: SRS-027
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-028
+  dst: SRS-028
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-029
+  dst: SRS-029
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-030
+  dst: SRS-030
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-031
+  dst: SRS-031
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-032
+  dst: SRS-032
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-033
+  dst: SRS-001
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-034
+  dst: SRS-002
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-035
+  dst: SRS-003
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-036
+  dst: SRS-004
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-037
+  dst: SRS-005
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-038
+  dst: SRS-006
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: TC-039
+  dst: SRS-007
+  type: verifies
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-001
+  dst: TC-001
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-001
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-002
+  dst: TC-002
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-002
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-003
+  dst: TC-003
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-003
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-004
+  dst: TC-004
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-004
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-005
+  dst: TC-005
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-005
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-006
+  dst: TC-006
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-006
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-007
+  dst: TC-007
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-007
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-008
+  dst: TC-008
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-008
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-008
+  dst: BUG-01
+  type: reports_defect
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-009
+  dst: TC-009
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-009
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-010
+  dst: TC-010
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-010
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-011
+  dst: TC-011
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-011
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-012
+  dst: TC-012
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-012
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-013
+  dst: TC-013
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-013
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-014
+  dst: TC-014
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-014
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-015
+  dst: TC-015
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-015
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-016
+  dst: TC-016
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-016
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-017
+  dst: TC-017
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-017
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-018
+  dst: TC-018
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-018
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-019
+  dst: TC-019
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-019
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-020
+  dst: TC-020
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-020
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-021
+  dst: TC-021
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-021
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-022
+  dst: TC-022
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-022
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-023
+  dst: TC-023
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-023
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-024
+  dst: TC-024
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-024
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-025
+  dst: TC-025
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-025
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-026
+  dst: TC-026
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-026
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-027
+  dst: TC-027
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-027
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-028
+  dst: TC-028
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-028
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-029
+  dst: TC-029
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-029
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-030
+  dst: TC-030
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-030
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-031
+  dst: TC-031
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-031
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-032
+  dst: TC-032
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-032
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-033
+  dst: TC-033
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-033
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-034
+  dst: TC-034
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-034
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-035
+  dst: TC-035
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-035
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-036
+  dst: TC-036
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-036
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-037
+  dst: TC-037
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-037
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-038
+  dst: TC-038
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-038
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-039
+  dst: TC-039
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-039
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-040
+  dst: TC-040
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-1-040
+  dst: RUN-1
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-001
+  dst: TC-001
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-001
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-002
+  dst: TC-002
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-002
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-003
+  dst: TC-003
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-003
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-004
+  dst: TC-004
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-004
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-005
+  dst: TC-005
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-005
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-006
+  dst: TC-006
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-006
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-007
+  dst: TC-007
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-007
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-008
+  dst: TC-008
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-008
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-008
+  dst: BUG-01
+  type: reports_defect
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-009
+  dst: TC-009
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-009
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-010
+  dst: TC-010
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-010
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-011
+  dst: TC-011
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-011
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-012
+  dst: TC-012
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-012
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-013
+  dst: TC-013
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-013
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-014
+  dst: TC-014
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-014
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-015
+  dst: TC-015
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-015
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-016
+  dst: TC-016
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-016
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-017
+  dst: TC-017
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-017
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-018
+  dst: TC-018
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-018
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-019
+  dst: TC-019
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-019
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-020
+  dst: TC-020
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-020
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-021
+  dst: TC-021
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-021
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-022
+  dst: TC-022
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-022
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-023
+  dst: TC-023
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-023
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-024
+  dst: TC-024
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-024
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-025
+  dst: TC-025
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-025
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-026
+  dst: TC-026
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-026
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-027
+  dst: TC-027
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-027
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-028
+  dst: TC-028
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-028
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-029
+  dst: TC-029
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-029
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-030
+  dst: TC-030
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-030
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-031
+  dst: TC-031
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-031
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-032
+  dst: TC-032
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-032
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-033
+  dst: TC-033
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-033
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-034
+  dst: TC-034
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-034
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-035
+  dst: TC-035
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-035
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-036
+  dst: TC-036
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-036
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-037
+  dst: TC-037
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-037
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-038
+  dst: TC-038
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-038
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-039
+  dst: TC-039
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-039
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-040
+  dst: TC-040
+  type: executes
+  origin: explicit
+  evidence: Synthetic source relation
+- src: RES-2-040
+  dst: RUN-2
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: ACT-01
+  dst: REV-01
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: ACT-02
+  dst: REV-01
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: ACT-03
+  dst: REV-01
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation
+- src: ACT-04
+  dst: REV-01
+  type: derives_from
+  origin: explicit
+  evidence: Synthetic source relation

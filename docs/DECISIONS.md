@@ -43,3 +43,9 @@ Append-only. Format: `ADR-NNN — Title` · date · status · context · decisio
 - **Context:** Current Haiku 5.5 rejects temperature zero and emits thinking blocks; successful requests expose actual usage. See https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide and https://platform.claude.com/docs/en/models/haiku-5-5/overview.
 - **Decision:** Both adapters request the claims JSON schema, reject truncation/refusal and return usage. Haiku uses low effort and default sampling (necessary exception to temperature zero requested by the owner); OpenAI uses temperature zero. SDK retries are disabled so one budget reservation covers one request. Successful usage settles reservations into actual_usd; failures retain reserved_usd. Persist actual + outstanding for cap enforcement.
 - **Consequences:** Cache and validator provide repeatability for Haiku. Paid input is bounded to the configured small-prompt pricing tier. Credentials are read via config without entering process globals. No live calls have been made.
+
+## ADR-008 — Synthetic fixture metadata and source-write guard
+2026-10-12 · Accepted
+- **Context:** The real org process has not been configured. Contracts must use ordinary ADO fields and Git transport.
+- **Decision:** Encode stable IDs in DHF tags, fixture-only structured attributes in the description/comment following DHF-META, and typed Related relation names in DHF metadata. Use native Parent and Tests relation reference names where applicable. Device Git's pre-receive hook independently rejects non-seeder pushes. Public mock HTML contains only synthetic fixtures.
+- **Consequences:** No custom ADO fields are required for the demo. Real-org field/tag mapping remains data configuration; source without synthetic markers cannot be sent to paid providers.

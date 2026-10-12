@@ -1,0 +1,88 @@
+- id: PR-1
+  native_id: 1
+  title: Implement UI
+  workitems:
+  - SRS-001
+  - SRS-007
+  - SRS-013
+  - SRS-019
+  - SRS-025
+  - SRS-031
+  files:
+  - kestrel/ui_status.py
+  - kestrel/ui_input.py
+  - kestrel/ui_confirm.py
+- id: PR-2
+  native_id: 2
+  title: Implement Infusion Control
+  workitems:
+  - SRS-002
+  - SRS-008
+  - SRS-014
+  - SRS-020
+  - SRS-026
+  - SRS-032
+  files:
+  - kestrel/infusion_bounds.py
+  - kestrel/infusion_volume.py
+  - kestrel/infusion_motor.py
+- id: PR-3
+  native_id: 3
+  title: Implement Sensor Monitoring
+  workitems:
+  - SRS-003
+  - SRS-009
+  - SRS-015
+  - SRS-021
+  - SRS-022
+  - SRS-023
+  - SRS-027
+  - SRS-033
+  files:
+  - kestrel/sensor_pressure.py
+  - kestrel/sensor_air.py
+  - kestrel/sensor_filter.py
+  - kestrel/sensor_calibration.py
+- id: PR-4
+  native_id: 4
+  title: Implement Alarm Manager
+  workitems:
+  - SRS-004
+  - SRS-010
+  - SRS-016
+  - SRS-028
+  files:
+  - kestrel/alarm_priority.py
+  - kestrel/alarm_latch.py
+  - kestrel/alarm_audio.py
+- id: PR-5
+  native_id: 5
+  title: Implement Drug Library
+  workitems:
+  - SRS-005
+  - SRS-011
+  - SRS-017
+  - SRS-029
+  files:
+  - kestrel/drug_limits.py
+  - kestrel/drug_lookup.py
+- id: PR-6
+  native_id: 6
+  title: Implement Logging & Comms
+  workitems:
+  - SRS-006
+  - SRS-012
+  - SRS-018
+  - SRS-024
+  - SRS-030
+  files:
+  - kestrel/log_events.py
+  - kestrel/log_digest.py
+  - kestrel/comms_frame.py
+  - kestrel/comms_timeout.py
+- id: PR-7
+  native_id: 7
+  title: Add diagnostic summary
+  workitems: []
+  files:
+  - kestrel/diagnostics_orphan.py

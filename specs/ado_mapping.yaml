@@ -1,0 +1,34 @@
+work_item_types:
+  Requirement:
+    UN: user_need
+    SYS: system_req
+    SRS: software_req
+    RISK-CONTROL: risk_control
+  Risk: hazard
+  Bug: defect
+  Test Case: test_case
+  Review: review
+  Task: action_item
+fields:
+  title: System.Title
+  body: System.Description
+  tags: System.Tags
+  state: System.State
+  changed_at: System.ChangedDate
+id_tag_prefix: 'DHF:'
+metadata_marker: 'DHF-META:'
+relations:
+  derives_from: System.LinkTypes.Hierarchy-Reverse
+  verifies: Microsoft.VSTS.Common.TestedBy-Reverse
+  mitigates: System.LinkTypes.Related
+  implements: System.LinkTypes.Related
+  allocated_to: System.LinkTypes.Related
+  reports_defect: System.LinkTypes.Related
+related_name_prefix: 'DHF:'
+components:
+  COMP-01: UI
+  COMP-02: Infusion Control
+  COMP-03: Sensor Monitoring
+  COMP-04: Alarm Manager
+  COMP-05: Drug Library
+  COMP-06: Logging & Comms

@@ -29,6 +29,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - Add `max_claims` to section specs (conclusion 5–6, purpose 3–4), enforced by the validator. Drop the excess and log it in the manifest.
   - Tell prompts to synthesise one claim per point rather than restate each evidence item.
 
+Resolved in 4c29a5f: scoped readiness evidence, deterministic gap/coverage facts, global claim caps and synthesis prompts.
+
 **R-017 [non-blocking, before M6 — every document reuses this renderer] M4 — Generated documents are hard for a human reviewer to read** (`specs/templates/section.md.j2`, `src/dhf/generate/__init__.py`)
 - **Evidence wall.** Every deterministic section ends with an "Evidence:" line of 40+ links; `references` has 42. Link IDs inside the table cells instead, as `rtm.md` already does, and drop the trailing wall. The manifest keeps the complete list.
 - **Unreadable revisions.** Git-sourced artifacts render as `COMP-01@r14fb1b4f…` (a 64-hex hash). Show a short commit SHA or hash (7–8 characters) and keep the full value in the manifest.
@@ -36,32 +38,13 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - **Plain-text URLs.** `verification_gaps` shows `source_url` as a text column. Link the artifact ID instead.
 - **"References" isn't references.** That section lists requirements, not controlled documents. Either rename it "Requirements baseline under test", or make it a real references table: SRS baseline, RTM version, test runs, and SAD/SDD versions once they exist.
 
+Resolved in 4c29a5f: linked table IDs, spec column labels, short displayed revisions, renamed baseline section and no evidence walls; 11-page local render visually checked.
+
 **R-018 [non-blocking, by M10] M4 — The dataset text gives away the answer key** (`data/synthetic/evidence.yaml:1976`, `data/synthetic/code/kestrel/diagnostics_orphan.py`)
 - BUG-03's body says "residual-anomaly listing is intentionally missing", and a unit is named `diagnostics_orphan`. Both appear in generated documents the judges will read.
 - Rewrite them as natural engineering text and rename the module (e.g. `diagnostics_trace.py`). Update the answer key and IDs consistently, and re-run the validator.
 
 ### Live-model check of `m4-done` (run by the reviewer with owner approval in a scratch worktree; spend ≈ $0.013 Anthropic, merged into `out/ledger.json`)
-
-**R-019 [blocking] M4 — Every live Anthropic call fails with HTTP 400 because of the schema** (`src/dhf/models/__init__.py:25-34`)
-- `dhf generate sstr --provider anthropic` returned: `output_config.format.schema: For 'number' type, properties maximum, minimum are not supported`.
-- The cause is `confidence`'s `ge=0, le=1` bounds, which pydantic writes into the JSON schema.
-- **Expected fix:** `strict_claims_schema()` (or a provider-specific variant) recursively strips `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum` from the schema it sends to providers. Pydantic still enforces 0–1 on the response.
-- The reviewer confirmed this fix works in the scratch copy: with the bounds stripped, Anthropic calls succeed.
-- Add a unit test asserting the provider schema contains no numeric-bound keywords. Re-check OpenAI strict mode once a valid key exists.
-
-Resolved in adfd507: provider schemas recursively omit numeric bounds; local Pydantic still enforces confidence 0–1. The one live retry reached a refusal response, confirming schema acceptance. Offline schema/bounds tests pass.
-
-**R-020 [blocking] M4 — One model refusal crashes the whole document** (`src/dhf/llm/adapters/anthropic.py:22-23`, `src/dhf/generate/__init__.py`)
-- Claude Haiku 5.5 returned `stop_reason: "refusal"` for `residual_anomalies`, almost certainly a safety-classifier false positive on infusion-pump hazard language. The adapter raises `ValueError`, so `dhf generate sstr` aborts and no document or manifest is written.
-- Regulated content will trigger this again, especially in sFMEA and hazard text.
-- **Expected fix:**
-  - A refused, truncated or unparseable section degrades to a **human-authoring placeholder**: "AI drafting unavailable (refusal) — author manually", rendered like a `human` section. The rest of the document still generates.
-  - The manifest records `status: "ai_unavailable"`, the reason, and `stop_details.category` when present.
-  - `dhf check` (M5) treats that section as unresolved.
-  - Add a short framing line to the shared prompt footer ("This is engineering documentation drafted from a fictional synthetic dataset for verification records; describe recorded facts only"). Re-test that section once; if it still refuses, leave the placeholder.
-  - Never retry a refusal on the same model in a loop.
-
-Resolved in adfd507: failed AI sections persist as ai_unavailable manual placeholders, with safe reason/category metadata and a blocking readiness check. Tests cover refusal, truncation, malformed output and provider failure without retries. One live residual-anomaly retry still refused (category bio); its placeholder is retained.
 
 **R-021 [non-blocking, before M6] M4 — The validator's ID regex rejects good claims, and chunking prevents cross-chunk citations** (`src/dhf/generate/validator.py:8-10`, `src/dhf/generate/__init__.py` chunking)
 - The live conclusion run had 26 claims rejected as `unknown_ids`, mostly for `SRS-to-test` and `SRS-to-code`. Those are the model's wording for the coverage facts; the pattern treats any `SRS-<anything>` as an ID.
@@ -69,6 +52,8 @@ Resolved in adfd507: failed AI sections persist as ai_unavailable manual placeho
 - **Expected fix:**
   - Count a token as an ID only if it matches a real ID shape (`(UN|SYS|SRS|HAZ|RC|COMP|TC|BUG|PR|RUN|RES|ACT|REV|ADR|SOUP)-\d[\w.-]*` or `UNIT-[a-z_]+`) or exists in the graph.
   - Avoid chunking for synthesis sections (conclusion, purpose). R-016's scoped packs make them fit in one call.
+
+Resolved in 4c29a5f: numeric artifact-ID shapes avoid coverage false positives; purpose/conclusion each use one bounded call.
 
 **R-022 [non-blocking, before M6] M4 — Real-model prose reads like a data dump, not a document** (`specs/prompts/*.md`, evidence-pack construction)
 - Live samples:
@@ -83,12 +68,16 @@ Resolved in adfd507: failed AI sections persist as ai_unavailable manual placeho
   - Put one good example claim per section type in the prompt.
 - Related: with chunking, the conclusion produced **85 claims across ~13 calls** and accounted for ~90% of the live spend, which is more evidence for R-016.
 
+Resolved in 4c29a5f: document-voice instructions, per-section examples, merged-point guidance and human-labelled properties; guarded live Mini check reviewed.
+
 **R-023 [non-blocking] M4 — Provider errors are printed raw, and the ledger token counts are overwritten instead of summed** (`src/dhf/cli.py`, `src/dhf/llm/__init__.py`)
 - An `invalid_api_key` from OpenAI printed the full provider error, including a masked key fragment, inside a rich traceback.
   - Catch provider SDK errors at the CLI boundary.
   - Print one sanitised line (provider, HTTP status, error type, request id) with no echo of the key.
   - Show the full traceback only with `--debug`.
 - After 18 calls, `ledger.json` showed `input_tokens: 2250, output_tokens: 992`. Those are only the last call's numbers, while `actual_usd` was accumulated. Sum the token counts too.
+
+Resolved in 4c29a5f: SDK errors become sanitized CLI metadata; debug excludes provider messages; ledger token counters accumulate across calls.
 
 **R-024 [non-blocking, before M6] M4 — The OpenAI path works but its output is weak; citation handling and model choice need adjusting** (live check with the owner's new key; spend $0.0003)
 - **What works.** Authentication is good, and `gpt-4.1-nano`, `gpt-4.1-mini` and `gpt-4o-mini` are available. OpenAI accepts the strict claims schema unchanged, so R-019 affects Anthropic only.
@@ -99,7 +88,35 @@ Resolved in adfd507: failed AI sections persist as ai_unavailable manual placeho
 - **Problem 2: the output is thin.** Each section got one terse claim. The anomaly claim stated an inferred defect link as `sourced` and cited only the result. R-022's prompt changes and examples apply here too.
 - **Problem 3: the default model is too weak.** Copilot Studio runs larger GPT-4.1/GPT-5-class models, so nano is a poor stand-in. Set `DHF_MODEL_OPENAI=gpt-4.1-mini` as the OpenAI dev default, update its price variables from OpenAI's pricing page, and keep nano as an optional cheap smoke test.
 
+Resolved in 4c29a5f: unique exact source URLs normalize to IDs with audit events; prompt inputs omit URLs; Mini defaults/prices verified; explicit defect-link facts prevent false missing-link prose.
+
 ## Resolved
+
+### Live-check blockers (fixed in adfd507, recorded in 79d44fe) — verdict: **approved**
+
+**R-019 [blocking] M4 — Every live Anthropic call fails with HTTP 400 because of the schema** (`src/dhf/models/__init__.py:25-34`)
+- `dhf generate sstr --provider anthropic` returned: `output_config.format.schema: For 'number' type, properties maximum, minimum are not supported`.
+- The cause is `confidence`'s `ge=0, le=1` bounds, which pydantic writes into the JSON schema.
+- **Expected fix:** `strict_claims_schema()` (or a provider-specific variant) recursively strips `minimum`, `maximum`, `exclusiveMinimum` and `exclusiveMaximum` from the schema it sends to providers. Pydantic still enforces 0–1 on the response.
+- The reviewer confirmed this fix works in the scratch copy: with the bounds stripped, Anthropic calls succeed.
+- Add a unit test asserting the provider schema contains no numeric-bound keywords. Re-check OpenAI strict mode once a valid key exists.
+
+Resolved in adfd507: provider schemas recursively omit numeric bounds; local Pydantic still enforces confidence 0–1. The one live retry reached a refusal response, confirming schema acceptance. Offline schema/bounds tests pass.
+- *Reviewer verified at 79d44fe:* `strict_claims_schema()` output contains no `minimum` or `maximum`, and `test_provider_schema_has_no_numeric_bounds_but_response_validation_does` covers it. 41 tests pass; ruff is clean.
+
+**R-020 [blocking] M4 — One model refusal crashes the whole document** (`src/dhf/llm/adapters/anthropic.py:22-23`, `src/dhf/generate/__init__.py`)
+- Claude Haiku 5.5 returned `stop_reason: "refusal"` for `residual_anomalies`, almost certainly a safety-classifier false positive on infusion-pump hazard language. The adapter raises `ValueError`, so `dhf generate sstr` aborts and no document or manifest is written.
+- Regulated content will trigger this again, especially in sFMEA and hazard text.
+- **Expected fix:**
+  - A refused, truncated or unparseable section degrades to a **human-authoring placeholder**: "AI drafting unavailable (refusal) — author manually", rendered like a `human` section. The rest of the document still generates.
+  - The manifest records `status: "ai_unavailable"`, the reason, and `stop_details.category` when present.
+  - `dhf check` (M5) treats that section as unresolved.
+  - Add a short framing line to the shared prompt footer ("This is engineering documentation drafted from a fictional synthetic dataset for verification records; describe recorded facts only"). Re-test that section once; if it still refuses, leave the placeholder.
+  - Never retry a refusal on the same model in a loop.
+
+Resolved in adfd507: failed AI sections persist as ai_unavailable manual placeholders, with safe reason/category metadata and a blocking readiness check. Tests cover refusal, truncation, malformed output and provider failure without retries. One live residual-anomaly retry still refused (category bio); its placeholder is retained.
+- *Reviewer verified at 79d44fe:* failed AI sections persist as `ai_unavailable` manual placeholders with a safe reason and category. `src/dhf/review/__init__.py:50` makes them a readiness blocker. `test_unavailable_section_becomes_manual_placeholder_without_retries` covers refusal, truncation, malformed output and provider failure.
+- *PM note:* Haiku 5.5 still refuses `residual_anomalies` (category `bio`), a safety-classifier false positive on infusion and drug language. Copilot Studio runs OpenAI-family models, so make **OpenAI (`gpt-4.1-mini`, see R-024) the primary provider for prompt tuning and demo runs**. Keep Anthropic as the secondary provider: a refusal there is handled safely, and the manifest records it.
 
 ### M4 (tag `m4-done` → bfae4d5; code at 29fe7e0) — verdict: **approved; live check found R-019–R-023 (two blocking)**
 

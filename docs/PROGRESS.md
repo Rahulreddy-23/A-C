@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M5 (in progress) · Last updated: 2026-10-12 IST
+Current milestone: M6 (in progress) · Last updated: 2026-10-12 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -8,9 +8,10 @@ Current milestone: M5 (in progress) · Last updated: 2026-10-12 IST
 | M1 | done | m1-done | 6969c55 | Refreshed evidence in b74d84b after R-010 |
 | M2 | done | m2-done (refreshed) | cfed7c3 | Native ADO parity, including metadata stripped, verified |
 | M3 | done | m3-done | eb0f00c | 16 exact gaps; RTM golden verified |
-| M4 | done | m4-done | see tag | 12-section SSTR and exact deterministic golden |
+| M4 | done | m4-done | bfae4d5 | 12-section SSTR and exact deterministic golden |
+| M5 | done | m5-done | 4c29a5f implementation | Docs PR/readiness, real OOXML redlines, live-review fixes |
 ## Now / Next
-- Working on: final M5 checkpoint; R-019/R-020 and pre-M6 follow-ups are fixed.
+- Working on: M6 SAD/SDD specifications and deterministic design evidence.
 - Next: M6 SAD/SDD, local diagrams and component consistency.
 ## Acceptance evidence
 ### M0
@@ -100,3 +101,5 @@ Current milestone: M5 (in progress) · Last updated: 2026-10-12 IST
 - R-016/R-017/R-021/R-022: bounded one-call synthesis, claim caps, human-labelled properties, linked table IDs, short displayed revisions and prompt examples verified. Seven deterministic sections match the revised golden exactly.
 - R-023: sanitized SDK-error/CLI tests and cumulative token accounting verified; pre-fix token counts cannot be reconstructed.
 - R-024: exact unique source URL citations normalize with audit events; lookalikes remain rejected. Mini defaults and prices updated without editing .env. First guarded anomaly check: `6 validated claims; $0.001052`; inspection found a false missing-link statement. Injecting explicit defect links and revising instructions produced `5 validated claims; $0.000960` with the sourced result/defect association citing both IDs and zero validation events. Prose still needs human review.
+
+- Final M5 regression: `uv run pytest -q` → `45 passed in 34.44s`; ruff → `All checks passed!`, `73 files already formatted`.

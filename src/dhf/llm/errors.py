@@ -1,6 +1,7 @@
 """Provider failure metadata safe to persist and display without response bodies."""
 
 import re
+import traceback
 
 
 def safe_label(value: object) -> str | None:
@@ -31,10 +32,16 @@ class DraftingUnavailable(ValueError):
 
 
 def provider_error(exc: Exception, provider: str) -> DraftingUnavailable:
-    return DraftingUnavailable(
+    failure = DraftingUnavailable(
         "provider_error",
         provider,
         status=getattr(exc, "status_code", None),
         error_type=type(exc).__name__,
         request_id=getattr(exc, "request_id", None),
     )
+
+    failure.details["debug_stack"] = [
+        {"file": frame.filename, "line": frame.lineno, "function": frame.name}
+        for frame in traceback.extract_tb(exc.__traceback__)
+    ]
+    return failure

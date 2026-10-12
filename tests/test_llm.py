@@ -317,3 +317,19 @@ def test_ledger_tokens_accumulate_across_distinct_calls(tmp_path: Path) -> None:
     entry = json.loads((tmp_path / "ledger.json").read_text())["anthropic"]
     assert entry["calls"] == 2
     assert entry["input_tokens"] == 20 and entry["output_tokens"] == 40
+
+
+def test_sdk_error_is_sanitized_in_section_cli(monkeypatch, capsys) -> None:
+    from dhf.cli import report_drafting_failures
+    from dhf.llm.errors import DraftingUnavailable, provider_error
+
+    class UnsafeSDKError(Exception):
+        status_code = 401
+        request_id = "req-test"
+
+    error = provider_error(UnsafeSDKError("invalid_api_key sk-sensitive-secret-fragment"), "openai")
+    assert isinstance(error, DraftingUnavailable)
+    report_drafting_failures([{"id": "purpose_scope", "ai_unavailable": error.details}])
+    output = capsys.readouterr().out
+    assert "openai" in output and "http=401" in output and "request=req-test" in output
+    assert "sk-sensitive" not in output and "Traceback" not in output

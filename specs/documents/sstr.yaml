@@ -22,6 +22,7 @@ sections:
   - no_unknown_ids
   - numbers_match_facts
   max_claims: 4
+  synthesis: true
 - id: references
   title: Requirements baseline under test
   mode: deterministic
@@ -125,6 +126,7 @@ sections:
   - no_unknown_ids
   - numbers_match_facts
   max_claims: 6
+  synthesis: true
 - id: evidence_index
   title: Evidence index
   mode: deterministic

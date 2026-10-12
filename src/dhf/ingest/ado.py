@@ -1,5 +1,6 @@
 """Azure DevOps REST 7.1 adapter; no knowledge of mock administration."""
 
+import hashlib
 import os
 import subprocess
 from datetime import UTC, datetime
@@ -35,6 +36,15 @@ def git_command(args: list[str], cwd: Path, token: str = "", strip: bool = True)
     if result.returncode:
         raise RuntimeError("Git operation failed; check repository access and branch configuration")
     return result.stdout.strip() if strip else result.stdout
+
+
+def clone_location(root: Path, remote: str) -> Path:
+    """Keep clones from different configured source repos isolated."""
+    if root.exists() and git_command(["remote", "get-url", "origin"], root) != remote:
+        root = root.with_name(root.name + "-" + hashlib.sha256(remote.encode()).hexdigest()[:12])
+    if root.exists() and git_command(["remote", "get-url", "origin"], root) != remote:
+        raise ValueError("Clone path belongs to another configured repository")
+    return root
 
 
 class ADO:
@@ -182,7 +192,7 @@ class ADO:
         repo_name = setting("ADO_DEVICE_REPO", "kestrel-device-sw")
         repo = next(r for r in self.collection("/_apis/git/repositories") if r["name"] == repo_name)
         clone_root.mkdir(parents=True, exist_ok=True)
-        clone = clone_root / repo_name
+        clone = clone_location(clone_root / repo_name, repo["remoteUrl"])
         if not clone.exists():
             git_command(["clone", repo["remoteUrl"], str(clone.resolve())], clone_root, self.token)
         else:

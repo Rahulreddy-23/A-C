@@ -4,7 +4,8 @@ import re
 from decimal import Decimal
 
 ID_PATTERN = re.compile(
-    r"\b(?:UN|SYS|SRS|HAZ|RC|COMP|TC|BUG|PR|RUN|RES|UNIT|SOUP|ADR|ACT|REV)-[A-Za-z0-9_.-]+"
+    r"\b(?:(?:UN|SYS|SRS|HAZ|RC|COMP|TC|BUG|PR|RUN|RES|ACT|REV|ADR|SOUP)-"
+    r"\d[\w.-]*|UNIT-[a-z_]+)\b"
 )
 NUMBER_PATTERN = re.compile(r"(?<![A-Za-z0-9_])[-+]?\d+(?:\.\d+)?(?![A-Za-z0-9_])")
 

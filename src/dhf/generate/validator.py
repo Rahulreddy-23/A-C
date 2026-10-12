@@ -11,8 +11,21 @@ def validate_claims(
     ids = {a["id"] for a in pack["evidence"]}
     permitted_numbers = fact_numbers(pack["facts"])
     accepted = []
-    events = {"rejected": [], "downgraded": [], "coerced": []}
+    events = {"rejected": [], "downgraded": [], "coerced": [], "normalized": []}
+    urls = {}
+    for artifact in pack["evidence"]:
+        url = artifact.get("source", {}).get("url")
+        if url:
+            urls.setdefault(url, set()).add(artifact["id"])
     for index, claim in enumerate(claims):
+        for position, citation in enumerate(claim["citations"]):
+            matches = urls.get(citation, set())
+            if len(matches) == 1:
+                id = next(iter(matches))
+                claim["citations"][position] = id
+                events["normalized"].append(
+                    {"claim_index": index, "reason": "exact_source_url", "from": citation, "to": id}
+                )
         unknown = (
             set(claim["citations"]) | {id.rstrip(".") for id in ID_PATTERN.findall(claim["text"])}
         ) - ids

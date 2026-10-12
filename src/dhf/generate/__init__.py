@@ -13,7 +13,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from pydantic import ValidationError
 
 from dhf.generate.validator import ID_PATTERN, validate_claims
-from dhf.graph.queries import fingerprint, query, stable_pack
+from dhf.graph.queries import fingerprint, prompt_pack, query
 from dhf.llm import LLM, BudgetExceeded, canonical
 from dhf.llm.errors import DraftingUnavailable
 
@@ -132,7 +132,7 @@ def finish_section(
     claims = list({canonical(c): c for response in validated for c in response["claims"]}.values())
     validation = {
         kind: [event for response in validated for event in response["validation"][kind]]
-        for kind in ("rejected", "downgraded", "coerced")
+        for kind in ("rejected", "downgraded", "coerced", "normalized")
     }
     if section["mode"] == "ai":
         capped = validate_claims(
@@ -186,7 +186,14 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
         prompts = [{k: prompt[k] for k in ("id", "version", "sha256")}]
         budget = prompt["max_input_tokens"] - len(prompt["body"].encode())
         try:
-            for chunk in partition_pack(stable_pack(pack), budget):
+            model_pack = prompt_pack(pack)
+            if section.get("synthesis"):
+                if len(canonical(model_pack).encode()) > budget:
+                    raise ValueError("Synthesis evidence exceeds its single-call budget")
+                chunks = [model_pack]
+            else:
+                chunks = partition_pack(model_pack, budget)
+            for chunk in chunks:
                 chunk["max_claims"] = section.get("max_claims", 6)
                 chunk["preferred_kind"] = (
                     "suggested" if section["allowed_kinds"] == ["suggested"] else "sourced"
@@ -198,7 +205,12 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
                     chunk,
                     prompt["max_output_tokens"],
                 )
-                responses.append(validate_claims(raw, chunk, section["allowed_kinds"]))
+                chunk_ids = {a["id"] for a in chunk["evidence"]}
+                validation_pack = {
+                    "facts": pack["facts"],
+                    "evidence": [a for a in pack["evidence"] if a["id"] in chunk_ids],
+                }
+                responses.append(validate_claims(raw, validation_pack, section["allowed_kinds"]))
         except DraftingUnavailable as exc:
             return finish_section(section, pack, [], prompts, exc.details)
         except (BudgetExceeded, ValidationError, json.JSONDecodeError, ValueError) as exc:
@@ -214,7 +226,7 @@ def assemble(spec: dict, graph: dict, params: dict, sections: list[dict], contex
     text = "# " + spec["title"] + "\n\n" + "\n".join(s["markdown"] for s in sections)
     validation = {
         k: [{"section": s["id"], **e} for s in sections for e in s["validation"][k]]
-        for k in ("rejected", "downgraded", "coerced")
+        for k in ("rejected", "downgraded", "coerced", "normalized")
     }
     prompts = {p["id"]: p for s in sections for p in s["prompts"]}
     manifest = {

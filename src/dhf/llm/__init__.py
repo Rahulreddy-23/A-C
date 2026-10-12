@@ -33,7 +33,7 @@ class LLM:
         total_cap: float | None = None,
     ) -> None:
         self.provider = provider
-        defaults = {"mock": "mock-v1", "openai": "gpt-4.1-nano", "anthropic": "claude-haiku-5-5"}
+        defaults = {"mock": "mock-v1", "openai": "gpt-4.1-mini", "anthropic": "claude-haiku-5-5"}
         self.model = setting(f"DHF_MODEL_{provider.upper()}", defaults.get(provider, ""))
         self.root = root
         self.root.mkdir(parents=True, exist_ok=True)
@@ -104,10 +104,10 @@ class LLM:
             in_price = float(
                 setting(
                     f"DHF_{self.provider.upper()}_INPUT_PER_MILLION",
-                    "0" if self.provider == "mock" else "0.10",
+                    {"mock": "0", "openai": "0.40", "anthropic": "0.10"}[self.provider],
                 )
             )
-            output_default = {"mock": "0", "openai": "0.40", "anthropic": "0.50"}
+            output_default = {"mock": "0", "openai": "1.60", "anthropic": "0.50"}
             out_price = float(
                 setting(
                     f"DHF_{self.provider.upper()}_OUTPUT_PER_MILLION", output_default[self.provider]
@@ -143,6 +143,10 @@ class LLM:
             self.calls += 1
             # Failed calls retain the reservation: fail safe rather than overspend.
             raw = self.adapter.complete(self.model, prompt, pack, max_output_tokens)
+            if not isinstance(raw, dict):
+                from dhf.llm.errors import DraftingUnavailable
+
+                raise DraftingUnavailable("invalid_schema", self.provider)
             usage = raw.pop("_usage", None)
             result = Claims.model_validate(raw)
             if usage is not None:

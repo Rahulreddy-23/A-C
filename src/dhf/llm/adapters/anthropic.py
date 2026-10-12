@@ -40,6 +40,8 @@ class AnthropicAdapter:
             output = json.loads("".join(texts))
         except (ValueError, TypeError):
             raise DraftingUnavailable("unparseable", "anthropic") from None
+        if not isinstance(output, dict):
+            raise DraftingUnavailable("invalid_schema", "anthropic")
         output["_usage"] = {
             "input_tokens": response.usage.input_tokens,
             "output_tokens": response.usage.output_tokens,

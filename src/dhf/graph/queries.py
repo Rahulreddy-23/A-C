@@ -26,7 +26,11 @@ def query(graph: dict, name: str, params: dict) -> dict:
         evidence = types("user_need")
         facts = {
             "release": release,
-            "scope": "System verification of the synthetic Kestrel controller",
+            "scope": "System verification of the Kestrel controller",
+            "verification_runs": [
+                a["id"] for a in types("test_run") if a["attributes"].get("release") == release
+            ],
+            "results_reported_in": "Summary of results and Results by requirement sections",
         }
     elif name == "references":
         evidence = types("software_req") + [
@@ -56,6 +60,9 @@ def query(graph: dict, name: str, params: dict) -> dict:
     elif name == "results_by_requirement":
         rows = rtm(graph, release)
         ids = {r["requirement"] for r in rows} | {v["result"] for r in rows for v in r["results"]}
+        ids |= {
+            id for r in rows for key in ("components", "units", "changes", "tests") for id in r[key]
+        }
         evidence = [nodes[id] for id in sorted(ids)]
         facts = {"rows": rows}
     elif name == "failed_results_with_defects":
@@ -63,6 +70,11 @@ def query(graph: dict, name: str, params: dict) -> dict:
         facts = {
             "summary": results_summary(graph, release),
             "failed_results": [a["id"] for a in results if a["attributes"]["outcome"] == "Failed"],
+            "recorded_defect_links": [
+                {"result": e["src"], "defect": e["dst"], "origin": e["origin"]}
+                for e in edges
+                if e["type"] == "reports_defect" and e["src"] in {a["id"] for a in results}
+            ],
         }
     elif name == "retest_results":
         evidence = results
@@ -101,12 +113,10 @@ def query(graph: dict, name: str, params: dict) -> dict:
             "gap_count": len(gaps(graph)),
             "gap_findings": [
                 {
-                    "rule": f["rule"],
-                    "artifact_id": f["artifact_id"],
-                    "message": f["message"],
-                    "action": f["action"],
+                    "rule": rule,
+                    "artifacts": [f["artifact_id"] for f in gaps(graph) if f["rule"] == rule],
                 }
-                for f in gaps(graph)
+                for rule in sorted({f["rule"] for f in gaps(graph)})
             ],
         }
     elif name == "evidence_index":
@@ -157,3 +167,45 @@ def fingerprint(pack: dict) -> str:
     import hashlib
 
     return hashlib.sha256(canonical(stable_pack(pack)).encode()).hexdigest()
+
+
+def prompt_pack(pack: dict) -> dict:
+    """Human-labelled, compact view; canonical provenance stays in the manifest."""
+
+    def display(key: str, value: object) -> object:
+        if isinstance(value, bool):
+            return "yes" if value else "no"
+        if isinstance(value, dict):
+            return {k.replace("_", " ").capitalize(): display(k, v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [display(key, v) for v in value]
+        return value
+
+    labels = {
+        "residual_listed": "Listed as residual anomaly",
+        "state": "Status",
+        "severity": "Severity",
+        "acceptance_criteria": "Acceptance criteria",
+        "completed_at": "Completed at",
+        "test_case": "Test case",
+        "is_retest": "Retest",
+    }
+    evidence = []
+    for a in pack["evidence"]:
+        attrs = a["attributes"]
+        properties = {
+            labels.get(k, k.replace("_", " ").capitalize()): display(k, v)
+            for k, v in attrs.items()
+            if k not in ("synthetic", "steps", "requirement_history", "changed_at")
+        }
+        evidence.append(
+            {
+                "id": a["id"],
+                "title": a["title"],
+                "body": a["body"],
+                "revision": a["source"]["revision"],
+                "attributes": {"synthetic": attrs.get("synthetic", False)},
+                "properties": properties,
+            }
+        )
+    return {"facts": pack["facts"], "evidence": evidence}

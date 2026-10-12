@@ -122,3 +122,57 @@ def test_unavailable_section_becomes_manual_placeholder_without_retries(
     assert {"section": "residual_anomalies", "reason": "ai_unavailable"} in readiness(
         result["markdown"], result["manifest"]
     )["blockers"]
+
+
+def test_real_id_shapes_and_single_call_synthesis(tmp_path: Path) -> None:
+    from dhf.generate import generate_section, load_spec
+    from dhf.graph.queries import prompt_pack, query
+
+    pack = {"facts": {"coverage": 88.57}, "evidence": [{"id": "RUN-2"}, {"id": "SRS-021"}]}
+    claims = {
+        "claims": [
+            {
+                "text": "SRS-to-test and SRS-to-code coverage is 88.57 for RUN-2.",
+                "kind": "sourced",
+                "citations": ["RUN-2"],
+            },
+            {"text": "SRS-999 is verified.", "kind": "sourced", "citations": ["RUN-2"]},
+        ]
+    }
+    checked = validate_claims(claims, pack, ["sourced"])
+    assert len(checked["claims"]) == 1 and len(checked["validation"]["rejected"]) == 1
+    graph = ingest_fixtures()
+    llm = LLM(root=tmp_path)
+    for id in ("purpose_scope", "release_conclusion"):
+        section = next(s for s in load_spec("sstr")["sections"] if s["id"] == id)
+        before = llm.calls
+        result = generate_section(section, graph, {"release": "1.1"}, llm)
+        assert result["status"] == "draft" and llm.calls - before == 1
+    view = prompt_pack(query(graph, "residual_anomalies", {"release": "1.1"}))
+    assert view["evidence"][0]["properties"]["Listed as residual anomaly"] == "yes"
+    assert "residual_listed" not in str(view)
+
+
+def test_exact_url_citations_are_normalized_but_lookalikes_rejected() -> None:
+    pack = {
+        "facts": {},
+        "evidence": [{"id": "RES-2-008", "source": {"url": "fixture://RES-2-008"}}],
+    }
+    output = {
+        "claims": [
+            {"text": "The retest failed.", "kind": "sourced", "citations": [url]}
+            for url in ("fixture://RES-2-008", "fixture://RES-2-008?rev=1", "fixture://RES-2-999")
+        ]
+    }
+    result = validate_claims(output, pack, ["sourced"])
+    assert result["claims"][0]["citations"] == ["RES-2-008"]
+    assert len(result["claims"]) == 1
+    assert len(result["validation"]["rejected"]) == 2
+    assert result["validation"]["normalized"] == [
+        {
+            "claim_index": 0,
+            "reason": "exact_source_url",
+            "from": "fixture://RES-2-008",
+            "to": "RES-2-008",
+        }
+    ]

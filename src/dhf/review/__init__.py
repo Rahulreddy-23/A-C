@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dhf.config import setting
 from dhf.generate import sha
-from dhf.ingest.ado import ADO, git_command
+from dhf.ingest.ado import ADO, clone_location, git_command
 from dhf.llm import canonical
 from dhf.render import render_docx
 
@@ -41,6 +41,7 @@ def readiness(markdown: str, manifest: dict) -> dict:
         if reviewer.strip() and rationale.strip()
     }
     blockers = []
+    manual_authors = {}
     expected = {s["id"] for s in manifest["sections"]}
     if set(sections) != expected or len(SECTION.findall(markdown)) != len(expected):
         blockers.append({"reason": "section_integrity"})
@@ -48,7 +49,25 @@ def readiness(markdown: str, manifest: dict) -> dict:
         id = section["id"]
         text = sections.get(id, "")
         if section["status"] == "ai_unavailable":
-            blockers.append({"section": id, "reason": "ai_unavailable"})
+            authored = re.search(
+                r"<!-- dhf-authoring:"
+                + re.escape(id)
+                + r" reviewer=([^\n<>]+?) rationale=([^\n<>]+?) -->",
+                text,
+            )
+            body = re.sub(r"<!--.*?-->|^#+[^\n]*", "", text, flags=re.S | re.M).strip()
+            if (
+                not authored
+                or not body
+                or "AI drafting unavailable" in text
+                or not all(group.strip() for group in authored.groups())
+            ):
+                blockers.append({"section": id, "reason": "ai_unavailable"})
+            else:
+                manual_authors[id] = {
+                    "reviewer": authored[1].strip(),
+                    "rationale": authored[2].strip(),
+                }
         if section["status"] == "stale":
             blockers.append({"section": id, "reason": "stale"})
         if section["mode"] == "human":
@@ -74,6 +93,7 @@ def readiness(markdown: str, manifest: dict) -> dict:
         "ready": not blockers,
         "blockers": blockers,
         "resolutions": resolutions,
+        "manual_authors": manual_authors,
         "document_sha256": sha(markdown),
     }
 
@@ -83,8 +103,9 @@ class DocsReview:
         self.ado = ado
         self.name = setting("ADO_DOCS_REPO", "kestrel-dhf-docs")
         self.api = "/_apis/git/repositories/" + self.name + "/pullrequests"
-        self.root = root
         repo = next(r for r in ado.collection("/_apis/git/repositories") if r["name"] == self.name)
+        root = clone_location(root, repo["remoteUrl"])
+        self.root = root
         if not root.exists():
             root.parent.mkdir(parents=True, exist_ok=True)
             git_command(["clone", repo["remoteUrl"], str(root.resolve())], root.parent, ado.token)
@@ -207,6 +228,10 @@ class DocsReview:
         check = readiness(markdown, manifest)
         manifest["review"]["status"] = "ready_for_review" if check["ready"] else "draft"
         manifest["review"]["readiness"] = check
+        for section in manifest["sections"]:
+            if section["id"] in check["manual_authors"]:
+                section["status"] = "human_authored"
+                section["manual_authoring"] = check["manual_authors"][section["id"]]
         manifest.setdefault("draft_sha256", manifest["document_sha256"])
         manifest["document_sha256"] = sha(markdown)
         self.commit(ref.removeprefix("refs/heads/"), doc, markdown, manifest, self.baseline(doc)[1])

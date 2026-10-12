@@ -82,3 +82,45 @@ uv run dhf generate-section sstr purpose_scope --provider openai
 Inspect `out/cross-provider/` for typed claims, citations and validation events.
 `dhf ingest --verbose` prints the complete change lists; normal output shows counts
 by artifact type and at most twenty changed IDs.
+
+Create a docs-repo draft PR with Word output and its manifest:
+
+```sh
+uv run dhf generate sstr --release 1.1 --open-pr
+uv run dhf check sstr --pr-id <id>
+```
+
+The checker fetches the edited PR Markdown, rebuilds Word output and posts the
+`DHF review readiness` status. A model refusal leaves a manual-authoring
+placeholder and blocks readiness while other sections still generate. Provider
+errors print sanitized metadata; `--debug` includes safe diagnostic details.
+
+Reviewers edit the Markdown in the docs PR. To accept a suggested claim, remove
+its `[Suggested — review required]` prefix and record its `dhf-claim` identifier:
+
+```md
+<!-- dhf-resolution:<16-character-claim-hash> accepted reviewer=YourName rationale=Your reviewed rationale -->
+```
+
+To reject it, remove the claim text and record the same marker with `rejected`.
+Fill human placeholders in the existing section boundaries. To manually author
+an unavailable AI section, replace its placeholder and record:
+
+```md
+<!-- dhf-authoring:residual_anomalies reviewer=YourName rationale=Manually authored and reviewed -->
+```
+
+Validator rejections also need a `dhf-validation:<event-hash> reviewed` marker
+with reviewer and rationale. These decisions are saved in the review manifest.
+Readiness is a draft-completeness gate; company approval and e-signatures remain
+in the eQMS. After the owner merges a ready PR, create its controlled baseline:
+
+```sh
+uv run dhf baseline sstr --pr-id <id>
+```
+
+Baseline tags (`sstr-v1`, `sstr-v2`, …) drive paragraph-level Word redlines in
+subsequent drafts. The product never merges a PR. Test tooling separately offers
+`mock-ado merge-docs-pr <id>` to simulate an owner's merge on the local mock.
+
+OpenAI prompt tuning uses `gpt-4.1-mini` ($0.40 input / $1.60 output per million tokens, verified against https://developers.openai.com/api/docs/models/gpt-4.1-mini). Existing `.env` files are preserved; override old settings with `DHF_MODEL_OPENAI=gpt-4.1-mini DHF_OPENAI_INPUT_PER_MILLION=0.40 DHF_OPENAI_OUTPUT_PER_MILLION=1.60`. Nano remains an optional smoke test with its matching prices. Offline runs still default to mock.

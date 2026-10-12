@@ -155,6 +155,7 @@ def generate(
     provider: str = "mock",
     db: str = "out/evidence.sqlite",
     open_pr: bool = False,
+    debug: bool = False,
 ) -> None:
     """Generate a typed, cited DHF draft from its YAML document specification."""
     from pathlib import Path
@@ -170,6 +171,7 @@ def generate(
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence first")
     result = generate_document(doc, graph, {"release": release}, provider)
+    report_drafting_failures(result["manifest"]["sections"], debug)
     typer.echo(
         f"{doc}: {len(result['manifest']['sections'])} sections → out/documents/{doc}.md + manifest"
     )
@@ -183,7 +185,11 @@ def generate(
 
         ado = ADO()
         try:
-            published = DocsReview(ado).publish(result, gap_count=len(gaps(graph)))
+            review = DocsReview(ado)
+            published = review.publish(result, gap_count=len(gaps(graph)))
+            Path(f"out/documents/{doc}.docx").write_bytes(
+                (review.root / (doc + ".docx")).read_bytes()
+            )
             Path(f"out/documents/{doc}.manifest.json").write_text(
                 json.dumps(result["manifest"], indent=2)
             )
@@ -193,6 +199,24 @@ def generate(
             ado.close()
 
 
+def report_drafting_failures(sections: list[dict], debug: bool = False) -> None:
+    """Print only sanitized failure metadata; SDK messages never reach Rich tracebacks."""
+    import json
+
+    for section in sections:
+        error = section.get("ai_unavailable")
+        if not error:
+            continue
+        typer.echo(
+            f"{error['provider']}: section={section['id']} reason={error['reason']} "
+            f"http={error.get('http_status') or 'n/a'} "
+            f"type={error.get('error_type') or 'n/a'} "
+            f"request={error.get('request_id') or 'n/a'}"
+        )
+        if debug:
+            typer.echo(json.dumps(error, indent=2))
+
+
 @app.command("generate-section")
 def generate_section_command(
     doc: str,
@@ -200,6 +224,7 @@ def generate_section_command(
     release: str = "1.1",
     provider: str = "mock",
     db: str = "out/evidence.sqlite",
+    debug: bool = False,
 ) -> None:
     """Run one bounded section for the owner's cross-provider quality check."""
     import json
@@ -222,6 +247,7 @@ def generate_section_command(
         raise typer.BadParameter("Ingest evidence first")
     llm = LLM(provider)
     result = generate_section(selected, graph, {"release": release}, llm)
+    report_drafting_failures([result], debug)
     target = Path(f"out/cross-provider/{doc}-{section}-{provider}.json")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(result, indent=2))
@@ -255,7 +281,7 @@ def check_command(doc: str, pr_id: int | None = None) -> None:
 
 
 @app.command("baseline")
-def baseline_command(doc: str, pr_id: int) -> None:
+def baseline_command(doc: str, pr_id: int = typer.Option(...)) -> None:
     """Tag a ready document after its PR was merged by a human."""
     from dhf.ingest.ado import ADO
     from dhf.review import DocsReview

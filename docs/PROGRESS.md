@@ -10,8 +10,8 @@ Current milestone: M5 (in progress) · Last updated: 2026-10-12 IST
 | M3 | done | m3-done | eb0f00c | 16 exact gaps; RTM golden verified |
 | M4 | done | m4-done | see tag | 12-section SSTR and exact deterministic golden |
 ## Now / Next
-- Working on: R-019/R-020 fixes before resuming M5; M5 PR/readiness and DOCX implementation is not yet checkpointed.
-- Next: complete R-021–R-023 with R-016/R-017, then finish M5 acceptance.
+- Working on: final M5 checkpoint; R-019/R-020 and pre-M6 follow-ups are fixed.
+- Next: M6 SAD/SDD, local diagrams and component consistency.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -50,20 +50,6 @@ Current milestone: M5 (in progress) · Last updated: 2026-10-12 IST
 - `score_findings` over the ingested graph → `{'precision': 1.0, 'recall': 1.0, 'true_positive': 16, 'false_positive': 0, 'false_negative': 0}`.
 - `test_rtm_matches_hand_checked_rows` validates five independent boundary/example rows. Release 1.0 totals 40/38 passed/2 failed; release 1.1 totals 40/39 passed/1 failed; SRS test coverage is 31/35 (88.57%).
 - `uv run pytest` → `28 passed in 24.05s`; ruff → `All checks passed!`, `60 files already formatted`.
-## Pending live verification
-- Paid-provider section parity — optional API keys; tests and demo use mock.
-- Real ADO M11 — needs a real org; not part of the offline build.
-## Known issues
-## Deviations from BRIEF (with reason)
-- Synthetic fixture has 20 units and 4 unverified SRS (including risk control SRS-012), meeting the approximate sizes and at-least gap requirements.
-- Local contract tests require sandbox elevation for loopback bind. The test fixture still blocks all external sockets.
-- Default ADO fields, native revisions/history, area allocation and residual tags are mapped in YAML. Optional fixture metadata now holds only a synthetic marker; all product facts come from native evidence (ADR-010 supersedes ADR-008).
-- uv was absent; installed inside ignored `out/bin` for this workstation. CI uses setup-uv.
-## LLM spend (from out/ledger.json)
-| Provider | Spent | Cap |
-|---|---|---|
-| anthropic | $0 | $1.50 build / $4 hard stop |
-| openai | $0 | $1.50 build / $4 hard stop |
 
 
 ### M4
@@ -77,8 +63,8 @@ Current milestone: M5 (in progress) · Last updated: 2026-10-12 IST
 - `dhf rtm --db out/m4.sqlite` → `35 RTM rows → out/rtm.md + out/rtm.json`; Markdown includes linked requirement, revision, components, units, changes, tests and latest results.
 - `dhf gaps --db out/m4.sqlite` → `16 deterministic gaps → out/gaps.md + out/gaps.json`; per-rule summary and recommended actions now come from YAML (R-014).
 
-### M4 pending live verification
-- Owner-run `dhf generate-section sstr purpose_scope --provider anthropic` and `--provider openai`: inspect source support, labels and provider parity. Both are guarded by the ledger/cache; no paid calls were made during build tests.
+### M4 live verification
+- Reviewer live check exposed R-019–R-024; guarded retests and fixes are recorded below. Tests never use paid APIs.
 
 ### Live-review fixes R-019/R-020
 - `pytest tests/test_llm.py tests/test_generate.py -q` → `22 passed in 4.12s`.
@@ -89,3 +75,28 @@ Current milestone: M5 (in progress) · Last updated: 2026-10-12 IST
 - The displayed failed-call cost is a retained worst-case reservation, not an actual provider invoice. Prior reviewer live checks were merged into `out/ledger.json` (actual Anthropic $0.0128976, OpenAI $0.000328 before this retry).
 
 - Full review-fix regression: `uv run pytest` → `41 passed in 32.44s`; ruff check/format clean. M5 remains in progress; its visual and CLI acceptance is still to finish.
+
+## Pending live verification
+- Full-document paid-provider narrative review remains optional; single-section OpenAI and Anthropic checks are recorded below. Tests and offline demo use mock.
+- Real ADO M11 — needs a real org; not part of the offline build.
+## Known issues
+## Deviations from BRIEF (with reason)
+- Synthetic fixture has 20 units and 4 unverified SRS (including risk control SRS-012), meeting the approximate sizes and at-least gap requirements.
+- Local contract tests require sandbox elevation for loopback bind. The test fixture still blocks all external sockets.
+- Default ADO fields, native revisions/history, area allocation and residual tags are mapped in YAML. Optional fixture metadata now holds only a synthetic marker; all product facts come from native evidence (ADR-010 supersedes ADR-008).
+- uv was absent; installed inside ignored `out/bin` for this workstation. CI uses setup-uv.
+## LLM spend (from out/ledger.json)
+| Provider | Spent | Cap |
+|---|---|---|
+| anthropic | $0.0137161 actual + $0.0096725 reserved | $1.50 build / $4 hard stop |
+| openai | $0.0023408 actual + $0.0021046 reserved | $1.50 build / $4 hard stop |
+
+### M5
+- `dhf ingest --source ado --db out/m5-acceptance.sqlite` → `Snapshot 3: 248 artifacts, 473 links`; added/changed/removed all zero.
+- `dhf generate sstr --release 1.1 --db out/m5-acceptance.sqlite --open-pr` → 12 sections, zero validation rejects/downgrades/coercions/normalizations; PR 10 visible via API and HTML, 9 readiness blockers. The isolated HTTP server used port 54064; acceptance URL is historical test evidence.
+- `dhf check sstr --pr-id 10` → exit 1, `ready: false`, 9 blockers. After a test-only human edit with explicit dispositions: exit 0, `ready: true`, zero blockers; PR status succeeded. Test tooling simulated owner merge; product never merges.
+- `dhf baseline sstr --pr-id 10` → `sstr-v2`; md/docx/manifest exist in docs Git branch. DOCX hash matches the published manifest.
+- OOXML round-trip tests prove real insertions/deletions, cited comments, highlights and hyperlinks. Local bundled LibreOffice rendered the final 11-page fresh SSTR and one-page redline; all PNG pages inspected, no layout overflow. Redline sample reports 2 insertions, 1 deletion and 2 comments; fresh drafts have no artificial full-document insertion. Desktop Word UI remains unverified.
+- R-016/R-017/R-021/R-022: bounded one-call synthesis, claim caps, human-labelled properties, linked table IDs, short displayed revisions and prompt examples verified. Seven deterministic sections match the revised golden exactly.
+- R-023: sanitized SDK-error/CLI tests and cumulative token accounting verified; pre-fix token counts cannot be reconstructed.
+- R-024: exact unique source URL citations normalize with audit events; lookalikes remain rejected. Mini defaults and prices updated without editing .env. First guarded anomaly check: `6 validated claims; $0.001052`; inspection found a false missing-link statement. Injecting explicit defect links and revising instructions produced `5 validated claims; $0.000960` with the sourced result/defect association citing both IDs and zero validation events. Prose still needs human review.

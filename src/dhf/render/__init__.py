@@ -117,18 +117,28 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
             lambda m: "\u200b".join(m[0][i : i + 12] for i in range(0, len(m[0]), 12)),
             clean,
         )
-        run = p.add_run(LINK.sub("", clean))
-        if small:
-            run.font.size = Pt(8)
-        citations = LINK.findall(text)
+        anchor = p.add_run("" if change == "delete" else "\u200b")
         note = []
-        if "[Inferred]" in text:
-            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+        inferred = "[Inferred]" in text
+        suggested = "[Suggested" in text
+        if inferred:
             note.append("AI-inferred from the cited evidence; review the stated basis.")
-        if "[Suggested" in text:
-            run.font.highlight_color = WD_COLOR_INDEX.TURQUOISE
+        if suggested:
             note.append("REVIEW REQUIRED: AI suggestion; no approval is implied.")
-        for label, url in citations:
+
+        def add_text(value: str) -> None:
+            run = p.add_run(value)
+            if small:
+                run.font.size = Pt(8)
+            if inferred or suggested:
+                run.font.highlight_color = (
+                    WD_COLOR_INDEX.YELLOW if inferred else WD_COLOR_INDEX.TURQUOISE
+                )
+
+        cursor = 0
+        for match in LINK.finditer(clean):
+            add_text(clean[cursor : match.start()])
+            label, url = match.groups()
             note.append(f"Source: {label} — {url}")
             hyperlink = OxmlElement("w:hyperlink")
             hyperlink.set(
@@ -140,13 +150,23 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
                 ),
             )
             hr = OxmlElement("w:r")
+            props = OxmlElement("w:rPr")
+            color = OxmlElement("w:color")
+            color.set(qn("w:val"), "1B4F72")
+            props.append(color)
+            size = OxmlElement("w:sz")
+            size.set(qn("w:val"), "16" if small else "20")
+            props.append(size)
+            hr.append(props)
             ht = OxmlElement("w:t")
-            ht.text = " [" + label + "]"
+            ht.text = label
             hr.append(ht)
             hyperlink.append(hr)
             p._p.append(hyperlink)
+            cursor = match.end()
+        add_text(clean[cursor:])
         if note and change != "delete":
-            doc.add_comment(run, "\n".join(note), author=AUTHOR, initials="AI")
+            doc.add_comment(anchor, "\n".join(note), author=AUTHOR, initials="AI")
             counts["comments"] += 1
         revision(p, change)
 
@@ -194,6 +214,8 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
                         qn("w:fill"), "DEE8F0" if idx == 0 else ("F6F8FA" if idx % 2 else "FFFFFF")
                     )
                     props.append(shading)
+                    cell.paragraphs[0].paragraph_format.space_after = Pt(3)
+                    cell.paragraphs[0].paragraph_format.space_before = Pt(2)
                     content(cell.paragraphs[0], value, change, small=True)
                     if idx == 0:
                         for r in cell.paragraphs[0].runs:

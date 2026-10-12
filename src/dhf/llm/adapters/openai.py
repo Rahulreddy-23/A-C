@@ -46,6 +46,8 @@ class OpenAIAdapter:
             output = json.loads(choice.message.content)
         except (ValueError, TypeError):
             raise DraftingUnavailable("unparseable", "openai") from None
+        if not isinstance(output, dict):
+            raise DraftingUnavailable("invalid_schema", "openai")
         output["_usage"] = {
             "input_tokens": response.usage.prompt_tokens,
             "output_tokens": response.usage.completion_tokens,

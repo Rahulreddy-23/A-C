@@ -148,3 +148,17 @@ def test_docs_pr_push_readiness_recheck_and_merged_baseline(ado_server, tmp_path
     manifest = json.loads((review.root / "sstr.manifest.json").read_text())
     assert manifest["review"]["status"] == "ready_for_review"
     ado.close()
+
+
+def test_clone_location_never_reuses_a_different_remote(tmp_path: Path) -> None:
+    from dhf.ingest.ado import clone_location
+
+    root = tmp_path / "clone"
+    root.mkdir()
+    git_command(["init"], root)
+    git_command(["remote", "add", "origin", "/fictional/repo-a.git"], root)
+    assert clone_location(root, "/fictional/repo-a.git") == root
+    isolated = clone_location(root, "/fictional/repo-b.git")
+    assert isolated != root and isolated.parent == root.parent
+    assert git_command(["remote", "get-url", "origin"], root) == "/fictional/repo-a.git"
+    assert clone_location(root, "/fictional/repo-b.git") == isolated

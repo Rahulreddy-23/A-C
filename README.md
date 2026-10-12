@@ -32,3 +32,14 @@ invoke admin endpoints. The app token is refused source writes, and a Git
 pre-receive hook independently rejects product pushes to the device repo.
 Browser pages are public and contain only synthetic data. Run contract tests
 with loopback sockets permitted; external network is blocked by the test fixture.
+
+```sh
+uv run dhf ingest --source fixtures   # offline file adapter
+uv run dhf ingest --source ado        # HTTP + device Git clone; start mock first
+```
+
+Every ingestion stores an immutable SQLite snapshot, provenance, content hashes,
+revisions and added/changed/removed IDs. Code units and signatures come from Python
+ASTs, SOUP versions from pinned dependency manifests, and implementation links
+from explicit ADO PR references and `AB#` commit messages. Real evidence lacking
+explicit synthetic metadata is rejected by the external-provider guard.

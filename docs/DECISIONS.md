@@ -49,3 +49,9 @@ Append-only. Format: `ADR-NNN — Title` · date · status · context · decisio
 - **Context:** The real org process has not been configured. Contracts must use ordinary ADO fields and Git transport.
 - **Decision:** Encode stable IDs in DHF tags, fixture-only structured attributes in the description/comment following DHF-META, and typed Related relation names in DHF metadata. Use native Parent and Tests relation reference names where applicable. Device Git's pre-receive hook independently rejects non-seeder pushes. Public mock HTML contains only synthetic fixtures.
 - **Consequences:** No custom ADO fields are required for the demo. Real-org field/tag mapping remains data configuration; source without synthetic markers cannot be sent to paid providers.
+
+## ADR-009 — Immutable JSON snapshots and stable per-file revisions
+2026-10-12 · Accepted
+- **Context:** A commit affecting one unit must not mark all units changed. Pure JSON transformations must remain portable.
+- **Decision:** Validate/normalize evidence, diff graphs and extract code as pure functions. SQLite persists complete immutable JSON snapshots transactionally. Git unit revision is its blob object ID, with citation URLs pinned to the last commit touching that file. Link changes also flag their source artifact.
+- **Consequences:** Fixture/HTTP parity preserves semantic fields and source revisions, normalizing transport URL/native ID, retrieval time and link-evidence descriptions. Historical snapshots remain readable; selective impact can compare any pair.

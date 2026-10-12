@@ -56,6 +56,8 @@ Resolved in 688a1c3: empty evidence is allowed; any non-synthetic item is reject
 - But `Anthropic()` and `OpenAI()` are built with no arguments, and they read keys only from `os.environ`. Keys that exist only in `.env` won't be found, so live calls fail with an auth error.
 - **Expected fix:** pass `api_key=setting("ANTHROPIC_API_KEY")` / `api_key=setting("OPENAI_API_KEY")` explicitly when building the clients. Fail fast with a clear message if the key is empty, and never log it. Add a unit test that injects a fake key through `DHF_ENV_FILE` and asserts the client receives it, without any network call.
 
+Resolved in 4064754: clients receive api_key from setting(); missing keys fail before transport. A fake DHF_ENV_FILE credential test captures both client constructor arguments without a network call.
+
 ## Resolved
 
 **R-001 [blocking] M0 — The cache key can collide and ignores prompt text.**

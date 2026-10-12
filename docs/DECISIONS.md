@@ -37,3 +37,9 @@ Append-only. Format: `ADR-NNN — Title` · date · status · context · decisio
 - **Context:** Paid requests may fail after consumption; token estimates must not allow budget overruns.
 - **Decision:** Reserve cost using UTF-8 bytes as an upper bound on input tokens and the maximum output tokens. Persist under an exclusive file lock before the request; retain reservations after failures. The ledger reports reserved cost, not a fabricated invoice amount.
 - **Consequences:** Budget enforcement is conservative. Models and prices remain config; owner verifies live pricing before live checks. External requests reject evidence not explicitly synthetic.
+
+## ADR-007 — Structured provider output and settled spend
+2026-10-12 · Accepted (owner requested R-003–R-005 fixes)
+- **Context:** Current Haiku 5.5 rejects temperature zero and emits thinking blocks; successful requests expose actual usage. See https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide and https://platform.claude.com/docs/en/models/haiku-5-5/overview.
+- **Decision:** Both adapters request the claims JSON schema, reject truncation/refusal and return usage. Haiku uses low effort and default sampling (necessary exception to temperature zero requested by the owner); OpenAI uses temperature zero. SDK retries are disabled so one budget reservation covers one request. Successful usage settles reservations into actual_usd; failures retain reserved_usd. Persist actual + outstanding for cap enforcement.
+- **Consequences:** Cache and validator provide repeatability for Haiku. Paid input is bounded to the configured small-prompt pricing tier. Credentials are read via config without entering process globals. No live calls have been made.

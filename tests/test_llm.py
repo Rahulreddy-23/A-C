@@ -31,13 +31,14 @@ def test_caps_persistence_and_failed_reservation(tmp_path: Path, monkeypatch) ->
 
     llm = LLM("openai", tmp_path, MockAdapter(), run_cap=0.001)
     with pytest.raises(BudgetExceeded):
-        llm.generate("t", 1, "p", PACK)
-    llm = LLM("openai", tmp_path, MockAdapter(), run_cap=5, build_cap=5, total_cap=2)
-    llm.generate("t", 1, "p", PACK)
-    assert json.loads((tmp_path / "ledger.json").read_text())["openai"]["reserved_usd"] > 1
+        llm.generate("t", 1, "p", PACK, 1000)
+    llm = LLM("openai", tmp_path, MockAdapter(), run_cap=20, build_cap=20, total_cap=5)
+    llm.generate("t", 1, "p", PACK, 1000)
+    spent = json.loads((tmp_path / "ledger.json").read_text())["openai"]["reserved_usd"]
+    assert 2 < spent < 4  # First reservation fits the 80% stop; a second cannot.
     with pytest.raises(BudgetExceeded):
-        LLM("openai", tmp_path, MockAdapter(), run_cap=5, build_cap=5, total_cap=2).generate(
-            "t", 2, "p", PACK
+        LLM("openai", tmp_path, MockAdapter(), run_cap=20, build_cap=20, total_cap=5).generate(
+            "t", 2, "p", PACK, 1000
         )
 
 
@@ -54,11 +55,13 @@ def test_build_cap_and_cumulative_run_cap(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("DHF_OPENAI_INPUT_PER_MILLION", "1000")
     monkeypatch.setenv("DHF_OPENAI_OUTPUT_PER_MILLION", "1000")
     with pytest.raises(BudgetExceeded):
-        LLM("openai", tmp_path, MockAdapter(), run_cap=5, build_cap=0.5).generate("x", 1, "p", PACK)
-    llm = LLM("openai", tmp_path, MockAdapter(), run_cap=1.5, build_cap=5)
-    llm.generate("x", 1, "p", PACK)
+        LLM("openai", tmp_path, MockAdapter(), run_cap=20, build_cap=0.5).generate(
+            "x", 1, "p", PACK, 1000
+        )
+    llm = LLM("openai", tmp_path, MockAdapter(), run_cap=4, build_cap=20, total_cap=25)
+    llm.generate("x", 1, "p", PACK, 1000)
     with pytest.raises(BudgetExceeded):
-        llm.generate("x", 2, "p", PACK)
+        llm.generate("x", 2, "p", PACK, 1000)
 
 
 def test_schema_file_matches_contract() -> None:
@@ -106,3 +109,105 @@ def test_real_provider_network_is_blocked(monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "dummy-not-a-real-key")
     with pytest.raises(APIConnectionError):
         OpenAIAdapter().complete("gpt-4.1-nano", "Return JSON claims.", PACK, 100)
+
+
+def test_actual_cost_reconciliation_and_failure_reservation(tmp_path: Path, monkeypatch) -> None:
+    from dhf.llm.adapters.mock import MockAdapter
+
+    monkeypatch.setenv("DHF_OPENAI_INPUT_PER_MILLION", "1")
+    monkeypatch.setenv("DHF_OPENAI_OUTPUT_PER_MILLION", "1")
+
+    class UsageAdapter(MockAdapter):
+        def complete(self, model: str, prompt: str, pack: dict, limit: int) -> dict:
+            return {
+                **super().complete(model, prompt, pack, limit),
+                "_usage": {"input_tokens": 10, "output_tokens": 20},
+            }
+
+    llm = LLM("openai", tmp_path, UsageAdapter())
+    llm.generate("usage", 1, "p", PACK)
+    ledger = json.loads((tmp_path / "ledger.json").read_text())["openai"]
+    assert ledger["reserved_usd"] == pytest.approx(0)
+    assert ledger["actual_usd"] == pytest.approx(0.00003)
+
+    class FailureAdapter(UsageAdapter):
+        def complete(self, model: str, prompt: str, pack: dict, limit: int) -> dict:
+            raise ValueError("Provider failure")
+
+    with pytest.raises(ValueError, match="failure"):
+        LLM("openai", tmp_path, FailureAdapter()).generate("fail", 1, "p", PACK)
+    failed = json.loads((tmp_path / "ledger.json").read_text())["openai"]
+    assert failed["reserved_usd"] > 0
+    assert failed["actual_usd"] == ledger["actual_usd"]
+    llm.generate("empty", 1, "p", {"evidence": [], "facts": {}})
+
+
+def test_provider_contracts_thinking_strict_json_and_usage(monkeypatch) -> None:
+    from types import SimpleNamespace as NS
+
+    import dhf.llm.adapters.anthropic as aa
+    import dhf.llm.adapters.openai as oa
+
+    captured = {}
+
+    def anthropic_create(**kwargs):
+        captured["anthropic"] = kwargs
+        return NS(
+            stop_reason="end_turn",
+            content=[NS(type="thinking"), NS(type="text", text='{"claims":[]}')],
+            usage=NS(input_tokens=10, output_tokens=20),
+        )
+
+    monkeypatch.setattr(aa, "Anthropic", lambda **_: NS(messages=NS(create=anthropic_create)))
+    assert (
+        aa.AnthropicAdapter().complete("claude-haiku-5-5", "schema prompt", PACK, 4000)["_usage"][
+            "output_tokens"
+        ]
+        == 20
+    )
+    assert "temperature" not in captured["anthropic"]
+    assert captured["anthropic"]["system"] == "schema prompt"
+
+    def openai_create(**kwargs):
+        captured["openai"] = kwargs
+        return NS(
+            choices=[NS(finish_reason="stop", message=NS(refusal=None, content='{"claims":[]}'))],
+            usage=NS(prompt_tokens=10, completion_tokens=20),
+        )
+
+    monkeypatch.setattr(oa, "OpenAI", lambda **_: NS(chat=NS(completions=NS(create=openai_create))))
+    assert (
+        oa.OpenAIAdapter().complete("gpt-4.1-nano", "schema prompt", PACK, 4000)["_usage"][
+            "input_tokens"
+        ]
+        == 10
+    )
+    schema = captured["openai"]["response_format"]["json_schema"]
+    assert schema["strict"] is True
+    assert "confidence" in schema["schema"]["$defs"]["Claim"]["required"]
+    assert captured["openai"]["max_completion_tokens"] == 4000
+
+
+def test_provider_truncation_and_refusal_fail_closed(monkeypatch) -> None:
+    from types import SimpleNamespace as NS
+
+    import dhf.llm.adapters.anthropic as aa
+    import dhf.llm.adapters.openai as oa
+
+    for reason in ("max_tokens", "refusal"):
+        monkeypatch.setattr(
+            aa,
+            "Anthropic",
+            lambda reason=reason, **_: NS(messages=NS(create=lambda **_: NS(stop_reason=reason))),
+        )
+        with pytest.raises(ValueError, match="unusable"):
+            aa.AnthropicAdapter().complete("test", "p", PACK, 4000)
+    monkeypatch.setattr(
+        oa,
+        "OpenAI",
+        lambda **_: NS(
+            chat=NS(completions=NS(create=lambda **_: NS(choices=[NS(finish_reason="length")])))
+        ),
+    )
+    with pytest.raises(ValueError, match="truncated"):
+        oa.OpenAIAdapter().complete("test", "p", PACK, 4000)

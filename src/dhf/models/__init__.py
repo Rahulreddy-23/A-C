@@ -20,3 +20,15 @@ class Claim(BaseModel):
 class Claims(BaseModel):
     model_config = ConfigDict(extra="forbid")
     claims: list[Claim]
+
+
+def strict_claims_schema() -> dict:
+    """Strict provider schema; confidence is required but may be null for sourced claims."""
+    import json
+    from pathlib import Path
+
+    schema = json.loads(Path("specs/schemas/claims.v1.json").read_text())
+    claim = schema["$defs"]["Claim"]
+    claim["required"] = list(claim["properties"])
+    claim["properties"]["confidence"].pop("default", None)
+    return schema

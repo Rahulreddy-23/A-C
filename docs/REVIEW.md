@@ -21,6 +21,72 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - That's acceptable for the SSTR tables. The demo will open a few cases, though, so give 5–6 safety-critical cases specific stimuli and values: TC-021 occlusion, the air-in-line case, the over-infusion bound, the alarm latch/acknowledge case and the drug-limit case.
 - Keep IDs and links unchanged.
 
+**R-018 [non-blocking, by M10] M4 — The dataset text gives away the answer key** (`data/synthetic/evidence.yaml:1976`, `data/synthetic/code/kestrel/diagnostics_orphan.py`)
+- BUG-03's body says "residual-anomaly listing is intentionally missing", and a unit is named `diagnostics_orphan`. Both appear in generated documents the judges will read.
+- Rewrite them as natural engineering text and rename the module (e.g. `diagnostics_trace.py`). Update the answer key and IDs consistently, and re-run the validator.
+
+### M5 review (tag `m5-done`, 7fa1078) — verdict: **changes required**
+
+Verified independently by running the full workflow end to end against the mock ADO on port 8099, in a clean worktree, with the mock LLM:
+- 45 tests pass; ruff is clean.
+- `ingest --source ado`, then `generate sstr --open-pr`, creates docs-repo PR 8 on branch `dhf/sstr/1.1/<ts>` containing `sstr.md`, `sstr.docx` and `sstr.manifest.json`.
+- The PR description lists sections, claim counts and gaps. A `DHF review readiness` status is posted as `failed` with "9 unresolved draft blockers".
+- `dhf check sstr` exits 1 with `ready: false`.
+- The fresh DOCX has 0 tracked changes, which is correct with no baseline. It has 507 hyperlinks and 12 highlights.
+
+The workflow plumbing is solid. Two blocking defects show up as soon as the demo change is applied: I applied `mock-ado apply-scenario change_1`, re-ingested, regenerated, and rendered `render_docx(v2, baseline=v1)`.
+
+**R-025 [blocking — fix before more M6 work; M7 builds on it] M5 — The redline marks almost the whole document as changed** (`src/dhf/render/__init__.py:21-68`)
+- The change touched one requirement (SRS-021 r1→r2), one unit, one new PR and one failed run. The rendered redline had **694 insertions and 682 deletions, with 342 of 344 table rows and 1,376 of 1,401 paragraphs marked as changed**.
+- A reviewer would see the entire SSTR struck through and re-inserted. That defeats the "change tracking for human review" must-have and the AB1 demo moment.
+- Likely causes:
+  - (a) Tables are diffed as whole blocks, so one changed row redlines the whole table.
+  - (b) A row whose only change is a hyperlink target (e.g. `UNIT-sensor_pressure` link `version=GC6d75a2b…` → `GCc1ee4f6…`) counts as changed although its visible text is identical.
+- **Expected fix:**
+  - Diff tables **row by row** (and cell by cell where practical), keyed by the row's first-column ID.
+  - Diff paragraphs by visible text. A link-target-only change gets no tracked change, or a single small one on the revision marker.
+  - Show unit and code revisions visibly (`UNIT-sensor_pressure@c1ee4f6`) so real changes are readable.
+  - Add a regression test that runs this exact scenario (generate → `change_1` → regenerate → redline) and asserts the changes are confined to the expected rows and sections: SRS-021 rows, RUN-3/RES-3-021, results summary 39/1 → 38/2, and the AI sections whose evidence changed. Use a small threshold, e.g. < 10% of paragraphs.
+
+Resolved in 18ee5e8: visible-text paragraph matching and source-keyed row/cell diffs; Git revisions are displayed. Exact change_1 HTTP regression confines edits to 46/744 paragraphs and 15/175 rows (under 10%), with 30 insertions/16 deletions; target-only link updates have no redline. All 12 local-render pages checked, including visible tracked hyperlinks.
+
+**R-026 [blocking — fix before more M6 work] M5 — The conclusion fails as soon as evidence grows: bytes are compared against a token budget** (`src/dhf/generate/__init__.py:186-193,215-220`)
+- `budget = prompt["max_input_tokens"] - len(prompt["body"].encode())`, which is then compared with `len(canonical(model_pack).encode())`. A "6000-token" budget is really about 6,000 **bytes** (≈1,500 tokens).
+- After `change_1`, the release-1.1 `release_conclusion` pack exceeds it. That raises `ValueError("Synthesis evidence exceeds its single-call budget")`, which is caught as the generic `invalid_output_or_budget`, so the conclusion renders "AI drafting unavailable" **even with the mock provider**, on the main demo path.
+- The same bug caused the earlier over-chunking: 13 calls and 85 claims for the conclusion in the live check.
+- **Expected fix:**
+  - Use one unit consistently. Estimate tokens conservatively (e.g. bytes ÷ 3) against `max_input_tokens`, or rename the setting to `max_input_bytes`.
+  - Raise synthesis budgets to about 12k tokens. That's still well under $0.01 per call on Haiku 5.5 or gpt-4.1-mini.
+  - When a synthesis pack is still too large, **reduce it deterministically**: keep failed and blocked results, open defects, residual anomalies and gap facts, and summarise the rest as counts in `facts`. Don't fail.
+  - Split the generic error into separate reasons (`evidence_over_budget`, `invalid_output`, `budget_exceeded`) and record the internal message in the manifest. These messages contain no secrets.
+  - Add a regression test: after `change_1`, regenerating the SSTR with the mock provider produces **no `ai_unavailable` sections**.
+
+Resolved in 18ee5e8: consistent token estimates (ceil bytes/3), 12k synthesis budgets, deterministic context counts and critical narrative excerpts with audit metadata. Distinct evidence_over_budget/invalid_output/budget_exceeded reasons include safe internal messages. change_1 regeneration has zero ai_unavailable sections; summary changes 39/1 to 38/2. 52 tests pass; ruff clean.
+
+**R-027 [non-blocking, before M7] M5 — The fresh DOCX has 377 Word comments, one per citation** (`src/dhf/render/__init__.py`)
+- That floods Word's comment pane and hides the comments reviewers actually need to act on.
+- Citations are already hyperlinks (507 of them). Keep comments for review-relevant items only: `[Inferred]` (basis and confidence), `[Suggested — review required]`, `ai_unavailable` and human placeholders.
+
+Resolved in 18ee5e8: comments restricted to inferred/suggested/manual review items; source citations remain hyperlinks. Inferred comments include basis/confidence. The scenario redline has seven comments; regression proves sourced citations create none.
+
+**R-028 [non-blocking] M5 — A conclusion-only instruction was pasted into every prompt's shared footer** (`specs/prompts/sstr.*.md:15`)
+- All four SSTR prompts end with "For a conclusion, discuss only verification outcomes, unresolved anomalies and coverage gaps…". In the purpose, anomaly and residual prompts it misdirects the model.
+- Keep the shared footer generic, move section-specific instructions into each prompt body, and bump the prompt versions so the cache invalidates.
+
+Resolved in 18ee5e8: conclusion-only instructions moved to the conclusion body; shared footer is generic. All four SSTR prompts bumped to version 2 and document prompt references updated.
+
+## Resolved
+
+### Pre-M6 fixes (resolved in 4c29a5f, checked during the M5 review)
+
+- *Reviewer verified:*
+  - Tables link IDs to sources with readable labels.
+  - The evidence walls are gone.
+  - Claim caps and synthesis prompts are present.
+  - Provider errors print as one sanitised line (`provider, section, reason, http, type, request`).
+  - URL-citation normalisation emits `normalized` audit events.
+- *Caveat:* R-016's bounded single-call synthesis is defeated by the byte/token mix-up in R-026.
+
 **R-016 [non-blocking, before M6] M4 — AI-section evidence packs are too broad, so the conclusion becomes a list of 30 "suggestions"** (`src/dhf/graph/queries.py:93-101`)
 - `release_readiness_facts` puts every failed result **plus all 35 software requirements** into the pack, and referenced components get pulled in too.
 - With the mock, the conclusion renders as about 30 `[Suggested]` paragraphs restating requirements. With a real model it costs more and still invites a restatement instead of a conclusion.
@@ -39,12 +105,6 @@ Resolved in 4c29a5f: scoped readiness evidence, deterministic gap/coverage facts
 - **"References" isn't references.** That section lists requirements, not controlled documents. Either rename it "Requirements baseline under test", or make it a real references table: SRS baseline, RTM version, test runs, and SAD/SDD versions once they exist.
 
 Resolved in 4c29a5f: linked table IDs, spec column labels, short displayed revisions, renamed baseline section and no evidence walls; 11-page local render visually checked.
-
-**R-018 [non-blocking, by M10] M4 — The dataset text gives away the answer key** (`data/synthetic/evidence.yaml:1976`, `data/synthetic/code/kestrel/diagnostics_orphan.py`)
-- BUG-03's body says "residual-anomaly listing is intentionally missing", and a unit is named `diagnostics_orphan`. Both appear in generated documents the judges will read.
-- Rewrite them as natural engineering text and rename the module (e.g. `diagnostics_trace.py`). Update the answer key and IDs consistently, and re-run the validator.
-
-### Live-model check of `m4-done` (run by the reviewer with owner approval in a scratch worktree; spend ≈ $0.013 Anthropic, merged into `out/ledger.json`)
 
 **R-021 [non-blocking, before M6] M4 — The validator's ID regex rejects good claims, and chunking prevents cross-chunk citations** (`src/dhf/generate/validator.py:8-10`, `src/dhf/generate/__init__.py` chunking)
 - The live conclusion run had 26 claims rejected as `unknown_ids`, mostly for `SRS-to-test` and `SRS-to-code`. Those are the model's wording for the coverage facts; the pattern treats any `SRS-<anything>` as an ID.
@@ -89,8 +149,6 @@ Resolved in 4c29a5f: SDK errors become sanitized CLI metadata; debug excludes pr
 - **Problem 3: the default model is too weak.** Copilot Studio runs larger GPT-4.1/GPT-5-class models, so nano is a poor stand-in. Set `DHF_MODEL_OPENAI=gpt-4.1-mini` as the OpenAI dev default, update its price variables from OpenAI's pricing page, and keep nano as an optional cheap smoke test.
 
 Resolved in 4c29a5f: unique exact source URLs normalize to IDs with audit events; prompt inputs omit URLs; Mini defaults/prices verified; explicit defect-link facts prevent false missing-link prose.
-
-## Resolved
 
 ### Live-check blockers (fixed in adfd507, recorded in 79d44fe) — verdict: **approved**
 

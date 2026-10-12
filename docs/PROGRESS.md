@@ -9,7 +9,7 @@ Current milestone: M5 (refreshed) · Development paused by owner · Last updated
 | M2 | done | m2-done (refreshed) | cfed7c3 | Native ADO parity, including metadata stripped, verified |
 | M3 | done | m3-done | eb0f00c | 16 exact gaps; RTM golden verified |
 | M4 | done | m4-done | bfae4d5 | 12-section SSTR and exact deterministic golden |
-| M5 | done | m5-done | 4c29a5f implementation | Docs PR/readiness, real OOXML redlines, live-review fixes |
+| M5 | done (refreshed) | m5-done | 18ee5e8 implementation | Localized change_1 redlines; token budgets; review fixes |
 ## Now / Next
 - Working on: completed M5 blocker fixes; development stops at the owner’s request.
 - Next: resume M6 only after the owner instructs. Unfinished M6 work is preserved in stash e1736bb3469388f8a6abf2d2a11d4c3d19617726 (`Paused M6 for R-025 R-026`). It has no completed milestone tag and still needs verification.
@@ -115,3 +115,5 @@ Current milestone: M5 (refreshed) · Development paused by owner · Last updated
 - Synthesis reduction is tested with artificially expanded source narratives, preserves critical evidence and gap facts, records omitted IDs/injected counts/excerpts, and is deterministic. Separate failure tests cover evidence_over_budget, invalid_output and budget_exceeded with safe internal messages.
 - R-027: sourced citations remain hyperlinks without comments. Review comments retain basis/confidence; placeholders receive a review comment. Scenario redline has seven comments. R-028: only the conclusion carries conclusion-specific instructions; all SSTR prompt versions are now 2.
 - Paused M6 smoke test had one unverified allocation expectation; it is not counted as acceptance evidence. Resume by inspecting/applying the preserved stash and resolving conflicts with these M5 fixes, then verify M6 fully.
+
+- Implementation and R-025–R-028 resolutions: 18ee5e8. m5-done is refreshed on the resolution checkpoint. M6 remains paused; no m6-done tag is claimed.

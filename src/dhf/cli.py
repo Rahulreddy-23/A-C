@@ -150,7 +150,11 @@ def rtm_command(release: str = "1.1", db: str = "out/evidence.sqlite") -> None:
 
 @app.command()
 def generate(
-    doc: str, release: str = "1.1", provider: str = "mock", db: str = "out/evidence.sqlite"
+    doc: str,
+    release: str = "1.1",
+    provider: str = "mock",
+    db: str = "out/evidence.sqlite",
+    open_pr: bool = False,
 ) -> None:
     """Generate a typed, cited DHF draft from its YAML document specification."""
     from pathlib import Path
@@ -170,6 +174,23 @@ def generate(
         f"{doc}: {len(result['manifest']['sections'])} sections → out/documents/{doc}.md + manifest"
     )
     typer.echo(f"Validation: { {k: len(v) for k, v in result['manifest']['validation'].items()} }")
+    if open_pr:
+        import json
+
+        from dhf.ingest.ado import ADO
+        from dhf.review import DocsReview
+        from dhf.trace import gaps
+
+        ado = ADO()
+        try:
+            published = DocsReview(ado).publish(result, gap_count=len(gaps(graph)))
+            Path(f"out/documents/{doc}.manifest.json").write_text(
+                json.dumps(result["manifest"], indent=2)
+            )
+            typer.echo(f"PR {published['pr_id']}: {published['pr_url']}")
+            typer.echo(f"Readiness: {len(published['readiness']['blockers'])} blockers")
+        finally:
+            ado.close()
 
 
 @app.command("generate-section")
@@ -205,3 +226,42 @@ def generate_section_command(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(result, indent=2))
     typer.echo(f"{len(result['claims'])} validated claims; ${llm.run_spend:.6f} → {target}")
+
+
+@app.command("check")
+def check_command(doc: str, pr_id: int | None = None) -> None:
+    """Recheck edited Markdown; with --pr-id, push updated manifest/DOCX and PR status."""
+    import json
+    from pathlib import Path
+
+    from dhf.ingest.ado import ADO
+    from dhf.review import DocsReview, readiness
+
+    if pr_id is None:
+        root = Path("out/documents")
+        result = readiness(
+            (root / (doc + ".md")).read_text(),
+            json.loads((root / (doc + ".manifest.json")).read_text()),
+        )
+    else:
+        ado = ADO()
+        try:
+            result = DocsReview(ado).check_pr(doc, pr_id)
+        finally:
+            ado.close()
+    typer.echo(json.dumps(result, indent=2))
+    if not result["ready"]:
+        raise typer.Exit(1)
+
+
+@app.command("baseline")
+def baseline_command(doc: str, pr_id: int) -> None:
+    """Tag a ready document after its PR was merged by a human."""
+    from dhf.ingest.ado import ADO
+    from dhf.review import DocsReview
+
+    ado = ADO()
+    try:
+        typer.echo(DocsReview(ado).create_baseline(doc, pr_id))
+    finally:
+        ado.close()

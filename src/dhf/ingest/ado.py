@@ -15,7 +15,7 @@ from dhf.ingest.native import native_record, normalize_result, normalize_run, no
 from dhf.models.evidence import validate_graph
 
 
-def git_command(args: list[str], cwd: Path, token: str = "") -> str:
+def git_command(args: list[str], cwd: Path, token: str = "", strip: bool = True) -> str:
     """Git auth stays in environment/askpass, never remote URL or command arguments."""
     helper = Path("out/git-askpass.sh").resolve()
     helper.parent.mkdir(parents=True, exist_ok=True)
@@ -34,7 +34,7 @@ def git_command(args: list[str], cwd: Path, token: str = "") -> str:
     result = subprocess.run(["git", *args], cwd=cwd, env=env, capture_output=True, text=True)
     if result.returncode:
         raise RuntimeError("Git operation failed; check repository access and branch configuration")
-    return result.stdout.strip()
+    return result.stdout.strip() if strip else result.stdout
 
 
 class ADO:

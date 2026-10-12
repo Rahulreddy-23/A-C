@@ -263,5 +263,26 @@ def apply_scenario(name: str, root: Path = ROOT) -> dict:
 def auth_token(header: str) -> str:
     try:
         return base64.b64decode(header.removeprefix("Basic ")).decode().split(":", 1)[1]
-    except (ValueError, UnicodeError):
+    except (ValueError, UnicodeError, IndexError):
         return ""
+
+
+def merge_docs_pr(pr_id: int, root: Path = ROOT) -> dict:
+    """Test tooling simulates the repo owner's merge; never called by the product."""
+    state = read_state(root)
+    pr = next(p for p in state["prs"] if p["pullRequestId"] == pr_id)
+    if pr["repository"]["id"] != "kestrel-dhf-docs" or pr["status"] != "active":
+        raise ValueError("Only active docs PRs can be merged by this test tool")
+    work = root / "seed-kestrel-dhf-docs"
+    git(["fetch", "origin", pr["sourceRefName"]], work)
+    git(["checkout", "main"], work)
+    git(["merge", "--ff-only", "FETCH_HEAD"], work)
+    git(["push", "origin", "main"], work)
+    pr["status"] = "completed"
+    pr["lastMergeCommit"] = {"commitId": git(["rev-parse", "HEAD"], work)}
+    write_state(root, state)
+    return {
+        "pullRequestId": pr_id,
+        "status": "completed",
+        "commit": pr["lastMergeCommit"]["commitId"],
+    }

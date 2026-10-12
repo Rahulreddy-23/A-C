@@ -65,3 +65,60 @@ def test_prompt_bound_is_enforced_without_truncation() -> None:
     assert [a["id"] for chunk in chunks for a in chunk["evidence"]] == [str(i) for i in range(10)]
     with pytest.raises(ValueError, match="Single artifact"):
         partition_pack({"facts": {}, "evidence": [{"id": "SRS-001", "body": "x" * 200}]}, 100)
+
+
+def test_claim_limit_is_validated_and_audited() -> None:
+    pack = {"facts": {}, "evidence": [{"id": "SRS-021"}]}
+    output = {
+        "claims": [
+            {"text": text, "kind": "sourced", "citations": ["SRS-021"]}
+            for text in ("First point", "Second point", "Third point")
+        ]
+    }
+    result = validate_claims(output, pack, ["sourced"], max_claims=2)
+    assert len(result["claims"]) == 2
+    assert result["validation"]["rejected"] == [{"claim_index": 2, "reason": "max_claims"}]
+
+
+@pytest.mark.parametrize("reason", ["refusal", "max_tokens", "unparseable", "provider_error"])
+def test_unavailable_section_becomes_manual_placeholder_without_retries(
+    tmp_path: Path, reason: str
+) -> None:
+    from dhf.llm.adapters.mock import MockAdapter
+    from dhf.llm.errors import DraftingUnavailable
+    from dhf.review import readiness
+
+    class RefusingAdapter:
+        refused_calls = 0
+
+        def complete(self, model, prompt, pack, limit):
+            if "open_count" in pack["facts"]:
+                self.refused_calls += 1
+                raise DraftingUnavailable(reason, "anthropic", category="safety_classifier")
+            return MockAdapter().complete(model, prompt, pack, limit)
+
+    adapter = RefusingAdapter()
+    result = generate_document(
+        "sstr",
+        ingest_fixtures(),
+        {"release": "1.1"},
+        out=tmp_path / "docs",
+        llm=LLM(root=tmp_path / "llm", adapter=adapter),
+    )
+    failed = next(s for s in result["manifest"]["sections"] if s["id"] == "residual_anomalies")
+    assert failed["status"] == "ai_unavailable" and failed["claims"] == []
+    assert failed["ai_unavailable"]["reason"] == reason
+    assert failed["ai_unavailable"]["stop_details"]["category"] == "safety_classifier"
+    assert f"AI drafting unavailable ({reason}) — author manually." in result["markdown"]
+    assert adapter.refused_calls == 1
+    assert len(result["manifest"]["sections"]) == 12
+    assert (tmp_path / "docs/sstr.manifest.json").is_file()
+    assert (
+        next(s for s in result["manifest"]["sections"] if s["id"] == "results_summary")["facts"][
+            "summary"
+        ]["passed"]
+        == 39
+    )
+    assert {"section": "residual_anomalies", "reason": "ai_unavailable"} in readiness(
+        result["markdown"], result["manifest"]
+    )["blockers"]

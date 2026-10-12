@@ -10,10 +10,12 @@ from pathlib import Path
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from pydantic import ValidationError
 
 from dhf.generate.validator import ID_PATTERN, validate_claims
 from dhf.graph.queries import fingerprint, query, stable_pack
-from dhf.llm import LLM, canonical
+from dhf.llm import LLM, BudgetExceeded, canonical
+from dhf.llm.errors import DraftingUnavailable
 
 
 def sha(text: str) -> str:
@@ -88,11 +90,30 @@ def render_section(section: dict, pack: dict, claims: list[dict]) -> str:
         keep_trailing_newline=True,
     )
 
-    def cell(value: object) -> str:
-        text = canonical(value) if isinstance(value, (dict, list)) else str(value)
-        return text.replace("|", "\\|").replace("\n", "<br>")
+    nodes = {a["id"]: a for a in pack["evidence"]}
 
+    def rev(value: str) -> str:
+        return value[:8] if len(value) > 12 else value
+
+    def cell(value: object) -> str:
+        if isinstance(value, list):
+            return "<br>".join(cell(v) for v in value) or "—"
+        if isinstance(value, dict):
+            return "; ".join(f"{k.replace('_', ' ')}: {cell(v)}" for k, v in value.items())
+        text = str(value).replace("|", "\\|").replace("\n", "<br>")
+
+        def link(match):
+            id = match[0].rstrip(".")
+            if id not in nodes:
+                return match[0]
+            a = nodes[id]
+            return f"[{id}]({a['source']['url']})" + match[0][len(id) :]
+
+        return ID_PATTERN.sub(link, text)
+
+    env.filters["revision"] = rev
     env.filters["cell"] = cell
+    env.filters["claim_key"] = lambda c: sha(canonical(c))[:16]
     return env.get_template("section.md.j2").render(
         section=section,
         facts=pack["facts"],
@@ -101,18 +122,32 @@ def render_section(section: dict, pack: dict, claims: list[dict]) -> str:
     )
 
 
-def finish_section(section: dict, pack: dict, validated: list[dict], prompts: list[dict]) -> dict:
+def finish_section(
+    section: dict,
+    pack: dict,
+    validated: list[dict],
+    prompts: list[dict],
+    failure: dict | None = None,
+) -> dict:
     claims = list({canonical(c): c for response in validated for c in response["claims"]}.values())
     validation = {
         kind: [event for response in validated for event in response["validation"][kind]]
         for kind in ("rejected", "downgraded", "coerced")
     }
+    if section["mode"] == "ai":
+        capped = validate_claims(
+            {"claims": claims}, pack, section["allowed_kinds"], section.get("max_claims", 6)
+        )
+        validation["rejected"].extend(capped["validation"]["rejected"])
+        claims = capped["claims"]
     ids = (
         {a["id"] for a in pack["evidence"]}
         if section["mode"] == "deterministic"
         else {id for c in claims for id in c["citations"]}
     )
-    rendered = render_section(section, pack, claims)
+    rendered = render_section(
+        {**section, **({"ai_unavailable": failure} if failure else {})}, pack, claims
+    )
     counts = Counter(c["kind"] for c in claims)
     return {
         "id": section["id"],
@@ -121,7 +156,10 @@ def finish_section(section: dict, pack: dict, validated: list[dict], prompts: li
         "query": section.get("query"),
         "query_fingerprint": fingerprint(pack),
         "facts": pack["facts"],
-        "status": "human_input_required" if section["mode"] == "human" else "draft",
+        "status": "ai_unavailable"
+        if failure
+        else ("human_input_required" if section["mode"] == "human" else "draft"),
+        "ai_unavailable": failure,
         "cited_revisions": {
             a["id"]: a["source"]["revision"] for a in pack["evidence"] if a["id"] in ids
         },
@@ -147,14 +185,28 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
         prompt = load_prompt(section["prompt"])
         prompts = [{k: prompt[k] for k in ("id", "version", "sha256")}]
         budget = prompt["max_input_tokens"] - len(prompt["body"].encode())
-        for chunk in partition_pack(stable_pack(pack), budget):
-            chunk["preferred_kind"] = (
-                "suggested" if section["allowed_kinds"] == ["suggested"] else "sourced"
+        try:
+            for chunk in partition_pack(stable_pack(pack), budget):
+                chunk["max_claims"] = section.get("max_claims", 6)
+                chunk["preferred_kind"] = (
+                    "suggested" if section["allowed_kinds"] == ["suggested"] else "sourced"
+                )
+                raw = llm.generate(
+                    prompt["id"],
+                    prompt["version"],
+                    prompt["body"],
+                    chunk,
+                    prompt["max_output_tokens"],
+                )
+                responses.append(validate_claims(raw, chunk, section["allowed_kinds"]))
+        except DraftingUnavailable as exc:
+            return finish_section(section, pack, [], prompts, exc.details)
+        except (BudgetExceeded, ValidationError, json.JSONDecodeError, ValueError) as exc:
+            reason = (
+                "budget_exceeded" if isinstance(exc, BudgetExceeded) else "invalid_output_or_budget"
             )
-            raw = llm.generate(
-                prompt["id"], prompt["version"], prompt["body"], chunk, prompt["max_output_tokens"]
-            )
-            responses.append(validate_claims(raw, chunk, section["allowed_kinds"]))
+            failure = DraftingUnavailable(reason, llm.provider, error_type=type(exc).__name__)
+            return finish_section(section, pack, [], prompts, failure.details)
     return finish_section(section, pack, responses, prompts)
 
 
@@ -231,6 +283,11 @@ def generate_document(
     }
     result = assemble(spec, graph, params, sections, context)
     out.mkdir(parents=True, exist_ok=True)
+    from dhf.render import render_docx
+
+    result["manifest"]["docx"] = render_docx(
+        result["markdown"], out / (doc + ".docx"), timestamp=context["generated_at"]
+    )
     (out / (doc + ".md")).write_text(result["markdown"])
     (out / (doc + ".manifest.json")).write_text(json.dumps(result["manifest"], indent=2))
     return result

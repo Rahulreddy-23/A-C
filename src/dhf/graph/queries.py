@@ -1,7 +1,7 @@
 """Pure named evidence queries. IDs and facts are deterministic; prose is downstream."""
 
-from dhf.generate.validator import ID_PATTERN, fact_numbers
 from dhf.llm import canonical
+from dhf.models.values import ID_PATTERN, fact_numbers
 from dhf.trace import confirmed_links, coverage, gaps, latest_results, results_summary, rtm
 
 
@@ -91,13 +91,23 @@ def query(graph: dict, name: str, params: dict) -> dict:
             "coverage": coverage(graph, release),
         }
     elif name == "release_readiness_facts":
-        evidence = [a for a in results if a["attributes"]["outcome"] == "Failed"] + types(
-            "software_req"
+        evidence = linked(
+            [a for a in results if a["attributes"]["outcome"] in ("Failed", "Blocked")]
         )
+        evidence += [a for a in types("defect") if a["attributes"]["state"] != "Closed"]
         facts = {
             "summary": results_summary(graph, release),
             "coverage": coverage(graph, release),
             "gap_count": len(gaps(graph)),
+            "gap_findings": [
+                {
+                    "rule": f["rule"],
+                    "artifact_id": f["artifact_id"],
+                    "message": f["message"],
+                    "action": f["action"],
+                }
+                for f in gaps(graph)
+            ],
         }
     elif name == "evidence_index":
         evidence = [

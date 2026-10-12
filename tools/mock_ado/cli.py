@@ -49,3 +49,11 @@ def scenario(name: str) -> None:
 def reset() -> None:
     reset_root(ROOT)
     typer.echo("Mock reset to synthetic baseline")
+
+
+@app.command("merge-docs-pr")
+def merge_docs(pr_id: int) -> None:
+    """Simulate the repo owner's merge, using test-tool authority on the mock only."""
+    from mock_ado.state import merge_docs_pr
+
+    typer.echo(merge_docs_pr(pr_id))

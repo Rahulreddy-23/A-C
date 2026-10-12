@@ -100,15 +100,16 @@ def test_env_isolation_and_memoization(tmp_path: Path, monkeypatch) -> None:
 def test_real_provider_network_is_blocked(monkeypatch) -> None:
     import socket
 
-    from openai import APIConnectionError
-
     from dhf.llm.adapters.openai import OpenAIAdapter
+    from dhf.llm.errors import DraftingUnavailable
 
     with pytest.raises(OSError, match="Tests prohibit"):
         socket.create_connection(("api.openai.com", 443))
     monkeypatch.setenv("OPENAI_API_KEY", "dummy-not-a-real-key")
-    with pytest.raises(APIConnectionError):
+    with pytest.raises(DraftingUnavailable) as failed:
         OpenAIAdapter().complete("gpt-4.1-nano", "Return JSON claims.", PACK, 100)
+    assert failed.value.details["error_type"] == "APIConnectionError"
+    assert failed.value.details["reason"] == "provider_error"
 
 
 def test_actual_cost_reconciliation_and_failure_reservation(tmp_path: Path, monkeypatch) -> None:
@@ -204,8 +205,11 @@ def test_provider_truncation_and_refusal_fail_closed(monkeypatch) -> None:
             "Anthropic",
             lambda reason=reason, **_: NS(messages=NS(create=lambda **_: NS(stop_reason=reason))),
         )
-        with pytest.raises(ValueError, match="unusable"):
+        from dhf.llm.errors import DraftingUnavailable
+
+        with pytest.raises(DraftingUnavailable) as failure:
             aa.AnthropicAdapter().complete("test", "p", PACK, 4000)
+        assert failure.value.details["reason"] == reason
     monkeypatch.setattr(
         oa,
         "OpenAI",
@@ -269,3 +273,47 @@ def test_provider_keys_from_env_file_and_missing_key_fail_fast(tmp_path: Path, m
     aa.AnthropicAdapter().complete("test", "p", PACK, 4000)
     oa.OpenAIAdapter().complete("test", "p", PACK, 4000)
     assert received == {"anthropic": "fake-anthropic", "openai": "fake-openai"}
+
+
+def test_provider_schema_has_no_numeric_bounds_but_response_validation_does() -> None:
+    from pydantic import ValidationError
+
+    from dhf.models import Claims, strict_claims_schema
+
+    def assert_unbounded(value):
+        if isinstance(value, dict):
+            assert not {"minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"} & set(value)
+            for v in value.values():
+                assert_unbounded(v)
+        if isinstance(value, list):
+            for v in value:
+                assert_unbounded(v)
+
+    assert_unbounded(strict_claims_schema())
+    for confidence in (-0.01, 1.01):
+        with pytest.raises(ValidationError):
+            Claims.model_validate(
+                {
+                    "claims": [
+                        {
+                            "text": "Point",
+                            "kind": "suggested",
+                            "citations": [],
+                            "confidence": confidence,
+                        }
+                    ]
+                }
+            )
+
+
+def test_ledger_tokens_accumulate_across_distinct_calls(tmp_path: Path) -> None:
+    class UsageAdapter:
+        def complete(self, *args):
+            return {"claims": [], "_usage": {"input_tokens": 10, "output_tokens": 20}}
+
+    llm = LLM(provider="anthropic", adapter=UsageAdapter(), root=tmp_path)
+    for version in (1, 2):
+        llm.generate("test", version, "p", PACK)
+    entry = json.loads((tmp_path / "ledger.json").read_text())["anthropic"]
+    assert entry["calls"] == 2
+    assert entry["input_tokens"] == 20 and entry["output_tokens"] == 40

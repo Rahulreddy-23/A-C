@@ -132,6 +132,7 @@ class LLM:
                 raise BudgetExceeded("LLM budget cap reached")
             self.run_spend += cost
             ledger[self.provider] = {
+                **entry,
                 "reserved_usd": outstanding + cost,
                 "actual_usd": actual,
                 "calls": ledger.get(self.provider, {}).get("calls", 0) + 1,

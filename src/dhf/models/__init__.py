@@ -31,4 +31,16 @@ def strict_claims_schema() -> dict:
     claim = schema["$defs"]["Claim"]
     claim["required"] = list(claim["properties"])
     claim["properties"]["confidence"].pop("default", None)
+
+    def strip_bounds(value: object) -> None:
+        if isinstance(value, dict):
+            for key in ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"):
+                value.pop(key, None)
+            for child in value.values():
+                strip_bounds(child)
+        elif isinstance(value, list):
+            for child in value:
+                strip_bounds(child)
+
+    strip_bounds(schema)
     return schema

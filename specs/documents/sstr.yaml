@@ -1,19 +1,139 @@
 id: sstr
 title: Software System Test Report
-spec_version: 1
-standard_refs: [IEC 62304 5.7, IEC 62304 5.8]
+spec_version: 2
+standard_refs:
+- IEC 62304 5.7
+- IEC 62304 5.8
 params:
-  release: {type: string, required: true}
+  release:
+    type: string
+    required: true
 sections:
-  - {id: purpose_scope, title: Purpose and scope, mode: ai, query: purpose_scope, prompt: sstr.purpose@1, output_schema: claims.v1, allowed_kinds: [sourced, inferred], rules: [no_unknown_ids, numbers_match_facts]}
-  - {id: references, title: References, mode: deterministic, query: references, render: table}
-  - {id: test_environment, title: Test environment, mode: deterministic, query: test_environment, render: table}
-  - {id: results_summary, title: Summary of results, mode: deterministic, query: test_results_summary, render: table, standard_refs: [IEC 62304 5.7.5]}
-  - {id: results_by_requirement, title: Results by requirement, mode: deterministic, query: results_by_requirement, render: table}
-  - {id: anomaly_assessment, title: Failed tests and anomaly assessment, mode: ai, query: failed_results_with_defects, prompt: sstr.anomaly_assessment@1, output_schema: claims.v1, allowed_kinds: [sourced, inferred, suggested], rules: [no_unknown_ids, numbers_match_facts]}
-  - {id: retest_results, title: Retest results, mode: deterministic, query: retest_results, render: table}
-  - {id: residual_anomalies, title: Known residual anomalies, mode: ai, query: residual_anomalies, prompt: sstr.residual@1, output_schema: claims.v1, allowed_kinds: [suggested], rules: [no_unknown_ids, numbers_match_facts], standard_refs: [IEC 62304 5.8]}
-  - {id: verification_gaps, title: Verification coverage gaps, mode: deterministic, query: verification_gaps, render: table}
-  - {id: release_conclusion, title: Conclusion and release readiness, mode: ai, query: release_readiness_facts, prompt: sstr.conclusion@1, output_schema: claims.v1, allowed_kinds: [suggested], rules: [no_unknown_ids, numbers_match_facts]}
-  - {id: evidence_index, title: Evidence index, mode: deterministic, query: evidence_index, render: table}
-  - {id: approvals, title: Approvals, mode: human}
+- id: purpose_scope
+  title: Purpose and scope
+  mode: ai
+  query: purpose_scope
+  prompt: sstr.purpose@1
+  output_schema: claims.v1
+  allowed_kinds:
+  - sourced
+  - inferred
+  rules:
+  - no_unknown_ids
+  - numbers_match_facts
+  max_claims: 4
+- id: references
+  title: Requirements baseline under test
+  mode: deterministic
+  query: references
+  render: table
+  columns:
+    id: Requirement
+    revision: Revision
+    title: Title
+- id: test_environment
+  title: Test environment
+  mode: deterministic
+  query: test_environment
+  render: table
+  columns:
+    environment: Environment
+- id: results_summary
+  title: Summary of results
+  mode: deterministic
+  query: test_results_summary
+  render: table
+  standard_refs:
+  - IEC 62304 5.7.5
+  columns:
+    release: Release
+    total: Total
+    passed: Passed
+    failed: Failed
+    blocked: Blocked
+    not_run: Not run
+- id: results_by_requirement
+  title: Results by requirement
+  mode: deterministic
+  query: results_by_requirement
+  render: table
+  columns:
+    requirement: Requirement
+    revision: Rev
+    components: Components
+    units: Software units
+    changes: Changes
+    tests: Test cases
+    results: Latest results
+- id: anomaly_assessment
+  title: Failed tests and anomaly assessment
+  mode: ai
+  query: failed_results_with_defects
+  prompt: sstr.anomaly_assessment@1
+  output_schema: claims.v1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  rules:
+  - no_unknown_ids
+  - numbers_match_facts
+  max_claims: 6
+- id: retest_results
+  title: Retest results
+  mode: deterministic
+  query: retest_results
+  render: table
+  columns:
+    case: Test case
+    result: Latest result
+    outcome: Outcome
+- id: residual_anomalies
+  title: Known residual anomalies
+  mode: ai
+  query: residual_anomalies
+  prompt: sstr.residual@1
+  output_schema: claims.v1
+  allowed_kinds:
+  - suggested
+  rules:
+  - no_unknown_ids
+  - numbers_match_facts
+  standard_refs:
+  - IEC 62304 5.8
+  max_claims: 6
+- id: verification_gaps
+  title: Verification coverage gaps
+  mode: deterministic
+  query: verification_gaps
+  render: table
+  columns:
+    rule: Rule
+    artifact_id: Artifact
+    revision: Rev
+    message: Finding
+    action: Recommended action
+- id: release_conclusion
+  title: Conclusion and release readiness
+  mode: ai
+  query: release_readiness_facts
+  prompt: sstr.conclusion@1
+  output_schema: claims.v1
+  allowed_kinds:
+  - suggested
+  rules:
+  - no_unknown_ids
+  - numbers_match_facts
+  max_claims: 6
+- id: evidence_index
+  title: Evidence index
+  mode: deterministic
+  query: evidence_index
+  render: table
+  columns:
+    id: Artifact
+    revision: Rev
+    hash: Content hash
+- id: approvals
+  title: Approvals
+  mode: human

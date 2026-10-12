@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M4 (done) · Last updated: 2026-10-12 IST
+Current milestone: M5 (in progress) · Last updated: 2026-10-12 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -10,8 +10,8 @@ Current milestone: M4 (done) · Last updated: 2026-10-12 IST
 | M3 | done | m3-done | eb0f00c | 16 exact gaps; RTM golden verified |
 | M4 | done | m4-done | see tag | 12-section SSTR and exact deterministic golden |
 ## Now / Next
-- Working on: M4 checkpoint, including R-014/R-015 follow-ups.
-- Next: M5 DOCX tracked changes, docs PRs and readiness gate.
+- Working on: R-019/R-020 fixes before resuming M5; M5 PR/readiness and DOCX implementation is not yet checkpointed.
+- Next: complete R-021–R-023 with R-016/R-017, then finish M5 acceptance.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -79,3 +79,13 @@ Current milestone: M4 (done) · Last updated: 2026-10-12 IST
 
 ### M4 pending live verification
 - Owner-run `dhf generate-section sstr purpose_scope --provider anthropic` and `--provider openai`: inspect source support, labels and provider parity. Both are guarded by the ledger/cache; no paid calls were made during build tests.
+
+### Live-review fixes R-019/R-020
+- `pytest tests/test_llm.py tests/test_generate.py -q` → `22 passed in 4.12s`.
+- Provider schemas have no minimum/maximum/exclusive bound keywords; local Pydantic rejects confidence outside 0–1.
+- Parameterized refusal/max_tokens/unparseable/provider_error tests preserve all 12 sections and the manifest, record ai_unavailable/category, block readiness and make exactly one failed attempt.
+- Single live `dhf generate-section sstr residual_anomalies --provider anthropic --db out/m4.sqlite` → `0 validated claims; $0.002416 → out/cross-provider/sstr-residual_anomalies-anthropic.json`.
+- Output status: `ai_unavailable`; reason `refusal`; `stop_details.category: bio`. The request passed schema validation, but drafting remains manual. No further refusal retries.
+- The displayed failed-call cost is a retained worst-case reservation, not an actual provider invoice. Prior reviewer live checks were merged into `out/ledger.json` (actual Anthropic $0.0128976, OpenAI $0.000328 before this retry).
+
+- Full review-fix regression: `uv run pytest` → `41 passed in 32.44s`; ruff check/format clean. M5 remains in progress; its visual and CLI acceptance is still to finish.

@@ -73,3 +73,9 @@ Append-only. Format: `ADR-NNN — Title` · date · status · context · decisio
 - **Context:** Narrative source text can name artifacts outside a query's initial selection. Each prompt must stay bounded without discarding referenced context.
 - **Decision:** Named queries compute facts and expand source-body ID references. Partitioning preserves each artifact's referenced context within the conservative byte budget, failing explicitly on oversized artifacts. Claims pass the same unknown-ID, number, citation and kind rules on every provider. Sections store query fingerprints, cited revisions, rendered text and validation events.
 - **Consequences:** Retrieval timestamps cannot invalidate response caches. Deterministic Markdown has exact golden comparisons. Single-section CLI runs support the owner-run cross-provider check without paying for a complete document.
+
+## ADR-013 — Provider-compatible schemas and manual fallback
+2026-10-12 · Accepted (R-019/R-020)
+- **Context:** The live check found unsupported numeric bounds in Anthropic's schema and a refusal on residual anomalies.
+- **Decision:** Strip numeric-bound keywords recursively from the provider schema, retaining Pydantic's local bounds. Refusal, truncation, malformed output, provider failure or exhausted drafting budget yields an ai_unavailable section with a manual-authoring placeholder, safe reason metadata and no automatic retry. The document and manifest still persist; the readiness gate blocks the section.
+- **Consequences:** A refused section cannot become a completed draft. The single live residual-anomaly recheck still refused with category bio, so its placeholder is retained. Failed calls retain conservative ledger reservations. SDK failure metadata excludes provider messages and payloads.

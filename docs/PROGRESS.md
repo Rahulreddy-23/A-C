@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M13 (implemented; browser visual verification pending) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current work: owner-requested explorer redesign (implemented; browser visual verification pending) · M0–M16 offline implementation complete · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -18,9 +18,12 @@ Current milestone: M13 (implemented; browser visual verification pending) · Dev
 | M11 | done | m11-done | 279debf | Native synthetic seeder, read-only discovery and onboarding |
 | M12 | done | m12-done | cbf0a85 implementation | Advisory support, effort assumptions and R-046/R-047 |
 | M13 | implemented; visual check pending | m13-done | checkpoint tag | Offline explorer, audit/demo inclusion; browser policy limitation recorded |
+| M14 | done | m14-done | 275c62c | Verified offline rehearsal and frozen demo pack |
+| M15 | done | m15-done | 5a88eb9 | Day-1 kit and sandbox guardrails; tenant validation pending |
+| M16 | done offline | m16-done | a4963c4 | Copilot HTTP/folder transport and credit guard; tenant execution pending |
 ## Now / Next
-- Working on: M13 offline explorer implemented and automated acceptance checked.
-- Next: M14 demo pack, then M15 day-1 kit. Real tenant execution remains optional/pending credentials.
+- Working on: completed explorer redesign with focused relationships, trace context and full artifact index.
+- Next: owner visual check of the generated explorer; R-054 remains required before the first tenant run. Real tenant execution remains pending.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -262,3 +265,12 @@ Current milestone: M13 (implemented; browser visual verification pending) · Dev
 - After that safeguard, the final complete offline suite passed again: `110 passed in 116.83s`; ruff check and format remain green. The command did not contact BD or any paid model.
 - **Deviations:** the brief specified a 400-credit cumulative cap but no whole-demo run cap; 250 credits was chosen so the conservative 142-credit baseline estimate does not preempt SDD while still leaving 150 credits of cumulative headroom. The generic tenant flow handles `claims.v1` drafting only; `support.v1` is not sent to a claims-only flow.
 - **Pending live verification / known issues:** BD sandbox DLP permissions, prompt model identity, fixed JSON and actual token fields, credit Monitor usage, OneDrive sync/trigger deduplication, agent/Teams status-link beat and screenshot are all untested. `support.v1` advisory verification is explicitly skipped for the tenant provider until an approved flow/schema is built; the official M16 demo may state that check is pending. The R-051 graph's final projector/browser visual check remains with the owner. No real ADO or BD tenant capability is claimed from offline tests.
+
+### Explorer redesign — owner follow-up after M16
+- Replaced the fixed nine-lane SVG layout with a focused incoming/outgoing relationship map, selected-artifact card, five groups of trace context, searchable sidebar, complete evidence table and a compact source inspector. Every mapped relationship retains its recorded direction and type. Group placement explicitly does not assert a link. Gap/latest/stale states have text badges; long Git revisions display compactly with complete provenance available. The page remains one offline HTML file with inert base64 evidence, safe source anchors and no added dependency.
+- `.venv/bin/pytest -q` → `110 passed in 118.00s`; ruff check → `All checks passed!`; format → `188 files already formatted`. After the final direction/provenance polish, `.venv/bin/pytest -q tests/test_explorer.py` → `3 passed in 2.26s`.
+- `node tools/check_explorer.cjs data/demo/fallback/explorer-baseline.html` → 248 artifacts / 413 confirmed links, 10-artifact SRS-021 context, 6 direct links, 27.15 ms DOM build; search, all 248 index rows, component selection, G06, latest results, empty/reset states and source inspector pass. The stale and regenerated fallbacks pass the same contract with 251 artifacts / 416 links, 11-artifact context and 7 direct links (28.44 / 36.36 ms). These timings measure the dependency-free DOM contract, **not browser layout/paint**.
+- `./scripts/demo.sh` → exit 0, fresh offline mock run `out/demo/1021e08b96`; baseline 248/413, change_1 251/416, unknown IDs 0, gaps precision/recall 1.00, audit pack 33 verified files. Refreshed the three saved explorer snapshots with the final template, rebuilt the audit ZIP and froze the coherent 19-file rehearsal pack. `python tools/check_demo_pack.py` → 51 links, 19 fallback files, 33 audit files, tracked redline pass, tenant execution pending.
+- Preview: `out/ui/explorer.html`; checked-in baseline: `data/demo/fallback/explorer-baseline.html`. Open generated HTML rather than `specs/render/explorer.html`, which is a template.
+- **Deviation:** the owner requested a complete layout redesign. The full graph is indexed in the page; direct confirmed relationships are mapped around one selected artifact instead of drawing all edges simultaneously. This preserves evidence and traversal while avoiding crossings. See ADR-036.
+- **Known issue / pending verification:** the browser tool rejects local file URLs and explicitly forbids bypassing that restriction. Actual laptop/projector visual inspection and the under-two-second browser paint check remain with the owner. No paid API or tenant calls were made.

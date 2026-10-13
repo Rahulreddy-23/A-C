@@ -32,7 +32,7 @@ Capture a **real tenant** screenshot of the Copilot Studio agent test pane showi
 
 Say: “Every line starts in recorded evidence. This fixture has 248 artifacts and 413 confirmed links. Requirements, units, code changes and tests have stable IDs and revisions; missing links stay visible.”
 
-Show `explorer-baseline.html` in the active run folder. Search SRS-021, select its recorded test/component/control neighbors, and open a source revision. Filter G06 to show RC-12's deliberately missing realization; G07 to show SRS-012's missing verification. These are gaps, not AI-made trace links. Show the RTM revision and unit columns.
+Show `explorer-baseline.html` in the active run folder. Search SRS-021, select its recorded test/component/control neighbors in the relationship map or grouped trace context, and open a source revision. Use All evidence to browse the complete artifact index. Filter G06 to show RC-12's deliberately missing realization; G07 to show SRS-012's missing verification. These are gaps, not AI-made trace links. Show the RTM revision and unit columns.
 
 Exact commands if using the completed rehearsal:
 

@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M12 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current milestone: M13 (implemented; browser visual verification pending) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -17,9 +17,10 @@ Current milestone: M12 (done) · Development resumed by owner · Last updated: 2
 | M10 | done | m10-done | ecac18b | Evaluation, clause appendix, YAML extensions, audit export and offline demo |
 | M11 | done | m11-done | 279debf | Native synthetic seeder, read-only discovery and onboarding |
 | M12 | done | m12-done | cbf0a85 implementation | Advisory support, effort assumptions and R-046/R-047 |
+| M13 | implemented; visual check pending | m13-done | checkpoint tag | Offline explorer, audit/demo inclusion; browser policy limitation recorded |
 ## Now / Next
-- Working on: M12 governance/telemetry and R-047 seeder safeguards complete.
-- Next: M13 explorer, then M14 demo pack and M15 day-1 kit in order. Real tenant execution remains optional/pending credentials.
+- Working on: M13 offline explorer implemented and automated acceptance checked.
+- Next: M14 demo pack, then M15 day-1 kit. Real tenant execution remains optional/pending credentials.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -220,3 +221,12 @@ Current milestone: M12 (done) · Development resumed by owner · Last updated: 2
 - `python tools/check_port.py` → 7 flows, 22 rules, 47 queries, 22 prompt tools, reference_contracts pass, tenant_parity pending.
 - Final complete offline suite: `uv run pytest -q` → `82 passed in 105.36s`; ruff check → `All checks passed!`, format → `156 files already formatted`.
 - Review-resolution checkpoint suite → `82 passed in 109.77s`; ruff check/format remain green. R-046/R-047 marked `Resolved in cbf0a85`.
+
+
+### M13 — Offline traceability explorer
+- `dhf explore --db out/m12.sqlite --documents out/m12-docs --output out/m13/explorer.html` → `Explorer: 248 artifacts → out/m13/explorer.html; offline HTML`. Every node retains its source URL/revision. Search, G/C/F filters, current-result state and directed neighbor navigation are inline SVG/JS, without resource downloads or connections; inert data and connect-src none are enforced.
+- `pytest tests/test_explorer.py tests/test_evaluation.py -q` → `6 passed in 5.10s`; all-node provenance, G/C/F flags, 40 latest results, zero external URL literals/fetches, hostile source markup remaining inert, stale section causes and audit checksum integration checked.
+- `node tools/check_explorer.cjs out/m13/explorer.html` → 248 nodes, 413 links, DOM contract build 33.562 ms; search/G06/latest/inspector pass. This measures JS DOM construction in a dependency-free test harness, **not browser layout or paint**.
+- `./scripts/demo.sh` → exit 0, run `out/demo/2ade52ff5c`; pre-regeneration explorer has 251 artifacts/416 links, 40 directly stale sections, exact causes PR-8/RES-3-021/RUN-3/SRS-021/UNIT-sensor_pressure, all G/C/F families. Post-regeneration explorer is exported separately. `dhf audit-pack` → 33 verified files including trace/explorer.html. Metrics/goldens/regeneration remain exact. No paid calls.
+- Browser visual/laptop and true paint-time acceptance are pending: computer-use tool rejected file:// by protocol policy. No workaround attempted; owner requested to open the local artifact. DOM performance is not substituted for that unperformed check. Skill launcher was unavailable; source-derived PRODUCT/DESIGN context and inline review record this limitation.
+- Complete suite before checkpoint: `84 passed in 110.75s`; ruff → `All checks passed!`, `160 files already formatted`. No skips/xfails. The m13-done tag records the implementation and automated checks; visual acceptance remains explicitly pending.

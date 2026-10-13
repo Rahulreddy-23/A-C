@@ -66,6 +66,9 @@ def audit_payload(
     for i, graph in enumerate(snapshots, 1):
         add(f"evidence/snapshot-{i}.json", json.dumps(graph, indent=2))
     current = snapshots[-1]
+    from dhf.render.explorer import create_explorer
+
+    add("trace/explorer.html", create_explorer(current, documents))
     add("trace/rtm.json", json.dumps(rtm(current, release), indent=2))
     add(
         "trace/gaps.json",

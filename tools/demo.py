@@ -173,6 +173,17 @@ def run_demo() -> dict:
 
         _, own_reports = document_impacts(str(db), str(docs))
         saved.write_text(json.dumps(own_reports, indent=2))
+        command(
+            [
+                "explore",
+                "--db",
+                str(db),
+                "--documents",
+                str(docs),
+                "--output",
+                str(root / "explorer-stale.html"),
+            ]
+        )
         command(["regenerate", "--stale", "--open-pr", "--db", str(db), "--documents", str(docs)])
         sstr = json.loads((docs / "sstr.manifest.json").read_text())
         command(
@@ -223,7 +234,20 @@ def run_demo() -> dict:
                 str(root / "audit-pack.zip"),
             ]
         )
+        command(
+            [
+                "explore",
+                "--db",
+                str(db),
+                "--documents",
+                str(docs),
+                "--output",
+                str(root / "explorer.html"),
+            ]
+        )
         result = {
+            "explorer": str(root / "explorer.html"),
+            "explorer_stale": str(root / "explorer-stale.html"),
             "root": str(root),
             "documents": str(docs),
             "db": str(db),

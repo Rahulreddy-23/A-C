@@ -202,3 +202,6 @@ uv run dhf verify-support --doc sstr --sample 5 --provider openai
 ```
 
 `--sample 0` checks every sourced/inferred claim in the selected document; suggestions are not asserted source facts and are excluded. Supported/partial/unsupported findings stay in the manifest and produce advisory Word comments; no original claim is removed and readiness is unchanged. Mock support uses lexical comparison, not semantic proof. `specs/metrics/manual_effort.yaml` supplies explicit draft-authoring assumptions, with human review excluded from estimated savings. Metrics show section counts, generation/verifier time and cost, support rate and assumption-based hours saved.
+
+
+`uv run dhf explore` writes `out/explorer.html`: one offline evidence map, search, G/C/F filters, current-result markers, stale-section causes and source revisions. Use `--db`, `--documents`, `--output` for a separate run, or `--impact-file` to inspect a saved pre-regeneration impact. Source links navigate only on an explicit click; the file loads no external resources. Audit ZIPs include `trace/explorer.html`.

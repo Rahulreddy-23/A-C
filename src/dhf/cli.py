@@ -664,3 +664,32 @@ def verify_support_command(
             f"{id}: {report['counts']}; support rate={report['support_rate']}; advisory only"
         )
     report_budget(llm)
+
+
+@app.command("explore")
+def explore_command(
+    db: str = "out/evidence.sqlite",
+    documents: str = "out/documents",
+    output: str = "out/explorer.html",
+    impact_file: str | None = None,
+) -> None:
+    """Write one offline HTML explorer with provenance, G/C/F gaps and stale sections."""
+    import json
+    from pathlib import Path
+
+    from dhf.graph import Store
+    from dhf.render.explorer import create_explorer
+
+    store = Store(Path(db))
+    try:
+        graph = store.graph()
+    finally:
+        store.close()
+    if not graph["artifacts"]:
+        raise typer.BadParameter("Ingest evidence before exploring")
+    manifests = [json.loads(p.read_text()) for p in sorted(Path(documents).glob("*.manifest.json"))]
+    reports = json.loads(Path(impact_file).read_text()) if impact_file else None
+    target = Path(output)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(create_explorer(graph, manifests, reports))
+    typer.echo(f"Explorer: {len(graph['artifacts'])} artifacts → {target}; offline HTML")

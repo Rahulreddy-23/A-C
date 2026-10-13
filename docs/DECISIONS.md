@@ -175,3 +175,8 @@ R-046 collaborator closure is limited to component-design/runtime narratives and
 2026-10-13 · Accepted (R-047)
 
 Default seeding uses native work-item timestamps and ordered run/result completion times, then plants the post-pass SRS-030 revision. Historical readonly dates are opt-in with --bypass-rules and the corresponding permission; the mock rejects them otherwise. Inventory refusal covers foreign items, repos and runs before writes; an explicit --allow-nonempty override requires a reviewed sandbox. This supersedes ADR-029's historical-date caveat, not its separate tooling authority. Real tenant execution remains pending.
+
+## ADR-032 — Offline explorer and explicit source navigation
+2026-10-13 · Accepted (M13)
+
+Build a single inline SVG/JS page from a JSON-only graph/findings/impact payload. Base64 holds untrusted source text inert, including URLs; no external URL literals or resource fetch exists in the generated HTML. Source URLs become anchors only through safe DOM property assignment, opened by a user click. CSP blocks network connections. Filters retain G/C/F rule identities and direct stale cause records, not inferred trace edges. Latest results are explicitly marked; all source nodes remain present. Audit exports rebuild this view from the same current snapshots and manifests. Browser local-file inspection was rejected by the tool's protocol policy; do not bypass it. Automated DOM-contract performance is distinct from layout/paint; owner visual confirmation is requested. Skill context launcher was unavailable; supplied BRIEF governs direction, and the sole-engineer rule keeps review inline.

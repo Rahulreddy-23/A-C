@@ -1,0 +1,1 @@
+{"schemaVersion":1,"source":"specs/render/explorer.html","mode":"operate","focus":{"outline":"3px solid #006b65","offset":"3px"},"layout":{"sidebar":"300px","mobileBreakpoint":"760px"},"verification":{"browserPaint":"pending","reason":"Browser local-file URL policy"}}

@@ -1,0 +1,49 @@
+table,display_name,logical_name,type,required,alternate_key,notes
+Artifact,Organization,dhf_organization,Text,yes,yes,ADO organization or synthetic source namespace
+Artifact,Source system,dhf_sourcesystem,Text,yes,yes,ado/git/file/derived
+Artifact,Canonical ID,dhf_canonicalid,Text,yes,yes,Opaque stable ID
+Artifact,Revision,dhf_revision,Text,yes,yes,Native revision or pinned commit
+Artifact,Content hash,dhf_contenthash,Text,yes,yes,SHA256 of body and attributes
+Artifact,Artifact type,dhf_type,Text,yes,no,Canonical evidence type
+Artifact,Title,dhf_title,Text,yes,no,Human-readable source title
+Artifact,Body,dhf_body,Multiline Text,yes,no,Immutable source body
+Artifact,Attributes JSON,dhf_attributesjson,Multiline Text,yes,no,Canonical JSON
+Artifact,Source URL,dhf_sourceurl,URL,yes,no,Source record URL
+Artifact,Native ID,dhf_nativeid,Text,yes,no,Native work item or Git identity
+Artifact,Retrieved UTC,dhf_retrievedat,Date and Time,yes,no,Source retrieval time
+Artifact,Synthetic,dhf_synthetic,Yes/No,yes,no,Required external-model guard
+TraceLink,Snapshot number,dhf_snapshotnumber,Whole Number,yes,yes,Completed snapshot identifier
+TraceLink,Source canonical ID,dhf_srccanonicalid,Text,yes,yes,Confirmed endpoint
+TraceLink,Destination canonical ID,dhf_dstcanonicalid,Text,yes,yes,Confirmed endpoint
+TraceLink,Link type,dhf_type,Text,yes,yes,Canonical directed type
+TraceLink,Origin,dhf_origin,Text,yes,yes,explicit/human_confirmed/ai_inferred
+TraceLink,Evidence,dhf_evidence,Text,yes,no,Native relation or extraction basis
+TraceLink,Confidence,dhf_confidence,Decimal Number,no,no,Required only for inferred links
+DocumentSection,Run ID,dhf_runid,Text,yes,yes,GenerationRun request ID
+DocumentSection,Section ID,dhf_sectionid,Text,yes,yes,Stable spec section ID
+DocumentSection,Document ID,dhf_docid,Text,yes,no,sstr/sad/etc
+DocumentSection,Ordinal,dhf_ordinal,Whole Number,yes,no,Deterministic order
+DocumentSection,Mode,dhf_mode,Text,yes,no,deterministic/ai/human
+DocumentSection,Entity,dhf_entity,Text,no,no,Component or unit expansion ID
+DocumentSection,Facts JSON,dhf_factsjson,Multiline Text,yes,no,Computed input facts
+DocumentSection,Claims JSON,dhf_claimsjson,Multiline Text,no,no,Only accepted typed claims
+DocumentSection,Cited revisions JSON,dhf_citedrevisionsjson,Multiline Text,yes,no,Artifact ID revision pairs
+DocumentSection,Status,dhf_status,Text,yes,no,ok/ai_unavailable/stale
+DocumentSection,Validation JSON,dhf_validationjson,Multiline Text,yes,no,Rejected/downgraded/coerced events
+DocumentSection,Markdown file,dhf_markdownfile,Text,yes,no,Governed SharePoint file path
+DocumentSection,Markdown SHA256,dhf_markdownsha256,Text,yes,no,Hash computed by approved boundary
+GenerationRun,Request ID,dhf_requestid,Text,yes,yes,Idempotency key
+GenerationRun,Requested by,dhf_requestedby,Text,yes,no,Named reviewer identity
+GenerationRun,Document ID,dhf_docid,Text,yes,no,Target document
+GenerationRun,Release,dhf_release,Text,yes,no,Provided release string
+GenerationRun,Source snapshot,dhf_sourcesnapshot,Whole Number,yes,no,Complete source snapshot
+GenerationRun,Template ID,dhf_templateid,Text,yes,no,Versioned spec ID
+GenerationRun,Template SHA256,dhf_templatesha256,Text,yes,no,Content hash
+GenerationRun,Provider,dhf_provider,Text,yes,no,Approved tenant provider
+GenerationRun,Model,dhf_model,Text,no,no,Tenant-reported GPT model
+GenerationRun,State,dhf_state,Text,yes,no,queued/running/draft/failed
+GenerationRun,Started UTC,dhf_startedat,Date and Time,no,no,Measured start
+GenerationRun,Finished UTC,dhf_finishedat,Date and Time,no,no,Measured finish
+GenerationRun,Prompt credits,dhf_promptcredits,Decimal Number,no,no,Estimated tenant credits
+GenerationRun,Manifest file,dhf_manifestfile,Text,no,no,Governed SharePoint path
+GenerationRun,PR URL,dhf_prurl,URL,no,no,Docs-only draft PR

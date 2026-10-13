@@ -702,3 +702,30 @@ def explore_command(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(create_explorer(graph, manifests, reports, baselines))
     typer.echo(f"Explorer: {len(graph['artifacts'])} artifacts → {target}; offline HTML")
+
+
+@app.command("export-snapshot")
+def export_snapshot_command(
+    db: str = "out/evidence.sqlite", output_dir: str = "out/snapshot-export"
+) -> None:
+    """Write a local canonical JSON/CSV evidence package for reviewed import."""
+    from pathlib import Path
+
+    from dhf.graph import Store
+    from dhf.graph.export import snapshot_files
+
+    store = Store(Path(db))
+    try:
+        graph = store.graph()
+    finally:
+        store.close()
+    if not graph["artifacts"]:
+        raise typer.BadParameter("Ingest evidence before exporting")
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    for name, content in snapshot_files(graph).items():
+        (target / name).write_text(content)
+    typer.echo(
+        f"Snapshot export: {len(graph['artifacts'])} artifacts, {len(graph['links'])} links"
+        f" → {target}; review before upload"
+    )

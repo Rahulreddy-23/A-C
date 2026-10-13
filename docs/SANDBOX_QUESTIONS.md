@@ -1,5 +1,48 @@
 # Copilot Studio Sandbox: Questions to Answer
 
+## What we know (2026-10-13)
+
+Sources: the BD Citizen Developer onboarding deck (July 2026) and the Citizen Development emails of 2026-09-04 and later, supplied by the owner.
+
+**Where to build**
+- **Environment:** the **"Copilot Studio Citizen Development Sandbox"**, never "BD (Default)". It's a shared environment with the BD Power Platform DLP policy active.
+- **Stage:** the "Experiment stage", which means **base access** and *"some restricted connectors"*. Enhanced premium-connector access belongs to the Prototype stage (the Digital Incubation environment, via a Digital Innovation Request).
+- **How to create the agent:** use the **original Copilot Studio experience → Agent**. In the new experience, choose *Other ways to build → Agent, Standard*. **Never** use "Agent (GitHub Copilot)" or "Workflow (GitHub Copilot)"; they consume up to 100× the credits.
+- **Agent description is mandatory.** It must state the business problem, target audience, expected business value and key data sources.
+
+**Models**
+- **GPT models only.** Anthropic models were removed from the sandbox on 2026-09-11. The deck's July "Claude Sonnet approved" line is superseded.
+
+**Credits**
+- **Limit:** **600 billable Copilot credits per agent per month**. Watch the Monitor tab.
+- **Microsoft rates** (learn.microsoft.com, updated 2026-10-01):
+  - generative answer: 2 credits
+  - agent action: 5 credits
+  - agent flow actions: 13 credits per 100 actions
+  - prompt tools: **basic 0.1 credits per 1K tokens**, standard 1.5 per 1K, premium/reasoning 10 per 1K
+- **Power Automate cloud flows are billed through Power Automate licensing, not Copilot credits.**
+
+**Data and sharing**
+- **Data:** no sensitive, regulated or production data, which matches our synthetic Kestrel approach.
+- **Sharing:** with **at most 5 named individuals** (no groups), through the Teams channel after publishing. Unpublished changes only show in the test chat.
+
+**Licence and training**
+- **Licence:** 3-month Citizen Developer access to Copilot Studio, Power Apps Premium and Power Automate Premium.
+- **Training:** a 2-hour "BD Copilot Studio Hackathon Training" exists on MS Learn.
+
+## Still to confirm (the decisive ones are marked ★)
+
+- ★ **2.1/2.5** Is the **Azure DevOps connector** allowed by the sandbox DLP? Which ADO org/project can it sign in to?
+- ★ **1.2** Can you **create Dataverse tables** in the sandbox?
+- ★ **New:** can a **Power Automate cloud flow** use the AI Builder **"Run a prompt"** action, and be triggered from the agent (or from a Dataverse/SharePoint row the agent creates)?
+- ★ **New (M16 adapter):** can a cloud flow use the **"When an HTTP request is received"** trigger (premium) under the sandbox DLP? If not, is the **OneDrive for Business** connector allowed, and is the OneDrive sync client on your laptop (the folder-exchange fallback)?
+- **3.2** Which GPT models does the Prompt builder list, and is each labelled Basic, Standard or Premium?
+- **4.1** Is the real hackathon dataset cleared as non-sensitive, so it may go into the sandbox?
+- **1.3** Is there a SharePoint site with a document library you can write to?
+
+---
+
+
 Fill this in from the company sandbox, or forward it to the sandbox or Power Platform admin. The answers pick the build tier in `port/copilot_studio/BUILD_PLAN.md` (Tier A, B or C).
 
 **Where to look**

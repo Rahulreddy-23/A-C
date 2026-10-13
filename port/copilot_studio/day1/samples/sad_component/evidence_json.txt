@@ -1,0 +1,96 @@
+[
+  {
+    "id": "COMP-03",
+    "type": "component",
+    "title": "Sensor Monitoring",
+    "body": "Sensor Monitoring validates finite ordered pressure samples, applies the configured threshold and dwell interval, and retains an occlusion latch until safe acknowledgement. Air monitoring treats invalid or missing samples as faults. Calibration rejects invalid gain before activation. Pressure decisions request a critical alarm through Alarm Manager.",
+    "source": {
+      "system": "git",
+      "url": "fixture://kestrel-device-sw?path=/architecture.yaml",
+      "native_id": "COMP-03",
+      "revision": "9ae26fe41785b935881f710fc8f8845139fdd38c3eac7a41f5d07f270e865065",
+      "retrieved_at": "2026-10-13T07:53:35.904698+00:00"
+    },
+    "content_hash": "57f74d9fe4c757b6d1946fa8e80aeac3236165ebad2f53422152ed31c61c9e49",
+    "attributes": {
+      "collaborators": [
+        "COMP-02",
+        "COMP-04"
+      ],
+      "interfaces": [
+        "PressureSample",
+        "PressureDecision",
+        "air sample",
+        "calibration gain"
+      ],
+      "responsibility": "Sample validation and occlusion/air detection",
+      "safety_class": "C",
+      "synthetic": true
+    }
+  },
+  {
+    "id": "UNIT-sensor_pressure",
+    "type": "software_unit",
+    "title": "sensor_pressure",
+    "body": "import math\nfrom dataclasses import dataclass\nfrom enum import StrEnum\n\nfrom kestrel.alarm_latch import latched\n\n\ndef occluded(pressure: float, threshold: float = 80.0) -> bool:\n    if pressure < 0:\n        raise ValueError(\"Invalid pressure\")\n    return pressure > threshold\n\n\nclass PressureState(StrEnum):\n    SAFE = \"safe\"\n    OCCLUDED = \"occluded\"\n    FAULT = \"fault\"\n\n\n@dataclass(frozen=True)\nclass PressureSample:\n    value_kpa: float\n    timestamp_s: float\n\n\n@dataclass(frozen=True)\nclass PressureDecision:\n    state: PressureState\n    stop_output: bool\n    alarm_required: bool\n    reason: str\n\n\nclass PressureMonitor:\n    \"\"\"Validate ordered samples and latch sustained threshold crossings.\n\n    Time is supplied by the bench so boundary trials are deterministic.\n    A missing or non-finite sample inhibits output; it never becomes a safe zero.\n    \"\"\"\n\n    def __init__(self, threshold_kpa: float = 80.0, dwell_s: float = 3.0):\n        if threshold_kpa <= 0 or dwell_s < 0:\n            raise ValueError(\"Invalid pressure limits\")\n        self.threshold_kpa = threshold_kpa\n        self.dwell_s = dwell_s\n        self.last_time = None\n        self.crossing_since = None\n        self.latched = False\n\n    def evaluate(self, sample: PressureSample | None) -> PressureDecision:\n        if sample is None or not math.isfinite(sample.value_kpa):\n            return PressureDecision(PressureState.FAULT, True, True, \"Missing or invalid sample\")\n        if sample.value_kpa < 0 or not math.isfinite(sample.timestamp_s):\n            return PressureDecision(\n                PressureState.FAULT, True, True, \"Invalid measured value or time\"\n            )\n        if self.last_time is not None and sample.timestamp_s < self.last_time:\n            return PressureDecision(PressureState.FAULT, True, True, \"Decreasing sample timestamp\")\n        self.last_time = sample.timestamp_s\n        if occluded(sample.value_kpa, self.threshold_kpa):\n            if self.crossing_since is None:\n                self.crossing_since = sample.timestamp_s\n            if sample.timestamp_s - self.crossing_since >= self.dwell_s:\n                self.latched = True\n        else:\n            self.crossing_since = None\n        if self.latched:\n            return PressureDecision(PressureState.OCCLUDED, True, True, \"Sustained occlusion latch\")\n        return PressureDecision(PressureState.SAFE, False, False, \"Valid sample below dwell limit\")\n\n    def acknowledge(self, sample: PressureSample) -> bool:\n        if not math.isfinite(sample.value_kpa) or sample.value_kpa < 0:\n            return False\n        if occluded(sample.value_kpa, self.threshold_kpa):\n            return False\n        self.latched = False\n        self.crossing_since = None\n        return True\n\n\ndef pressure_alarm(decision: PressureDecision, active: bool, acknowledged: bool) -> bool:\n    \"\"\"Route a validated pressure decision through the shared alarm latch.\"\"\"\n    return latched(active, acknowledged, decision.alarm_required)",
+    "source": {
+      "system": "git",
+      "url": "fixture://kestrel-device-sw?path=/kestrel/sensor_pressure.py&version=GBmain",
+      "native_id": "kestrel/sensor_pressure.py",
+      "revision": "f3e587f21db82313ea3073513f64770aab778ed9",
+      "retrieved_at": "2026-10-13T07:53:35.904698+00:00"
+    },
+    "content_hash": "eeb9ce829ecdbb6055be3d35fc5e55921a8c1af15870c2c50d38658d82c8bdd8",
+    "attributes": {
+      "synthetic": true,
+      "component": "COMP-03",
+      "path": "kestrel/sensor_pressure.py",
+      "signatures": [
+        "def occluded(pressure: float, threshold: float=80.0) -> bool",
+        "def pressure_alarm(decision: PressureDecision, active: bool, acknowledged: bool) -> bool",
+        "def __init__(self, threshold_kpa: float=80.0, dwell_s: float=3.0)",
+        "def evaluate(self, sample: PressureSample | None) -> PressureDecision",
+        "def acknowledge(self, sample: PressureSample) -> bool"
+      ],
+      "import_calls": [
+        "kestrel.alarm_latch.latched"
+      ],
+      "data_structures": [
+        {
+          "name": "PressureState",
+          "bases": [
+            "StrEnum"
+          ],
+          "fields": [
+            "SAFE = 'safe'",
+            "OCCLUDED = 'occluded'",
+            "FAULT = 'fault'"
+          ]
+        },
+        {
+          "name": "PressureSample",
+          "bases": [],
+          "fields": [
+            "value_kpa: float",
+            "timestamp_s: float"
+          ]
+        },
+        {
+          "name": "PressureDecision",
+          "bases": [],
+          "fields": [
+            "state: PressureState",
+            "stop_output: bool",
+            "alarm_required: bool",
+            "reason: str"
+          ]
+        },
+        {
+          "name": "PressureMonitor",
+          "bases": [],
+          "fields": []
+        }
+      ]
+    }
+  }
+]

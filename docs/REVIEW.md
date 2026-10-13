@@ -32,45 +32,11 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 - The analytical tier was routed correctly (sFMEA, DRR and SSTR conclusion on `gpt-5.4-mini`), and model and tier are recorded per section.
 - The live samples were judged review-ready drafts. The owner has the outputs as Word files.
 
-### Live claim-support check on real prose (owner-approved; SSTR, SAD and SDD regenerated live at cbf0a85, then `verify-support`; $0.16; OpenAI ledger $0.63 of $4.00)
-
-- **Support rates:**
   - SSTR 5 supported / 1 partial / 1 unavailable (83%)
   - SAD 34 / 1 / 7 (97%)
   - SDD sample of 40: 36 supported / 1 partial / **1 unsupported** / 2 unavailable (95%)
 - **A genuine catch, worth showing in the demo:** `sdd/errors.UNIT-alarm_latch` claimed explicit invalid-input rejection, but the verifier found that "the provided code in UNIT-alarm_latch does not show handling of invalid input". The model had carried the requirement's wording into the code description.
 - R-046 helped: SAD generation rejections dropped from 6 to 2.
-
-**R-048 [non-blocking, before M14 demo pack] M12 — 11% of support checks are silently "unavailable", and the rate hides them** (`src/dhf/generate/support.py:92-104`, metrics/CLI)
-- 10 of 89 checks came back `unavailable`. The reason recorded is `type(error).__name__`, which is always "ValueError", so the real cause is lost.
-  - The reviewer patched a scratch copy to record `str(error)`. All 7 SAD failures were `invalid_verification_rationale`: the verdict's *rationale* text goes through `validate_claims`, and it fails when the explanation mentions an ID or number that isn't in the pack. A valid supported/partial/unsupported verdict is then thrown away.
-- The support rate excludes unavailable checks from the denominator. The SAD's "97%" really covers only 35 of 42 claims.
-- **Expected fix:**
-  - (a) Record the specific reason string.
-  - (b) Keep the verdict when only the rationale fails validation. Store the rationale flagged `rationale_unverified`, or strip the offending tokens, and count it separately.
-  - (c) The CLI and `out/metrics.md` report **coverage**, `verified / eligible`, next to the support rate, with the denominator stated explicitly.
-  - (d) Add one retry for the rationale with the allowed IDs listed, inside the ledger cap.
-
-Resolved in 8233c49: exact unavailable reasons, one ledger-protected rationale repair, retained flagged verdicts and explicit support/coverage denominators. Invalid rationale is stored as unverified audit data but never reaches Word; safe warning comments remain. Offline regression covers repeated invalid rationale and missing revisions.
-
-**R-049 [non-blocking, before the M14 demo pack — demo impact] M13 — Explorer usability in a real browser (reviewer visual check at 1440×900 in the built-in browser)**
-- **What works:**
-  - The page renders cleanly, with lanes for need → system → SRS → component/unit → change → test → …
-  - The legend shows gap finding, stale-section cause and latest result.
-  - The inspector shows type, revision, source, gap rules and stale cause, plus clickable recorded links.
-  - Search works ("occlusion" gives 7 chips: SRS-021, HAZ-04, RC-04, TC-021, PR-8, RUN-3, BUG-02).
-  - The stale filter gives the 5 causes.
-  - It works fully offline.
-- **(a) Filtered views don't compact.** After a search or filter, matching nodes keep their full-layout positions. The panel looks empty (PR-8 floating mid-panel, other matches off-screen) and a judge will read it as broken. Re-lay out the lanes to show only matches and their direct neighbours, starting at the top.
-- **(b) There's no "trace chain" focus.** This is the key traceability moment in the demo: click SRS-021 and see *only* its connected chain, compacted lane by lane: need → SYS-007 → SRS-021 → COMP-03/UNIT-sensor_pressure → PR-3/PR-8 → TC-021 → RES-3-021 (Failed) → RC-04 → HAZ-04. Make that the default when a node is selected, with "show all" to go back.
-- **(c) Source links die after the demo.** "Open source · revision 2" points at the demo's ephemeral mock port (`http://127.0.0.1:58602/…`), which stops when the demo exits. Either take a stable base URL for presentations (e.g. `--source-base http://127.0.0.1:8089`, with the demo keeping the mock up), or show the source record (title, body excerpt, revision, retrieved time) inline in the inspector so the walk-through doesn't depend on a live server.
-- **(d) The full view is a dense tangle of edges.** Dim all edges by default and draw them strongly only for the selected node's chain.
-- **(e) Minor:**
-  - The gap-rule dropdown omits the baseline findings C01/C04, which are central to the stale-documentation story; add them as a "baseline" filter.
-  - "Reset filters" may not clear the search text; please check.
-- The reviewer's copy for the owner: `out/review-samples/explorer-stale-m13.html`.
-
-Resolved in c6795b4: compact lane layout and viewport for filtered/focused nodes, actual SRS-021 trace chain on selection, inline source excerpt, subdued non-chain edges, baseline C01/C04 filter, and reset clearing text and focus. Automated graph/DOM regressions pass; the owner-provided screenshot prompted the final inspector and canvas tightening. Browser repaint still requires owner visual confirmation.
 
 **R-050 [non-blocking — include in M15; required before the sandbox build] PM — Adapt BUILD_PLAN and the day-1 kit to BD's sandbox guardrails** (`port/copilot_studio/BUILD_PLAN.md`, `day1/`, `agent.md`, `governance.md`)
 - The owner supplied BD's Citizen Developer guardrails. They're summarised at the top of `docs/SANDBOX_QUESTIONS.md`. Fold them in:
@@ -94,8 +60,73 @@ Resolved in c6795b4: compact lane layout and viewport for filtered/focused nodes
   6. **Sharing and demo channel.** Test pane plus a Teams channel after publishing. At most 5 named individuals, no groups. Re-publish after every change.
 - Keep the honesty rules: nothing claims tenant execution.
 
+**R-051 [non-blocking, polish before the demo] M13 — Explorer details from the reviewer's second visual check (c6795b4)**
+- **Truncated labels.** Text like "UNIT-sensor_pr…" and "RES-3-021 · Fa…" is cut off. Widen lane boxes slightly or wrap to two lines, and add a `title` tooltip with the full ID and outcome.
+- **Stale inspector selection.** When a search or filter hides the selected node, the inspector keeps showing it (SRS-010 stayed selected after searching "occlusion"). Select the first match, or clear the inspector with a hint.
+- **Size for projection.** The focused trace chain is small inside a large canvas. Add a "fit / zoom" control, or scale the focused chain to fill the lane area, so it reads on a projector.
+
+**R-052 [DECIDED 2026-10-13: owner chose option B, the hybrid approved-model adapter; build it as M16, BRIEF §18.1] M14 — The official demo must use BD-approved AI only; the demo pack's AI paths don't meet that** (`docs/DEMO_SCRIPT.md`, `tools/demo.py`, port pack)
+- The problem statement says to *"leverage only BD approved AI tools"*. BD's sandbox rules say GPT models through Copilot Studio.
+- In the demo pack, the offline mode uses the **mock** provider, so every AI-written section in the fallback Word files is structural mock prose that judges will read. `--live` uses the owner's **personal OpenAI API key**, which is fine for development testing but is not a BD-approved tool for the official demo.
+- **Proposed direction (the PM recommends B, with A as the fallback):**
+  - **A — Native MVP only.** Build the BUILD_PLAN slice in the sandbox. Copilot Studio generates 1–2 sections live with an approved GPT model. Everything else is shown from the reference engine and clearly labelled "structural/mock AI".
+  - **B — Approved-model adapter (hybrid).** Add a `copilotstudio` provider to the dhf LLM layer:
+    - It sends each section's prompt, the facts JSON and the evidence JSON to a **Power Automate cloud flow in the BD sandbox**. The flow runs AI Builder **"Run a prompt"** with an approved GPT model (Basic tier) and returns claims JSON.
+    - Our tested engine still does ingest, validation, rendering, redlines, impact and the audit pack, but **all AI text comes from BD-approved models in the BD tenant**.
+    - The Copilot Studio agent is the conversational front door (start generation, show gaps and status) and calls the same flows.
+    - Cost: about 120 sections × about 4K tokens × 0.1 credits per 1K ≈ **50 credits per full five-document run**, well inside 600 per month.
+    - It depends on: an HTTP-request trigger, or a request queue (SharePoint list or Dataverse row) if HTTP triggers are DLP-blocked, plus the "Run a prompt" action and a GPT model listed in the prompt builder.
+- **Expected once the owner chooses:**
+  - (1) The adapter, offline-tested against a stub HTTP endpoint, with the same budget, cache and validator path. The `--live` demo then uses `DHF_LIVE_PROVIDER=copilotstudio`.
+  - (2) A flow spec and day-1 kit entry for the prompt-runner flow.
+  - (3) The demo script states which provider produced each AI section and never presents mock prose or personal-API output as the official path.
+  - (4) A **Copilot Studio beat** in the 6:40 script (agent in the test pane or Teams: "Draft the release test report" → status → PR or SharePoint link), with a screenshot fallback.
+
 
 ## Resolved
+
+### M14 (commit c49b24b) — verdict: **approved as a rehearsal pack; R-052 decides the official-demo AI path**
+
+Verified independently:
+- 88 tests pass; ruff is clean.
+- `tools/check_demo_pack.py` passes: fallback index, checksums and tracked redline.
+- `docs/DEMO_SCRIPT.md` is a 6:40 talk track with one beat per criterion (25/25/20/10/10/10), exact commands, a `--pause-before-change` stage mode, and a fallback for every beat with honest wording ("This is the recorded offline rehearsal").
+- `docs/JUDGING_MAP.md` links each criterion to its evidence.
+- `--live` respects the owner's caps and stops rather than retrying on a refusal.
+- **Credit given:** the script attributes the alarm-latch unsupported-claim finding to the reviewer's live run, and labels fallback support metrics as mock lexical checks.
+
+**R-048 [non-blocking, before M14 demo pack] M12 — 11% of support checks are silently "unavailable", and the rate hides them** (`src/dhf/generate/support.py:92-104`, metrics/CLI)
+- 10 of 89 checks came back `unavailable`. The reason recorded is `type(error).__name__`, which is always "ValueError", so the real cause is lost.
+  - The reviewer patched a scratch copy to record `str(error)`. All 7 SAD failures were `invalid_verification_rationale`: the verdict's *rationale* text goes through `validate_claims`, and it fails when the explanation mentions an ID or number that isn't in the pack. A valid supported/partial/unsupported verdict is then thrown away.
+- The support rate excludes unavailable checks from the denominator. The SAD's "97%" really covers only 35 of 42 claims.
+- **Expected fix:**
+  - (a) Record the specific reason string.
+  - (b) Keep the verdict when only the rationale fails validation. Store the rationale flagged `rationale_unverified`, or strip the offending tokens, and count it separately.
+  - (c) The CLI and `out/metrics.md` report **coverage**, `verified / eligible`, next to the support rate, with the denominator stated explicitly.
+  - (d) Add one retry for the rationale with the allowed IDs listed, inside the ledger cap.
+
+Resolved in 8233c49: exact unavailable reasons, one ledger-protected rationale repair, retained flagged verdicts and explicit support/coverage denominators. Invalid rationale is stored as unverified audit data but never reaches Word; safe warning comments remain. Offline regression covers repeated invalid rationale and missing revisions.
+- *Reviewer verified at 8233c49 by code and tests: a single rationale retry with the allowed IDs keeps the verdict, specific reasons are recorded, and coverage (verified/eligible) is reported. A live re-check is planned in the M14 `--live` demo run.*
+
+**R-049 [non-blocking, before the M14 demo pack — demo impact] M13 — Explorer usability in a real browser (reviewer visual check at 1440×900 in the built-in browser)**
+- **What works:**
+  - The page renders cleanly, with lanes for need → system → SRS → component/unit → change → test → …
+  - The legend shows gap finding, stale-section cause and latest result.
+  - The inspector shows type, revision, source, gap rules and stale cause, plus clickable recorded links.
+  - Search works ("occlusion" gives 7 chips: SRS-021, HAZ-04, RC-04, TC-021, PR-8, RUN-3, BUG-02).
+  - The stale filter gives the 5 causes.
+  - It works fully offline.
+- **(a) Filtered views don't compact.** After a search or filter, matching nodes keep their full-layout positions. The panel looks empty (PR-8 floating mid-panel, other matches off-screen) and a judge will read it as broken. Re-lay out the lanes to show only matches and their direct neighbours, starting at the top.
+- **(b) There's no "trace chain" focus.** This is the key traceability moment in the demo: click SRS-021 and see *only* its connected chain, compacted lane by lane: need → SYS-007 → SRS-021 → COMP-03/UNIT-sensor_pressure → PR-3/PR-8 → TC-021 → RES-3-021 (Failed) → RC-04 → HAZ-04. Make that the default when a node is selected, with "show all" to go back.
+- **(c) Source links die after the demo.** "Open source · revision 2" points at the demo's ephemeral mock port (`http://127.0.0.1:58602/…`), which stops when the demo exits. Either take a stable base URL for presentations (e.g. `--source-base http://127.0.0.1:8089`, with the demo keeping the mock up), or show the source record (title, body excerpt, revision, retrieved time) inline in the inspector so the walk-through doesn't depend on a live server.
+- **(d) The full view is a dense tangle of edges.** Dim all edges by default and draw them strongly only for the selected node's chain.
+- **(e) Minor:**
+  - The gap-rule dropdown omits the baseline findings C01/C04, which are central to the stale-documentation story; add them as a "baseline" filter.
+  - "Reset filters" may not clear the search text; please check.
+- The reviewer's copy for the owner: `out/review-samples/explorer-stale-m13.html`.
+
+Resolved in c6795b4: compact lane layout and viewport for filtered/focused nodes, actual SRS-021 trace chain on selection, inline source excerpt, subdued non-chain edges, baseline C01/C04 filter, and reset clearing text and focus. Automated graph/DOM regressions pass; the owner-provided screenshot prompted the final inspector and canvas tightening. Browser repaint still requires owner visual confirmation.
+- *Reviewer verified visually at c6795b4 (1440×900, built-in browser): selecting SRS-021 shows the compact chain UN-001 → SYS-007 → SRS-021 → COMP-03/UNIT-sensor_pressure → PR-3/PR-8 → TC-021 → RES-3-021 (failed) → HAZ-04/RC-04, with stale markers and the revision-2 source text inline ("above 75 kPa"). The inspector lists the document sections each change made stale. Searching "occlusion" compacts to 7 matches plus 18 neighbours. Polish follow-ups are in R-051.*
 
 ### M13 (tag `m13-done`, 2ae290c) — verdict: **approved; usability fixes R-049 before the demo pack**
 

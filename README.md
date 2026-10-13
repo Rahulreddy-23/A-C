@@ -207,6 +207,8 @@ Sections select `model_tier: default|analytical` as YAML data. OpenAI defaults t
 
 For Phase 2 onboarding, run `uv run dhf discover` to inspect native fields/types/tags/links and create a mapping draft, then follow [REAL_DATA_ONBOARDING.md](docs/REAL_DATA_ONBOARDING.md). `uv run seed-ado --confirm-org kestrel-org --dry-run` previews the synthetic seeder. Only the separate seed identity can create source work items, test evidence and source Git history; `dhf` remains read-only outside the docs repo.
 
+If the sandbox has no ADO connector, `uv run dhf export-snapshot --db out/evidence.sqlite --output-dir out/snapshot-export` writes a local canonical graph JSON, Artifact/TraceLink CSV and SHA256 index for a **reviewed synthetic import**. The post-`change_1` graph can be exported the same way for the impact demonstration. This command does not upload or modify ADO. Follow the [M15 day-1 kit](port/copilot_studio/day1/README.md) and [Tier C-prime path](port/copilot_studio/BUILD_PLAN.md#tier-c-prime-no-ado-connector); tenant execution remains pending.
+
 Claim-support review is a second, advisory pass:
 
 ```sh

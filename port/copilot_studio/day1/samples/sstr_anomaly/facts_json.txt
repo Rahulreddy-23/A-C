@@ -1,0 +1,12 @@
+{
+  "recorded_defect_links": [
+    {
+      "result": "RES-2-008",
+      "defect": "BUG-01"
+    }
+  ],
+  "failed_results": [
+    "RES-2-008"
+  ],
+  "source_numbers": []
+}

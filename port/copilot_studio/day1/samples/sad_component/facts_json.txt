@@ -1,0 +1,10 @@
+{
+  "component_id": "COMP-03",
+  "allocated_units": [
+    "UNIT-sensor_pressure"
+  ],
+  "pressure_threshold_kpa": 80,
+  "source_numbers": [
+    80
+  ]
+}

@@ -1,0 +1,45 @@
+[
+  {
+    "id": "RES-2-008",
+    "type": "test_result",
+    "title": "Result for TC-008",
+    "body": "Result for TC-008",
+    "source": {
+      "system": "ado",
+      "url": "fixture://RES-2-008",
+      "native_id": "RES-2-008",
+      "revision": "1",
+      "retrieved_at": "2026-10-13T07:53:35.904698+00:00"
+    },
+    "content_hash": "dd1ea4e0d32dbb46a17781145f3e3956a439abdcfda02009fa5af38c6a34eb00",
+    "attributes": {
+      "synthetic": true,
+      "outcome": "Failed",
+      "release": "1.1",
+      "completed_at": "2026-10-03T10:00:00Z",
+      "test_case": "TC-008",
+      "run": "RUN-2"
+    }
+  },
+  {
+    "id": "BUG-01",
+    "type": "defect",
+    "title": "Air sensor transient not latched",
+    "body": "A transient high air reading is detected but the critical alarm clears without acknowledgement. Unsafe-condition indication can disappear before review. Impact assessment: Operator may miss an air condition; keep synthetic bench delivery inhibited until latch verification passes. Status rationale: Follow-up review required.",
+    "source": {
+      "system": "ado",
+      "url": "fixture://BUG-01",
+      "native_id": "150",
+      "revision": "1",
+      "retrieved_at": "2026-10-13T07:53:35.904698+00:00"
+    },
+    "content_hash": "1103c35ea095e78e9c3cffc3779ec38c5349c120d43014572f8df4cd26cd9696",
+    "attributes": {
+      "synthetic": true,
+      "changed_at": "2026-09-20T12:00:00Z",
+      "state": "Active",
+      "severity": 4,
+      "residual_listed": true
+    }
+  }
+]

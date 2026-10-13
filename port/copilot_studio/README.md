@@ -2,6 +2,8 @@
 
 This is an implementation blueprint and parity fixture pack, not an imported solution or a claim that a tenant deployment was tested. Build in a dedicated development environment using only synthetic evidence first. Capability gates and fallbacks are in [governance](governance.md). No Python reading is needed to follow the flow specs.
 
+For the owner's BD Experiment sandbox, start with the [day-1 kit](day1/README.md): paste-ready two-section prompts, reference-validated sample inputs/outputs, native validator cards, four-table CSV worksheet, and the Tier B click path. [BUILD_PLAN.md](BUILD_PLAN.md) budgets Copilot Credits and includes Tier C-prime when the ADO connector is blocked. The M16 BD-approved model runner is a later adapter milestone; this M15 kit alone does not claim approved tenant prose or tenant execution.
+
 | Reference step | Copilot Studio / Power Automate construct | Input → output | Spec |
 |---|---|---|---|
 | Native ADO normalization | Child flow; Parse JSON, Select, Filter array; Dataverse revision upsert | WIT fields/history/relations → Artifact revisions and links | [Ingest work items](flows/01-ingest-work-items.md) |

@@ -1,51 +1,51 @@
-Synthetic local demo: out/demo/9c927fe7a7; native mock port 64935
-$ dhf ingest --db out/demo/9c927fe7a7/evidence.sqlite
+Synthetic local demo: out/demo/1446d395b6; native mock port 55279
+$ dhf ingest --db out/demo/1446d395b6/evidence.sqlite
 Snapshot 1: 248 artifacts, 413 links
 added: 248 action_item=4, adr=2, code_change=7, component=6, defect=5, hazard=8, review=1, risk_control=12, software_req=35, software_unit=20, soup=5, system_req=15, test_case=40, test_result=80, test_run=2, user_need=6
 changed: 0 
 removed: 0 
 
-$ dhf generate sstr --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --open-pr --provider mock
-sstr: 12 sections → out/demo/9c927fe7a7/documents/sstr.md + manifest
+$ dhf generate sstr --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --open-pr --provider mock
+sstr: 12 sections → out/demo/1446d395b6/documents/sstr.md + manifest
 Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0, 'normalized': 0}
-PR 8: http://127.0.0.1:64935/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/8
+PR 8: http://127.0.0.1:55279/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/8
 Readiness: 9 blockers
 
-$ dhf generate sad --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --open-pr --provider mock
-sad: 28 sections → out/demo/9c927fe7a7/documents/sad.md + manifest
+$ dhf generate sad --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --open-pr --provider mock
+sad: 28 sections → out/demo/1446d395b6/documents/sad.md + manifest
 Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0, 'normalized': 0}
-PR 9: http://127.0.0.1:64935/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/9
+PR 9: http://127.0.0.1:55279/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/9
 Readiness: 1 blockers
 
-$ dhf generate sdd --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --open-pr --provider mock
-sdd: 162 sections → out/demo/9c927fe7a7/documents/sdd.md + manifest
+$ dhf generate sdd --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --open-pr --provider mock
+sdd: 162 sections → out/demo/1446d395b6/documents/sdd.md + manifest
 Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0, 'normalized': 0}
-PR 10: http://127.0.0.1:64935/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/10
+PR 10: http://127.0.0.1:55279/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/10
 Readiness: 0 blockers
 
-$ dhf generate sfmea --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --open-pr --provider mock
-sfmea: 61 sections → out/demo/9c927fe7a7/documents/sfmea.md + manifest
+$ dhf generate sfmea --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --open-pr --provider mock
+sfmea: 61 sections → out/demo/1446d395b6/documents/sfmea.md + manifest
 Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0, 'normalized': 0}
-PR 11: http://127.0.0.1:64935/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/11
+PR 11: http://127.0.0.1:55279/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/11
 Readiness: 151 blockers
 
-$ dhf explore --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --output out/demo/9c927fe7a7/explorer-baseline.html --baseline-file data/synthetic/sad_v1.md
-Explorer: 248 artifacts → out/demo/9c927fe7a7/explorer-baseline.html; offline HTML
+$ dhf explore --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --output out/demo/1446d395b6/explorer-baseline.html --baseline-file data/synthetic/sad_v1.md
+Explorer: 248 artifacts → out/demo/1446d395b6/explorer-baseline.html; offline HTML
 
-$ dhf gaps --db out/demo/9c927fe7a7/evidence.sqlite
+$ dhf gaps --db out/demo/1446d395b6/evidence.sqlite
 21 deterministic gaps → out/gaps.md + out/gaps.json
 
-$ dhf rtm --db out/demo/9c927fe7a7/evidence.sqlite
+$ dhf rtm --db out/demo/1446d395b6/evidence.sqlite
 35 RTM rows → out/rtm.md + out/rtm.json
 
-$ dhf propose --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --provider mock
+$ dhf propose --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --provider mock
 40 proposal checks → out/proposals/proposals.md + JSON
 
-$ dhf generate drr --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --input-file data/synthetic/review_input.json --since 1 --provider mock
-drr: 10 sections → out/demo/9c927fe7a7/documents/drr.md + manifest
+$ dhf generate drr --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --input-file data/synthetic/review_input.json --since 1 --provider mock
+drr: 10 sections → out/demo/1446d395b6/documents/drr.md + manifest
 Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0, 'normalized': 0}
 
-$ dhf consistency --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents
+$ dhf consistency --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents
 2 consistency findings → out/consistency.json
 
 Product-token source write: 403
@@ -54,7 +54,7 @@ Mock owner baseline: sstr-v1
 Mock owner baseline: sad-v2
 Mock owner baseline: sdd-v1
 Mock owner baseline: sfmea-v1
-$ dhf watch --cycles 2 --interval 3 --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents
+$ dhf watch --cycles 2 --interval 3 --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents
 Evidence unchanged
 Changed evidence: 2 changed, 3 added, 0 removed
 sad: 9 stale
@@ -67,18 +67,18 @@ sstr: 9 stale
 sstr: 0 possibly_affected
 Impact → out/impact.md + out/impact.json
 
-$ dhf explore --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --output out/demo/9c927fe7a7/explorer-stale.html --baseline-file data/synthetic/sad_v1.md
-Explorer: 251 artifacts → out/demo/9c927fe7a7/explorer-stale.html; offline HTML
+$ dhf explore --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --output out/demo/1446d395b6/explorer-stale.html --baseline-file data/synthetic/sad_v1.md
+Explorer: 251 artifacts → out/demo/1446d395b6/explorer-stale.html; offline HTML
 
-$ dhf regenerate --stale --open-pr --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents
+$ dhf regenerate --stale --open-pr --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents
 sad: regenerated 9 sections
-PR 12: http://127.0.0.1:64935/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/12
+PR 12: http://127.0.0.1:55279/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/12
 sdd: regenerated 10 sections
-PR 13: http://127.0.0.1:64935/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/13
+PR 13: http://127.0.0.1:55279/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/13
 sfmea: regenerated 12 sections
-PR 14: http://127.0.0.1:64935/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/14
+PR 14: http://127.0.0.1:55279/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/14
 sstr: regenerated 9 sections
-PR 15: http://127.0.0.1:64935/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/15
+PR 15: http://127.0.0.1:55279/kestrel-org/Kestrel/_git/kestrel-dhf-docs/pullrequest/15
 
 $ dhf check sstr --pr-id 15
 {
@@ -107,47 +107,47 @@ $ dhf check sstr --pr-id 15
     }
   },
   "manual_authors": {},
-  "document_sha256": "f0f00a672852961b7ff293493a07098b0874eecc33dbe949c1beca0f765b70b0"
+  "document_sha256": "9e214dbea6a469e64b597b475b86f1e9c215ac300d2c5873d94aaa44bda5ae7f"
 }
 
-$ dhf generate sutr --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --provider mock
-sutr: 3 sections → out/demo/9c927fe7a7/documents/sutr.md + manifest
+$ dhf generate sutr --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --provider mock
+sutr: 3 sections → out/demo/1446d395b6/documents/sutr.md + manifest
 Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0, 'normalized': 0}
 
-$ dhf generate rtm --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --provider mock
-rtm: 2 sections → out/demo/9c927fe7a7/documents/rtm.md + manifest
+$ dhf generate rtm --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --provider mock
+rtm: 2 sections → out/demo/1446d395b6/documents/rtm.md + manifest
 Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0, 'normalized': 0}
 
 YAML extensibility: Python files unchanged; SUTR reports missing recorded unit results.
-$ dhf generate drr --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --input-file data/synthetic/review_input.json --since 1 --impact-file out/demo/9c927fe7a7/impact-before-regeneration.json --provider mock
-drr: 10 sections → out/demo/9c927fe7a7/documents/drr.md + manifest
+$ dhf generate drr --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --input-file data/synthetic/review_input.json --since 1 --impact-file out/demo/1446d395b6/impact-before-regeneration.json --provider mock
+drr: 10 sections → out/demo/1446d395b6/documents/drr.md + manifest
 Validation: {'rejected': 0, 'downgraded': 0, 'coerced': 0, 'normalized': 0}
 
-$ dhf verify-support --doc sstr --sample 1 --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --provider mock
+$ dhf verify-support --doc sstr --sample 1 --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --provider mock
 sstr: {'supported': 1}; support rate=1.0 among 1 verdicts; coverage 1/1 sampled eligible (5 in document); 0 rationales unverified; advisory only
 
-$ dhf eval --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --impact-file out/demo/9c927fe7a7/impact-before-regeneration.json
+$ dhf eval --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --impact-file out/demo/1446d395b6/impact-before-regeneration.json
 Unknown IDs: 0; gaps precision=1.00 recall=1.00
 Metrics → out/metrics.md + JSON; clause appendix → out/clause_coverage.md
 
-$ dhf audit-pack --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --output out/demo/9c927fe7a7/audit-pack.zip
-Audit pack: 33 verified files → out/demo/9c927fe7a7/audit-pack.zip
+$ dhf audit-pack --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --output out/demo/1446d395b6/audit-pack.zip
+Audit pack: 33 verified files → out/demo/1446d395b6/audit-pack.zip
 
-$ dhf explore --db out/demo/9c927fe7a7/evidence.sqlite --documents out/demo/9c927fe7a7/documents --output out/demo/9c927fe7a7/explorer.html --baseline-file data/synthetic/sad_v1.md
-Explorer: 251 artifacts → out/demo/9c927fe7a7/explorer.html; offline HTML
+$ dhf explore --db out/demo/1446d395b6/evidence.sqlite --documents out/demo/1446d395b6/documents --output out/demo/1446d395b6/explorer.html --baseline-file data/synthetic/sad_v1.md
+Explorer: 251 artifacts → out/demo/1446d395b6/explorer.html; offline HTML
 
 {
-  "explorer_baseline": "out/demo/9c927fe7a7/explorer-baseline.html",
-  "redline": "out/demo/9c927fe7a7/redline-sstr.docx",
+  "explorer_baseline": "out/demo/1446d395b6/explorer-baseline.html",
+  "redline": "out/demo/1446d395b6/redline-sstr.docx",
   "provider": "mock",
   "live": false,
-  "explorer": "out/demo/9c927fe7a7/explorer.html",
-  "explorer_stale": "out/demo/9c927fe7a7/explorer-stale.html",
-  "root": "out/demo/9c927fe7a7",
-  "documents": "out/demo/9c927fe7a7/documents",
-  "db": "out/demo/9c927fe7a7/evidence.sqlite",
-  "impact": "out/demo/9c927fe7a7/impact-before-regeneration.json",
+  "explorer": "out/demo/1446d395b6/explorer.html",
+  "explorer_stale": "out/demo/1446d395b6/explorer-stale.html",
+  "root": "out/demo/1446d395b6",
+  "documents": "out/demo/1446d395b6/documents",
+  "db": "out/demo/1446d395b6/evidence.sqlite",
+  "impact": "out/demo/1446d395b6/impact-before-regeneration.json",
   "metrics": "out/metrics.md",
-  "audit": "out/demo/9c927fe7a7/audit-pack.zip",
+  "audit": "out/demo/1446d395b6/audit-pack.zip",
   "status": "drafts require human review"
 }

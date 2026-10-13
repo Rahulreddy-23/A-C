@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M10 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current milestone: M11 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -14,10 +14,11 @@ Current milestone: M10 (done) · Development resumed by owner · Last updated: 2
 | M7 | done | m7-done | 3bde3d8 | Native watch, exact impact, selective PRs and C01–C04 |
 | M8 | done | m8-done | b82108b | DRR, sFMEA, proposals and readability fixes |
 | M9 | done | m9-done | e972cb5 | Complete port blueprint; tenant deployment pending |
-| M10 | done | m10-done | e707d9a implementation; checkpoint below | Evaluation, clause appendix, YAML extensions, audit export and offline demo |
+| M10 | done | m10-done | ecac18b | Evaluation, clause appendix, YAML extensions, audit export and offline demo |
+| M11 | done | m11-done | checkpoint tag | Native synthetic seeder, read-only discovery and onboarding |
 ## Now / Next
-- Completed: M6–M10 and review follow-ups R-030/R-036–R-045; all implementation checks green.
-- Next: owner chooses the sandbox capability tier for native Copilot Studio execution. M11 requires a real ADO org. The restored stash remains as a backup.
+- Working on: Phase 2 M11 native seeder/discovery/onboarding. Core M0–M10 remains complete.
+- Next: M12 R-046, claim-support verification and effort telemetry, then M13–M15 in order. Real tenant execution remains optional/pending credentials.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -199,3 +200,11 @@ Current milestone: M10 (done) · Development resumed by owner · Last updated: 2
 
 - Committed-code checkpoint: `./scripts/demo.sh` → exit 0, fresh run `out/demo/80077d4952`, generator version `e707d9a6acbc3da02fa1d8924d1aa2545a41dc4d`. Same exact metrics/goldens and 32 verified audit files. Section manifest records `{provider: mock, name: mock-v2, tier: analytical}` for the conclusion; no unavailable AI sections.
 - Before the documentation checkpoint commit: full suite → `74 passed in 81.93s`; ruff → `All checks passed!`, `147 files already formatted`. Review scan → `Unresolved blocking items: []`. R-030/R-041–R-045 marked `Resolved in e707d9a`; earlier R-036/R-037 remain marked with their implementation SHAs.
+
+
+### M11 — Phase 2 real-data readiness
+- `pytest tests/test_onboarding.py -q -s` → `3 passed in 16.06s`; first seed → `{work_items_created: 126, runs_created: 2, results_created: 80, prs_created: 7, git_pushes: 9}`; rerun → all five counters 0. Native ingest/fixture parity is exact including content hashes and source system/revisions; only URLs/native IDs/retrieval time differ. SRS-030's planted two-revision history is replayed.
+- Fresh native acceptance run `out/m11/ab3b3046`: `seed-ado --confirm-org kestrel-org --dry-run` → 126 planned work items, no writes; confirmed seed then rerun → zero new entities/pushes. `dhf discover --output …/ado_mapping.yaml` → `0 unknowns require confirmation`; `dhf ingest --db …/evidence.sqlite` → `Snapshot 1: 248 artifacts, 413 links`.
+- Seed-only HTTP writes tested for work-item JSON Patch/create/update, native runs/results, source pushes and PR completion. App token gets 403; dhf source-write allowlist is unchanged. Renamed acceptance-criteria field is proposed as Custom.Acceptance and explicitly flagged for confirmation. Discovery drafts to out/, retaining the active mapping.
+- `uv run pytest -q` → `77 passed in 101.72s`; ruff check → `All checks passed!`; format → `152 files already formatted`. `seed-ado --help` shows required --confirm-org and --dry-run. No paid calls.
+- Native REST behavior was checked against Microsoft API contracts. Real tenant inherited-process/system-date/PR-completion permissions still need owner-provided sandbox verification; the test result is the empty local native mock, not a real organization.

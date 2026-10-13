@@ -592,3 +592,26 @@ def audit_pack_command(
         store.close()
     result = audit_pack(snapshots, Path(documents), Path(output), release)
     typer.echo(f"Audit pack: {result['verified_files']} verified files → {output}")
+
+
+@app.command("discover")
+def discover_command(output: str = "out/discovery/ado_mapping.yaml") -> None:
+    """Inspect native ADO evidence and save a mapping draft for human confirmation."""
+    import json
+    from pathlib import Path
+
+    import yaml
+
+    from dhf.ingest.ado import ADO
+    from dhf.ingest.discovery import discover
+
+    ado = ADO()
+    try:
+        report = discover(ado)
+    finally:
+        ado.close()
+    target = Path(output)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(yaml.safe_dump(report["mapping"], sort_keys=False))
+    target.with_suffix(".discovery.json").write_text(json.dumps(report, indent=2))
+    typer.echo(f"Mapping draft → {target}; {len(report['unknowns'])} unknowns require confirmation")

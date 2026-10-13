@@ -12,6 +12,55 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 
 ## Open
 
+- **SAD `architecture_overview` is good.** Each component has a distinct responsibility and named collaborators, so R-033 works.
+
+The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `sad/architecture_overview`, `sdd/behavior.UNIT-sensor_pressure` and `sfmea/function_modes.UNIT-sensor_pressure`. Prices are from OpenAI's pricing page as of 2026-10-13.
+
+| Model | $ per 5 sections | ≈ $ per full doc set (~120 AI sections) | Quality notes |
+|---|---|---|---|
+| gpt-5-nano | 0.0024 | 0.06 | Thin: 1 FMEA claim kept; leaks meta-language ("synthetic fixture") |
+| gpt-5.4-nano | 0.0064 | 0.15 | **All 5 FMEA claims rejected**; unreliable |
+| **gpt-4.1-mini** | 0.0084 | **0.20** | Consistent, fast (~3 s), correct FMEA system effect; best value |
+| gpt-5-mini | 0.0129 | 0.31 | Deeper code detail (dwell timer, 3 s boundary); slower (5–10 s) |
+| **gpt-5.4-mini** | 0.0234 | **0.56** | **Best FMEA semantics** (local effect "returns SAFE…", system effect → HAZ-04); good review questions |
+| gpt-4.1 | 0.0399 | 0.96 | No better than 4.1-mini |
+| gpt-5.5 | 0.1334 | 3.20 | Best overall (noticed BUG-03 isn't listed as residual), but too expensive to run routinely |
+
+**Rejections don't separate the models.** Every model's rejections were `unknown_ids`, mostly `UNIT-alarm_latch`, `UNIT-sensor_pressure`, SRS-012/034/035 and fact keys like `gap_findings`/`summary`/`G01`. That's the R-041(b) pack problem, not model quality.
+
+### M10 live full-document run (owner-approved; OpenAI default `gpt-4.1-mini` plus analytical `gpt-5.4-mini`; **$0.227**; ledger now OpenAI $0.48 of $4.00)
+
+- All five documents generated: SSTR (4 AI sections), SAD (12), SDD (61), sFMEA (25), DRR (2).
+- **0 `ai_unavailable` sections and no refusals.** 14 claims were rejected out of roughly 440.
+- The analytical tier was routed correctly (sFMEA, DRR and SSTR conclusion on `gpt-5.4-mini`), and model and tier are recorded per section.
+- The live samples were judged review-ready drafts. The owner has the outputs as Word files.
+
+**R-046 [non-blocking] M10 — Small leftovers from the live run** (`src/dhf/graph/design.py`, `specs/prompts/sstr.conclusion.md`)
+- **(a)** 9 of the 14 rejections are collaborator component IDs (`COMP-01..05`) cited in SAD component and runtime prose. Collaborators named in a component's record should join its evidence pack as compact records, the same treatment R-041 gave to fact references.
+- **(b)** The SSTR conclusion had 5 kind coercions, where the model labelled claims `sourced` in a suggested-only section. State "every claim in this section is `suggested`" in the prompt to cut audit noise.
+- **(c)** One numeric rejection each for "3" and "256" in narrative. Check that unit-bearing values quoted from evidence ("3 s") reach `source_numbers`.
+
+
+## Resolved
+
+### M10 (tag `m10-done`, ecac18b; implementation e707d9a) — verdict: **approved — core build complete (M0–M10)**
+
+Verified independently in a clean worktree:
+- 74 tests pass; ruff check and format are clean.
+- **`./scripts/demo.sh` exits 0 offline in 33 s.** It runs native HTTP ingest, docs PRs, readiness failures, labelled test-tool merge and baseline, watch plus `change_1`, selective regeneration, SUTR and RTM from YAML only, `dhf eval` and the audit pack.
+- **`out/metrics.md`:**
+  - 0 unknown IDs.
+  - Gaps precision/recall 1.00 (21 findings).
+  - Impact 1.00, correctly labelled "regression against a reviewer-audited expectation".
+  - Historical C01/C04 2/2.
+  - Deterministic goldens match.
+  - Coverage: SRS→test 31/35, SRS→code 33/35, hazard→control→verification 8/8.
+- **The clause appendix is honest:** 62304 §5.5 and §5.6, 14971 §6 and §8, and the release review are marked UNCOVERED or human-pending.
+- **The audit pack** has 32 verified files.
+- **The SAD figure** is a locally rendered PNG (6 components, 20 units, declared interfaces, and the extracted COMP-03→COMP-04 `alarm_latch` call), embedded and numbered in the DOCX.
+- **`BUILD_PLAN.md`** has an ordered MVP (~20–33 h), day-1 capability gates with fallbacks, and Tier A/B/C storylines.
+- Remaining: P2 items (AB9–AB13), optional M11, and the Copilot Studio build, which waits on the owner's sandbox answers (`docs/SANDBOX_QUESTIONS.md`).
+
 **R-030 [non-blocking, by M10 — demo impact] M6 — The architecture diagram is Mermaid source only, so the Word SAD shows a code listing, not a diagram** (`out/documents/sad.architecture.mmd`, SAD `architecture` section)
 - No local Mermaid or Graphviz renderer exists, so the DOCX gets a monospace block of `flowchart LR …`. A rendered architecture figure is one of the most visible parts of a SAD for reviewers and judges.
 - **Expected fix:**
@@ -21,11 +70,7 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - Never use an online renderer.
 
 Resolved in e707d9a: local deterministic PNG and Mermaid assets are checksummed and committed to docs PRs; Word embeds a numbered figure. Figure/Word and repeatability tests pass.
-
-### Live sample after R-036 (OpenAI `gpt-4.1-mini`, owner-approved; 5 sections, $0.0114, merged into `out/ledger.json`)
-
-- **sFMEA HAZ-04 has improved substantially.** It now uses SRS-021/022/023, "80 kPa for a configured dwell time (3 seconds)", TC-021/TC-009 and COMP-03/COMP-04. The corrected traces work.
-- **SAD `architecture_overview` is good.** Each component has a distinct responsibility and named collaborators, so R-033 works.
+- *Reviewer verified at m10-done.*
 
 **R-041 [non-blocking, before M10] M8 — Live findings: FMEA "effects" describe the control, not the failure; SAD packs drop the units their facts reference**
 - **(a) FMEA semantics.**
@@ -43,8 +88,7 @@ Resolved in e707d9a: local deterministic PNG and Mermaid assets are checksummed 
   - **Fix:** every ID referenced in a section's facts must be present in its evidence pack, as compact records. Add a test asserting `ids(facts) ⊆ ids(evidence)` for every AI section.
 
 Resolved in e707d9a: FMEA v2 prompts define failure-present local/system effects and a worked example; all AI fact IDs have source context, including compact synthesis records, with subset/reduction regressions.
-
-### M9 review (tag `m9-done`, e972cb5) — verdict: **approved; plan the sandbox build next**
+- *Reviewer verified at m10-done.*
 
 **R-042 [non-blocking — high priority before the sandbox build starts] M9 — The port pack describes the full build but has no realistic plan or cut line for it** (`port/copilot_studio/README.md`)
 - The pack maps everything: 7 flows, 11 Dataverse tables, 21 prompt tools, AST/hash/validator/DOCX function boundaries and the parity cases. Building **all** of that in an unfamiliar sandbox before the Oct 27 demo is not realistic, and the official submission must run in Copilot Studio.
@@ -67,6 +111,7 @@ Resolved in e707d9a: FMEA v2 prompts define failure-present local/system effects
   - For each tier, list which flows and prompt tools are built, the hour estimates, the demo storyline, and which parity cases can pass. The owner's answers to `docs/SANDBOX_QUESTIONS.md` will pick the tier, so make the plan easy to collapse to one tier quickly.
 
 Resolved in e707d9a: BUILD_PLAN contains ordered MVP, estimates/cut line, A/B/C capability tiers, SharePoint row/file limits, fallback gates and scoped parity/native-offline storylines. Tenant execution is explicitly pending.
+- *Reviewer verified at m10-done.*
 
 **R-043 [non-blocking — before the sandbox build] M9 — Keep the core governance native, and pass prompt-tool inputs as text** (`port/copilot_studio/flows/04-generate-section.md`, `deterministic_logic.md`, `prompts/*.md`)
 - **The validator.** The pack makes the validator an "approved function", falling back to "manual drafting boundary" when none exists. But source-backed vs inferred governance is worth 20% of the score, so the MVP slice must validate claims **natively**:
@@ -78,6 +123,7 @@ Resolved in e707d9a: BUILD_PLAN contains ordered MVP, estimates/cut line, A/B/C 
 - **Prompt-tool inputs.** The converted prompt tools declare named inputs typed `object`/`array`. Copilot Studio prompt inputs are text (plus files/images), so pass `facts` and `evidence` as **JSON strings**. Note that the tenant's prompt input/output size limits must be checked against the 6k/12k-token budgets on day 1.
 
 Resolved in e707d9a: native validator recipe covers IDs, kinds, confidence, downgrade/coercion and numeric checks or blocked compensation; all prompt tools take text JSON. Actual tenant limits remain a day-1 gate.
+- *Reviewer verified at m10-done.*
 
 **R-044 [non-blocking — do with the next commit] Owner budget cap: $2.50 per provider, enforced in code** (`src/dhf/llm/__init__.py`, `.env.example`, `AGENTS.md` rule 7)
 - On 2026-10-13 the owner set a hard cap of **$2.50 per API for the whole hackathon**, counting all spend. The current cap logic is `min(build_cap 1.50, 0.8 × DHF_PROVIDER_BUDGET_USD 5.00 = 4.00)`. That keeps Codex's own build-time calls under 1.50, but it doesn't encode the owner's ceiling for demo and reviewer runs.
@@ -88,22 +134,7 @@ Resolved in e707d9a: native validator recipe covers IDs, kinds, confidence, down
 - The reviewer's live checks currently copy `out/ledger.json` into a scratch worktree, run against it, and write it back. That way the cumulative cap already applies to reviewer spend.
 
 Resolved in e707d9a: provider hard caps enforce actual plus reserved spend (Anthropic 2.50/OpenAI 4.00), despite legacy higher config; paid CLI shows headroom. Both provider-cap regressions pass.
-
-### Model bake-off (owner-approved; 5 hard sections × 7 OpenAI models, $0.227; raw outputs kept by the reviewer)
-
-The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `sad/architecture_overview`, `sdd/behavior.UNIT-sensor_pressure` and `sfmea/function_modes.UNIT-sensor_pressure`. Prices are from OpenAI's pricing page as of 2026-10-13.
-
-| Model | $ per 5 sections | ≈ $ per full doc set (~120 AI sections) | Quality notes |
-|---|---|---|---|
-| gpt-5-nano | 0.0024 | 0.06 | Thin: 1 FMEA claim kept; leaks meta-language ("synthetic fixture") |
-| gpt-5.4-nano | 0.0064 | 0.15 | **All 5 FMEA claims rejected**; unreliable |
-| **gpt-4.1-mini** | 0.0084 | **0.20** | Consistent, fast (~3 s), correct FMEA system effect; best value |
-| gpt-5-mini | 0.0129 | 0.31 | Deeper code detail (dwell timer, 3 s boundary); slower (5–10 s) |
-| **gpt-5.4-mini** | 0.0234 | **0.56** | **Best FMEA semantics** (local effect "returns SAFE…", system effect → HAZ-04); good review questions |
-| gpt-4.1 | 0.0399 | 0.96 | No better than 4.1-mini |
-| gpt-5.5 | 0.1334 | 3.20 | Best overall (noticed BUG-03 isn't listed as residual), but too expensive to run routinely |
-
-**Rejections don't separate the models.** Every model's rejections were `unknown_ids`, mostly `UNIT-alarm_latch`, `UNIT-sensor_pressure`, SRS-012/034/035 and fact keys like `gap_findings`/`summary`/`G01`. That's the R-041(b) pack problem, not model quality.
+- *Reviewer verified at m10-done.*
 
 **R-045 [non-blocking, before the M10 demo run] M9 — Support per-section model tiers and GPT-5-family parameters** (`src/dhf/llm/adapters/openai.py`, `specs/documents/*.yaml`, `.env.example`, port pack)
 - **Decision (PM):**
@@ -119,8 +150,7 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 
 
 Resolved in e707d9a: section/rule data routes default/analytical models, with per-model prices/cache identity and section provenance. GPT-5 omits temperature, sets reasoning effort and reserves inclusive completion tokens; SDK/ledger/routing tests pass.
-
-## Resolved
+- *Reviewer verified at m10-done.*
 
 ### M9 (tag `m9-done`, e972cb5) — verdict: **approved**
 

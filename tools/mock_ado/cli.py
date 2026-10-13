@@ -22,8 +22,8 @@ def reset_root(root: Path) -> None:
 
 
 @app.command("init")
-def initialize() -> None:
-    state = init()
+def initialize(empty: bool = False, root: Path = ROOT) -> None:
+    state = init(root, empty=empty)
     typer.echo(
         f"Mock initialized: {len(state['items'])} work items, "
         f"{len(state['runs'])} runs, {len(state['prs'])} PRs"
@@ -31,8 +31,8 @@ def initialize() -> None:
 
 
 @app.command()
-def serve(port: int = 8089) -> None:
-    server = Server(port=port)
+def serve(port: int = 8089, root: Path = ROOT, empty: bool = False) -> None:
+    server = Server(root=root, port=port, empty=empty)
     typer.echo(f"Mock ADO serving at http://localhost:{server.server_port}/kestrel-org")
     try:
         server.serve_forever()

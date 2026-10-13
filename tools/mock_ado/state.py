@@ -27,12 +27,12 @@ WORK_TYPES = {
 }
 
 
-def git(args: list[str], cwd: Path, seed: bool = True) -> str:
+def git(args: list[str], cwd: Path, seed: bool = True, strip: bool = True) -> str:
     env = dict(os.environ, DHF_GIT_ROLE="seed" if seed else "app")
     result = subprocess.run(
         ["git", *args], cwd=cwd, env=env, capture_output=True, text=True, check=True
     )
-    return result.stdout.strip()
+    return result.stdout.strip() if strip else result.stdout
 
 
 def write_state(root: Path, state: dict) -> None:
@@ -49,14 +49,14 @@ def payload(artifact: dict) -> str:
     return artifact["body"] + '\nDHF-META:{"synthetic": true}'
 
 
-def init(root: Path = ROOT) -> dict:
+def init(root: Path = ROOT, empty: bool = False) -> dict:
     if (root / "state.json").exists():
         return read_state(root)
     root.mkdir(parents=True, exist_ok=True)
     dataset = yaml.safe_load((DATA / "evidence.yaml").read_text())
     mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
     artifacts = dataset["artifacts"]
-    eligible = [a for a in artifacts if a["type"] in WORK_TYPES]
+    eligible = [] if empty else [a for a in artifacts if a["type"] in WORK_TYPES]
     ids = {a["id"]: i for i, a in enumerate(eligible, 1)}
     items = {}
     for a in eligible:
@@ -95,7 +95,7 @@ def init(root: Path = ROOT) -> dict:
         git(["config", "user.name", "Synthetic Seeder"], work)
         git(["config", "user.email", "synthetic@example.invalid"], work)
         (work / "README.md").write_text("# Entirely synthetic demo repository\n")
-        if name == "kestrel-device-sw":
+        if name == "kestrel-device-sw" and not empty:
             shutil.copytree(DATA / "code", work, dirs_exist_ok=True)
             for file in (work / "kestrel").glob("*.py"):
                 if file.name != "__init__.py":
@@ -105,13 +105,13 @@ def init(root: Path = ROOT) -> dict:
                     [a for a in artifacts if a["type"] in ("component", "adr")], sort_keys=False
                 )
             )
-        else:
+        elif not empty:
             shutil.copyfile(DATA / "sad_v1.md", work / "sad.md")
         git(["add", "."], work)
         git(["commit", "-m", "Synthetic repository seed"], work)
         git(["remote", "add", "origin", str(bare)], work)
         git(["push", "origin", "main"], work)
-        if name == "kestrel-dhf-docs":
+        if name == "kestrel-dhf-docs" and not empty:
             git(["tag", "sad-v1"], work)
             git(["push", "origin", "sad-v1"], work)
         # Transport guard independently enforces read-only device history.
@@ -137,10 +137,10 @@ def init(root: Path = ROOT) -> dict:
         )
     history = yaml.safe_load((DATA / "history.yaml").read_text())
     prs = []
-    for entry in history:
+    for entry in [] if empty else history:
         prs.append(commit_entry(root, entry, ids))
     runs = []
-    for a in artifacts:
+    for a in [] if empty else artifacts:
         if a["type"] != "test_run":
             continue
         rid = int(a["id"].split("-")[1])

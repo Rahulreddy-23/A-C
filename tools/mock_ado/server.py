@@ -12,10 +12,10 @@ from mock_ado.state import ROOT, apply_scenario, auth_token, init, read_state, w
 
 
 class Server(ThreadingHTTPServer):
-    def __init__(self, root: Path = ROOT, port: int = 8089) -> None:
+    def __init__(self, root: Path = ROOT, port: int = 8089, empty: bool = False) -> None:
         self.root = root
         self.lock = threading.RLock()
-        init(root)
+        init(root, empty=empty)
         super().__init__(("127.0.0.1", port), Handler)
 
 
@@ -66,7 +66,9 @@ class Handler(BaseHTTPRequestHandler):
             if token not in (app_pat, seed_pat):
                 return self.respond({"message": "Authentication required"}, 401)
             read_post = method == "POST" and path.endswith(("/wiql", "/workitemsbatch"))
-            docs_write = "/git/repositories/kestrel-dhf-docs/pullrequests" in path
+            docs_write = (
+                method == "POST" and "/git/repositories/kestrel-dhf-docs/pullrequests" in path
+            )
             if token == app_pat and method != "GET" and not read_post and not docs_write:
                 return self.respond(
                     {"message": "Product token is read-only outside docs repo"}, 403
@@ -83,7 +85,11 @@ class Handler(BaseHTTPRequestHandler):
                 "html": {"href": f"{base}/_workitems/edit/{value['id']}?rev={value['rev']}"}
             }
             for relation in value["relations"]:
-                relation["url"] = f"{base}/" + relation["url"]
+                relation["url"] = (
+                    relation["url"]
+                    if relation["url"].startswith("http")
+                    else f"{base}/" + relation["url"]
+                )
             if not expanded:
                 value.pop("relations", None)
             return value
@@ -97,6 +103,10 @@ class Handler(BaseHTTPRequestHandler):
             page = values[skip : skip + top]
             self.respond({"count": len(page), "value": page})
 
+        from mock_ado.seed_routes import seed_route
+
+        if seed_route(self, method, path, query, data, state, base):
+            return
         if path == "/_mock/state" and method == "GET":
             return self.respond(state)
         if path.startswith("/_mock/apply-scenario/") and method == "POST":
@@ -204,7 +214,7 @@ class Handler(BaseHTTPRequestHandler):
                     "pullRequestId": max((p["pullRequestId"] for p in state["prs"]), default=0) + 1,
                     "repository": {"id": repo},
                     "status": "active",
-                    "workitems": [],
+                    "workitems": [int(w["id"]) for w in data.get("workItemRefs", [])],
                     "statuses": [],
                     **data,
                 }

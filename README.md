@@ -162,3 +162,5 @@ uv run dhf propose
 ```
 
 DRR identity comes from your JSON input (`type`, `date`, `baseline`, `participants`); `--since` selects the previous ingested snapshot for its deterministic scope diff. Discussion, decisions, new actions and approvals remain human fields. sFMEA keeps source severity/controls/verification separate from the suggested analysis cells and human residual-risk assessment. Proposed failure modes do not close F03 until confirmed by a reviewer. L01–L03 proposal files are local suggestions with citations/confidence; they never update ADO. SAD/SDD use grouped navigation headings, readable structure columns and named hazards/controls. G12 identifies missing SOUP requirements or known-anomaly evaluation; the synthetic baseline now has 21 deterministic gaps.
+
+The [Copilot Studio port pack](port/copilot_studio/README.md) maps the reference to Dataverse, prompt tools and seven Power Automate flows. Run `uv run python tools/check_port.py` to verify exact prompt/contract coverage. Tenant deployment and parity remain pending capability verification.

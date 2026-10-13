@@ -1,0 +1,48 @@
+{
+  "refUpdates": [
+    {
+      "name": "refs/heads/dhf/sstr/1.1/run-id",
+      "oldObjectId": "0000000000000000000000000000000000000000"
+    }
+  ],
+  "commits": [
+    {
+      "comment": "DHF draft: sstr",
+      "parents": [
+        "<verified docs main commit>"
+      ],
+      "changes": [
+        {
+          "changeType": "add",
+          "item": {
+            "path": "/sstr.md"
+          },
+          "newContent": {
+            "content": "<exact UTF-8 Markdown>",
+            "contentType": "rawtext"
+          }
+        },
+        {
+          "changeType": "add",
+          "item": {
+            "path": "/sstr.docx"
+          },
+          "newContent": {
+            "content": "<base64 DOCX>",
+            "contentType": "base64encoded"
+          }
+        },
+        {
+          "changeType": "add",
+          "item": {
+            "path": "/sstr.manifest.json"
+          },
+          "newContent": {
+            "content": "<JSON manifest>",
+            "contentType": "rawtext"
+          }
+        }
+      ]
+    }
+  ]
+}

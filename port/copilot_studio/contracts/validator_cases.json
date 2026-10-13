@@ -1,0 +1,46 @@
+{
+  "pack": {
+    "facts": {
+      "passed": 39,
+      "risk_authoring": false
+    },
+    "evidence": [
+      {
+        "id": "SRS-021"
+      }
+    ]
+  },
+  "claims": [
+    {
+      "text": "Unknown",
+      "kind": "sourced",
+      "citations": [
+        "SRS-999"
+      ]
+    },
+    {
+      "text": "40 passed",
+      "kind": "sourced",
+      "citations": [
+        "SRS-021"
+      ]
+    },
+    {
+      "text": "Uncited reasoning",
+      "kind": "sourced",
+      "citations": []
+    },
+    {
+      "text": "39 passed",
+      "kind": "sourced",
+      "citations": [
+        "SRS-021"
+      ]
+    }
+  ],
+  "expected": {
+    "accepted": 2,
+    "rejected": 2,
+    "downgraded": 1
+  }
+}

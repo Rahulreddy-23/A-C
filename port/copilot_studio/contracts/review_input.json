@@ -1,0 +1,9 @@
+{
+  "type": "Software design review",
+  "date": "2026-10-12",
+  "baseline": "sad-v1",
+  "participants": [
+    "Synthetic Reviewer",
+    "Synthetic Design Engineer"
+  ]
+}

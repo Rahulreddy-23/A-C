@@ -1,0 +1,230 @@
+version: 1
+flows:
+- flows/01-ingest-work-items.md
+- flows/02-ingest-test-results.md
+- flows/03-coverage-gaps.md
+- flows/04-generate-section.md
+- flows/05-assemble-document.md
+- flows/06-open-docs-pr.md
+- flows/07-impact.md
+rules:
+  C01:
+    op: component_set
+    mapping: deterministic_logic.md
+  C02:
+    op: citation_revision
+    mapping: deterministic_logic.md
+  C03:
+    op: result_summary
+    mapping: deterministic_logic.md
+  C04:
+    op: component_name
+    mapping: deterministic_logic.md
+  F01:
+    op: missing_control
+    mapping: deterministic_logic.md
+  F02:
+    op: missing_verification
+    mapping: deterministic_logic.md
+  F03:
+    op: missing_confirmed_mode
+    mapping: deterministic_logic.md
+  G01:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G02:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G03:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G04:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G05:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G06:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G07:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G08:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G09:
+    op: missing_link
+    mapping: deterministic_logic.md
+  G10:
+    op: match
+    mapping: deterministic_logic.md
+  G11:
+    op: outdated_verification
+    mapping: deterministic_logic.md
+  G12:
+    op: soup_requirements
+    mapping: deterministic_logic.md
+  L01:
+    op: requirement_implementation
+    mapping: deterministic_logic.md
+  L02:
+    op: orphan_requirement
+    mapping: deterministic_logic.md
+  L03:
+    op: design_contradiction
+    mapping: deterministic_logic.md
+queries:
+- architectural_decisions
+- architecture_diagram
+- architecture_matrix
+- architecture_risks
+- component_allocation
+- component_design
+- components
+- design_gaps
+- design_scope
+- drr_actions
+- drr_checklist
+- drr_findings
+- drr_findings_table
+- drr_identification
+- drr_scope
+- evidence_index
+- failed_results_with_defects
+- interfaces
+- proposal_pack
+- purpose_scope
+- references
+- release_readiness_facts
+- residual_anomalies
+- results_by_requirement
+- retest_results
+- runtime_view
+- sfmea_cells
+- sfmea_function_cells
+- sfmea_functions
+- sfmea_gaps
+- sfmea_rows
+- soup_inventory
+- soup_purpose
+- system_context
+- test_environment
+- test_results_summary
+- unit_allocation
+- unit_behavior
+- unit_errors
+- unit_identity
+- unit_interfaces
+- unit_purpose
+- unit_structures
+- unit_tests
+- unit_trace
+- verification_gaps
+prompts:
+- id: design.architecture
+  version: 2
+  source: specs/prompts/design.architecture.md
+  sha256: 8c4f631cbc73296cc13dc6698212aa291327faae00538897a2ddc6eaee810059
+  tool: prompts/design.architecture.md
+- id: design.component
+  version: 2
+  source: specs/prompts/design.component.md
+  sha256: 3c9128c2b58140331693e480362f82fc8ad62120170496ba648b6a62002433bd
+  tool: prompts/design.component.md
+- id: design.context
+  version: 1
+  source: specs/prompts/design.context.md
+  sha256: 1c6b68e1a86f5e3b957cc8f1322c54052e763f167d9cbc7481e7743e0bcbf859
+  tool: prompts/design.context.md
+- id: design.conventions
+  version: 2
+  source: specs/prompts/design.conventions.md
+  sha256: 0e82a85d3b7328aa44c8151698bc582b93adfec9cf6b29874c957f0f3542e6cc
+  tool: prompts/design.conventions.md
+- id: design.runtime
+  version: 2
+  source: specs/prompts/design.runtime.md
+  sha256: 834ea858b331cc27fc6aea3f0703151ad9a36a6bf4d8ebbd054b1cdbe4b28111
+  tool: prompts/design.runtime.md
+- id: design.scope
+  version: 1
+  source: specs/prompts/design.scope.md
+  sha256: 099bfae604843c626fda35822fe32351c26fb973d17ab8d5ae1fe9d3a350be78
+  tool: prompts/design.scope.md
+- id: design.soup
+  version: 1
+  source: specs/prompts/design.soup.md
+  sha256: 54228a69f23116a9d7611425165ebc225ddbd7a891eed93117338fef1265ef0f
+  tool: prompts/design.soup.md
+- id: design.unit_behavior
+  version: 2
+  source: specs/prompts/design.unit_behavior.md
+  sha256: 27182b761d4c2dd94c4e8a71ded3549ecc2b870a36d0fb317aafe5a1be5b31aa
+  tool: prompts/design.unit_behavior.md
+- id: design.unit_errors
+  version: 2
+  source: specs/prompts/design.unit_errors.md
+  sha256: 6987e309ef1f0485b00541cdd79e063ef33cc22891bfdf76f074d9144f7f056d
+  tool: prompts/design.unit_errors.md
+- id: design.unit_purpose
+  version: 2
+  source: specs/prompts/design.unit_purpose.md
+  sha256: cb53983bfb8b96405d958a3cb73c61e7be24cb40f4b609f16d8e4b9b6315e9aa
+  tool: prompts/design.unit_purpose.md
+- id: proposal.contradiction
+  version: 1
+  source: specs/prompts/proposal.contradiction.md
+  sha256: 134850798b58aa0672ef2bfddc95960743830c4622e4fd4d77406d932686a4d0
+  tool: prompts/proposal.contradiction.md
+- id: proposal.implementation
+  version: 1
+  source: specs/prompts/proposal.implementation.md
+  sha256: 4d24e62a5a36b654f68877b26d2bddcd44749c40ed73ee322db0d832388da3ff
+  tool: prompts/proposal.implementation.md
+- id: proposal.orphan
+  version: 1
+  source: specs/prompts/proposal.orphan.md
+  sha256: d94c8566a2d2399e5f5d209ab6aa0de5d985f67d17807e1f8d1021014db9a221
+  tool: prompts/proposal.orphan.md
+- id: review.checklist
+  version: 1
+  source: specs/prompts/review.checklist.md
+  sha256: 6d7d829e9e531248e45649dd36aa3f1e29bf68874451c428eba6f3d391ff0787
+  tool: prompts/review.checklist.md
+- id: review.findings
+  version: 1
+  source: specs/prompts/review.findings.md
+  sha256: c10321bea7d1b1ddabbd93595d06f571b5b1c09285a3421e54b6917f25da4311
+  tool: prompts/review.findings.md
+- id: risk.cells
+  version: 1
+  source: specs/prompts/risk.cells.md
+  sha256: 12836c5e209d420d5e6f8590b1613794158088036f2477e1e956fc031d755631
+  tool: prompts/risk.cells.md
+- id: risk.function
+  version: 1
+  source: specs/prompts/risk.function.md
+  sha256: 754b2b8c1fbe8ffe21f0a3fec13bd066cfec08327d6cc66d6f032214613a738d
+  tool: prompts/risk.function.md
+- id: sstr.anomaly_assessment
+  version: 2
+  source: specs/prompts/sstr.anomaly_assessment.md
+  sha256: 46b3455adb44add86655b951c359154d267089f0807e2f928170fc22e896dc96
+  tool: prompts/sstr.anomaly_assessment.md
+- id: sstr.conclusion
+  version: 2
+  source: specs/prompts/sstr.conclusion.md
+  sha256: 0f4478c582b03bd0c1b37de8d354742c2122ce805287a480a3dad8520c2e8ec6
+  tool: prompts/sstr.conclusion.md
+- id: sstr.purpose
+  version: 2
+  source: specs/prompts/sstr.purpose.md
+  sha256: 97f86e69889c138f4022ce2835bd31be984c0e40296d1a47a58ee2012d23f45b
+  tool: prompts/sstr.purpose.md
+- id: sstr.residual
+  version: 2
+  source: specs/prompts/sstr.residual.md
+  sha256: c4b5317c676acb9f8df96b3ad1ef2c5f017f5436216cc5ec90e1f1684b14341e
+  tool: prompts/sstr.residual.md
+tenant_status: pending

@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M8 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current milestone: M9 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -13,9 +13,10 @@ Current milestone: M8 (done) · Development resumed by owner · Last updated: 20
 | M6 | done | m6-done | c98915a | SAD/SDD, allocations and local diagram source |
 | M7 | done | m7-done | 3bde3d8 | Native watch, exact impact, selective PRs and C01–C04 |
 | M8 | done | m8-done | b82108b | DRR, sFMEA, proposals and readability fixes |
+| M9 | done | m9-done | checkpoint below | Complete port blueprint; tenant deployment pending |
 ## Now / Next
-- Working on: M6 complete; starting M7 impact and selective regeneration.
-- Next: M7 impact and selective regeneration, then M8–M10. The restored stash remains as a backup.
+- Working on: M9 complete; starting M10 evaluation, audit export and offline demo.
+- Next: M10 demo and all remaining acceptance checks. The restored stash remains as a backup.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -171,3 +172,10 @@ Current milestone: M8 (done) · Development resumed by owner · Last updated: 20
 - `dhf generate drr --input-file data/synthetic/review_input.json --since 1 --db out/m9.sqlite` → `10 sections`; zero validation events. Complete G/C/F findings table, safety-first suggestions including C01/C04/G06/G07/G05, named empty-diff notice, and specific prior action descriptions. Missing historical IDs remain findings, never fabricated source records.
 - `dhf propose --db out/m9.sqlite` → `40 proposal checks`; G02 requirements SRS-034/035 are deterministic no-implementation findings, not LLM jobs. The mock flags only SRS-020's missing checksum activation check; L01 agreement returns no claims and empty checks are omitted from the proposal Markdown. Local proposal output never changes the evidence graph.
 - Full regression `pytest -q` → `62 passed in 70.28s`; ruff → `All checks passed!`, `137 files already formatted`. Exact native change/watch/regeneration cases include the new function-level risk rows. No paid calls.
+
+### M9
+- `python tools/check_port.py` → `flows: 7, rules: 22, queries: 46, prompt_tools: 21, reference_contracts: pass, tenant_parity: pending`. Every current prompt body is preserved exactly; queries and G/C/F/L rules are mapped to named flow constructs and explicit deterministic operations.
+- Pack contains architecture mapping, eleven Dataverse tables, seven step-by-step flows, converted prompt tools, deterministic rule/AST/hash/redline boundaries, agent topics/async job status, DLP/authentication/model/region capability gates, native/canonical contracts and frozen parity expectations.
+- Native test IDs use run ID plus result ID (not test-case native ID); run/result revision is `1` with content-hash changes. Dataverse immutable key includes canonical ID and content hash to retain such revisions safely. Native ADO connector authentication does not accept PATs; supported Entra connection and source/docs permission boundaries are documented.
+- Microsoft-primary-source checks document link-only trigger omissions and polling fallback, supported async infrastructure/Teams callback and run-status fallback. No tenant deployment, licenses, custom functions, residency or parity execution is claimed.
+- Full reference checks: `62 passed in 70.28s`; ruff clean / `137 files already formatted`. No paid calls. R-036 is in 212e688 and R-037–R-039 in 450b11d before M10.

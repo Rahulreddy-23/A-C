@@ -69,6 +69,8 @@ Resolved in 212e688: controls, requirement/component/unit annotations and PR lin
   - residual risk left for a human
 - **Expected fix:** add that row table for Class C units, which bounds the cost, and keep the hazard-level view as a summary that links back to the rows. Make the mock emit distinct cells.
 
+Resolved in 450b11d: Class C primary functions have bottom-up source traces and distinct suggested analysis cells; hazard summaries link to unit rows. Source-only severity and human residual risk are tested.
+
 **R-038 [non-blocking] M8 — DRR pre-review findings skip the most review-relevant items** (`specs/documents/drr.yaml`, `src/dhf/graph/queries.py`)
 - The 5-claim cap shows only G01×4 and G02×1. It omits **C01/C04 for the very baseline under review (`sad-v1`)**, G05 (a failed result with no defect) and the risk-control gaps G06/G07.
 - **Expected fix:**
@@ -76,6 +78,8 @@ Resolved in 212e688: controls, requirement/component/unit annotations and PR lin
   - Order the AI suggestions by safety relevance: stale baseline and risk-control gaps first, then failed tests, then coverage.
   - The empty "Changed evidence since baseline" section should say "No changes since sad-v1 (snapshot 1)" instead of rendering blank.
   - ACT-01–04 descriptions are placeholders ("Review action N"); give them real content.
+
+Resolved in 450b11d: Complete deterministic G/C/F findings table, approved-baseline C01/C04 inputs, safety-first suggestions, named empty-diff notice and specific prior actions.
 
 **R-039 [non-blocking] M8 — L01 produces 35 identical "review whether…" proposals** (`src/dhf/cli.py` propose, `specs/prompts`)
 - The planted SRS-034/035 (not implemented) look the same as the implemented requirements, so the proposals file is noise.
@@ -101,6 +105,8 @@ Verified independently in a clean worktree:
 - **The DRR invents nothing:** identity comes exactly from `review_input.json`, and discussion, decisions, new actions and approvals are human placeholders.
 - G12 for SOUP is added (`rules: 12`), and the answer key is still exact.
 - Content problems: R-036 (blocking before M10) and R-037–R-039.
+
+Resolved in 450b11d: G02 is pre-screened without model calls; linked code is compared to criteria, agreement emits no proposal, and the fixture flags the missing checksum guard with confidence.
 
 **R-013 [non-blocking, by M10] M2 — Test-case steps are one template repeated across all cases** (`data/synthetic/evidence.yaml`, test_case entries)
 - Every case has the same four generic steps ("exercise … with nominal input; challenge its boundary; repeat with invalid input"), and titles end in "— case 0NN".

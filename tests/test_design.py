@@ -42,3 +42,30 @@ def test_all_components_units_allocations_and_local_diagrams(tmp_path: Path) -> 
     assert soup["facts"]["rows"][0]["version"] == "24.2.0"
     edited = {**sad["manifest"], "component_set": sorted(components - {"COMP-06"})}
     assert component_consistency(graph, [edited])[0]["missing"] == ["COMP-06"]
+
+
+def test_design_structure_and_extracted_dependency():
+    graph = ingest_fixtures()
+    pack = query(graph, "runtime_view", {"release": "1.1"})
+    assert len(pack["facts"]["unit_allocation"]) == 20
+    assert pack["facts"]["dependencies"] == [
+        {
+            "from_unit": "UNIT-sensor_pressure",
+            "to_unit": "UNIT-alarm_latch",
+            "from_component": "COMP-03",
+            "to_component": "COMP-04",
+            "call": "kestrel.alarm_latch.latched",
+        }
+    ]
+    assert (
+        "kestrel.alarm_latch.latched"
+        in query(graph, "architecture_diagram", {})["facts"]["diagram"]
+    )
+    assert len({a["body"] for a in graph["artifacts"] if a["type"] == "component"}) == 6
+    component = query(graph, "component_design", {"entity": "COMP-03"})
+    assert {u["unit"] for u in component["facts"]["unit_allocation"]} == {
+        "UNIT-sensor_pressure",
+        "UNIT-sensor_air",
+        "UNIT-sensor_calibration",
+        "UNIT-sensor_filter",
+    }

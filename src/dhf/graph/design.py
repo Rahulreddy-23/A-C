@@ -17,6 +17,68 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
         anchor, peer = ("src", "dst") if direction == "out" else ("dst", "src")
         return [nodes[e[peer]] for e in edges if e["type"] == kind and e[anchor] in ids]
 
+    def structure(component: str | None = None) -> dict:
+        units = [
+            u
+            for u in of_type("software_unit")
+            if component is None or u["attributes"]["component"] == component
+        ]
+        dependencies = []
+        for unit in units:
+            for call in unit["attributes"].get("import_calls", []):
+                target = "UNIT-" + call.split(".")[1]
+                if target in nodes:
+                    dependencies.append(
+                        {
+                            "from_unit": unit["id"],
+                            "to_unit": target,
+                            "from_component": unit["attributes"]["component"],
+                            "to_component": nodes[target]["attributes"]["component"],
+                            "call": call,
+                        }
+                    )
+        reqs = {
+            a["id"]
+            for a in of_type("software_req")
+            if component is None or a["attributes"].get("component") == component
+        }
+        controls = {
+            e["dst"]
+            for e in edges
+            if e["src"] in reqs
+            and e["type"] == "implements"
+            and nodes[e["dst"]]["type"] == "risk_control"
+        }
+        hazards = sorted(
+            {e["dst"] for e in edges if e["src"] in controls and e["type"] == "mitigates"}
+        )
+        return {
+            "hazard_controls": [
+                {
+                    "hazard": h,
+                    "title": nodes[h]["title"],
+                    "controls": sorted(
+                        c
+                        for c in controls
+                        if any(
+                            e["src"] == c and e["dst"] == h and e["type"] == "mitigates"
+                            for e in edges
+                        )
+                    ),
+                }
+                for h in hazards
+            ],
+            "unit_allocation": [
+                {
+                    "unit": u["id"],
+                    "component": u["attributes"]["component"],
+                    "interfaces": u["attributes"]["signatures"],
+                }
+                for u in units
+            ],
+            "dependencies": dependencies,
+        }
+
     if name in ("design_scope", "system_context"):
         items = of_type("user_need") if name == "design_scope" else of_type("system_req")
         return pack(items, {"release": params.get("release", "1.1")})
@@ -48,16 +110,32 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
             for e in edges
             if e["type"] == "allocated_to" and e["src"] in ids and e["dst"] in ids
         ]
-        return pack(items, {"diagram": "\n".join(lines), "diagram_format": "mermaid"})
+        for d in structure()["dependencies"]:
+            lines.append(
+                f"  {d['from_component'].replace('-', '_')} -->|{d['call']}| "
+                f"{d['to_component'].replace('-', '_')}"
+            )
+        return pack(
+            items, {"diagram": "\n".join(lines), "diagram_format": "mermaid", **structure()}
+        )
     if name in ("component_design", "component_allocation"):
         component = nodes[params["entity"]]
         requirements = relation({component["id"]}, "allocated_to", "in")
         requirements = [r for r in requirements if r["type"] == "software_req"]
-        items = [component, *requirements] if name == "component_allocation" else [component]
+        items = (
+            [component, *requirements]
+            if name == "component_allocation"
+            else [
+                component,
+                *of_type("adr"),
+                *(nodes[h["hazard"]] for h in structure(component["id"])["hazard_controls"]),
+            ]
+        )
         return pack(
             items,
             {
                 "component": component["id"],
+                **structure(component["id"]),
                 "rows": [
                     {
                         "requirement": r["id"],
@@ -107,7 +185,10 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
             },
         )
     if name == "runtime_view":
-        return pack(of_type("component", "adr"), {"release": params.get("release", "1.1")})
+        return pack(
+            of_type("component", "adr", "hazard", "risk_control"),
+            {"release": params.get("release", "1.1"), **structure()},
+        )
     if name == "architecture_risks":
         items = of_type("hazard", "risk_control", "software_req", "component")
         return pack(

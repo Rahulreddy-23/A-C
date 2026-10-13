@@ -55,6 +55,22 @@ class PythonExtractor:
                 for n in tree.body
                 if isinstance(n, (ast.ClassDef, ast.Assign, ast.AnnAssign))
             ]
+            imports = {
+                alias.asname or alias.name: (node.module or "") + "." + alias.name
+                for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom)
+                for alias in node.names
+            }
+            calls = sorted(
+                {
+                    imports[node.func.id]
+                    for node in ast.walk(tree)
+                    if isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id in imports
+                    and imports[node.func.id].startswith("kestrel.")
+                }
+            )
             unit = "UNIT-" + Path(path).stem
             body = "\n".join(
                 line
@@ -87,6 +103,7 @@ class PythonExtractor:
                         "component": component,
                         "path": path,
                         "signatures": signatures,
+                        "import_calls": calls,
                         "data_structures": structures,
                     },
                     "source": {

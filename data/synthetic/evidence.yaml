@@ -1028,63 +1028,118 @@ artifacts:
 - id: COMP-01
   type: component
   title: UI
-  body: UI owns set and monitor infusion. It exposes explicit inputs and outputs and
-    reports faults to the control path. It must retain validated state when invalid
-    inputs are rejected.
+  body: Accept proposed rate/volume settings through ui_input; ui_confirm retains
+    the previous configuration when the operator cancels. ui_status displays mode
+    and delivered volume. Collaborates with Infusion Control for configuration acceptance;
+    it cannot clear active unsafe alarms.
   attributes:
     synthetic: true
-    responsibility: Set and monitor infusion
+    responsibility: Operator configuration and status
     safety_class: B
+    interfaces:
+    - operator controls
+    - display status
+    collaborators:
+    - COMP-02
+    - COMP-04
 - id: COMP-02
   type: component
   title: Infusion Control
-  body: Infusion Control owns limit delivered volume. It exposes explicit inputs and
-    outputs and reports faults to the control path. It must retain validated state
-    when invalid inputs are rejected.
+  body: Infusion Control validates DeliveryConfiguration atomically before start,
+    rejects configuration edits while running, and clamps each delivered increment
+    to remaining target volume. Sensor Monitoring supplies safe/fault decisions; Alarm
+    Manager supplies active critical latches. Faults inhibit delivery and restart
+    requires a valid configuration.
   attributes:
     synthetic: true
-    responsibility: Limit delivered volume
+    responsibility: Validated delivery state and volume bounds
     safety_class: C
+    interfaces:
+    - DeliveryConfiguration
+    - sensor_safe
+    - alarm_active
+    - motor command
+    collaborators:
+    - COMP-03
+    - COMP-04
+    - COMP-05
 - id: COMP-03
   type: component
   title: Sensor Monitoring
-  body: Sensor Monitoring owns detect unsafe sensor conditions. It exposes explicit
-    inputs and outputs and reports faults to the control path. It must retain validated
-    state when invalid inputs are rejected.
+  body: Sensor Monitoring validates finite ordered pressure samples, applies the configured
+    threshold and dwell interval, and retains an occlusion latch until safe acknowledgement.
+    Air monitoring treats invalid or missing samples as faults. Calibration rejects
+    invalid gain before activation. Pressure decisions request a critical alarm through
+    Alarm Manager.
   attributes:
     synthetic: true
-    responsibility: Detect unsafe sensor conditions
+    responsibility: Sample validation and occlusion/air detection
     safety_class: C
+    interfaces:
+    - PressureSample
+    - PressureDecision
+    - air sample
+    - calibration gain
+    collaborators:
+    - COMP-02
+    - COMP-04
 - id: COMP-04
   type: component
   title: Alarm Manager
-  body: Alarm Manager owns alert operators. It exposes explicit inputs and outputs
-    and reports faults to the control path. It must retain validated state when invalid
-    inputs are rejected.
+  body: Alarm Manager records events independently of display refresh, orders visible
+    alarms by priority, and keeps an unsafe condition active after acknowledgement.
+    Critical active alarms request inhibited delivery; audio and display present that
+    latch without owning its recovery state.
   attributes:
     synthetic: true
-    responsibility: Alert operators
+    responsibility: Persistent critical alarm state
     safety_class: C
+    interfaces:
+    - AlarmRegistry.update
+    - acknowledge
+    - stop_required
+    - visible
+    collaborators:
+    - COMP-01
+    - COMP-02
+    - COMP-03
 - id: COMP-05
   type: component
   title: Drug Library
-  body: Drug Library owns use configured drug limits. It exposes explicit inputs and
-    outputs and reports faults to the control path. It must retain validated state
-    when invalid inputs are rejected.
+  body: Drug Library resolves stable record keys and validates dose/rate against configured
+    bounds before activation. Invalid values and missing records prevent configuration
+    acceptance. Its validated limits support Infusion Control and are presented through
+    operator configuration.
   attributes:
     synthetic: true
-    responsibility: Use configured drug limits
+    responsibility: Drug lookup and dose validation
     safety_class: C
+    interfaces:
+    - drug key
+    - dose limits
+    - validated limit decision
+    collaborators:
+    - COMP-01
+    - COMP-02
 - id: COMP-06
   type: component
   title: Logging & Comms
-  body: Logging & Comms owns retain audit evidence. It exposes explicit inputs and
-    outputs and reports faults to the control path. It must retain validated state
-    when invalid inputs are rejected.
+  body: Comms & Logging retains ordered timestamped events, hashes records for integrity
+    checks, validates framed messages and detects communication timeout. Diagnostics
+    captures trace summaries. These services report faults; they do not own the delivery
+    stop path.
   attributes:
     synthetic: true
-    responsibility: Retain audit evidence
+    responsibility: Ordered audit records and bounded communication
     safety_class: C
+    interfaces:
+    - event append
+    - digest
+    - frame checksum
+    - timeout
+    collaborators:
+    - COMP-01
+    - COMP-02
 - id: UNIT-ui_status
   type: software_unit
   title: ui_status
@@ -1319,7 +1374,7 @@ artifacts:
     component: COMP-06
 - id: TC-001
   type: test_case
-  title: "Verify flow bounds \u2014 case 001"
+  title: Verify flow bounds — case 001
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise flow bounds with nominal input; (2)
     challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
@@ -1336,7 +1391,7 @@ artifacts:
       change.
 - id: TC-002
   type: test_case
-  title: "Verify volume limit \u2014 case 002"
+  title: Verify volume limit — case 002
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise volume limit with nominal input; (2)
     challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
@@ -1352,7 +1407,7 @@ artifacts:
       requesting more than the remaining volume is clamped to that remaining volume.
 - id: TC-003
   type: test_case
-  title: "Verify start interlock \u2014 case 003"
+  title: Verify start interlock — case 003
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise start interlock with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1368,7 +1423,7 @@ artifacts:
       inhibited output and records a fault; start with valid settings enters RUNNING.
 - id: TC-004
   type: test_case
-  title: "Verify pause control \u2014 case 004"
+  title: Verify pause control — case 004
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise pause control with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1383,7 +1438,7 @@ artifacts:
       next tick and preserves accumulated delivered volume.
 - id: TC-005
   type: test_case
-  title: "Verify stop control \u2014 case 005"
+  title: Verify stop control — case 005
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise stop control with nominal input; (2)
     challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
@@ -1398,7 +1453,7 @@ artifacts:
       delivered volume and the stop event remain available.
 - id: TC-006
   type: test_case
-  title: "Verify rate conversion \u2014 case 006"
+  title: Verify rate conversion — case 006
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise rate conversion with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1413,7 +1468,7 @@ artifacts:
       rate or calibration raises ValueError.
 - id: TC-007
   type: test_case
-  title: "Verify dose calculation \u2014 case 007"
+  title: Verify dose calculation — case 007
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise dose calculation with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1428,7 +1483,7 @@ artifacts:
       volume is 0.5 mL; zero concentration is rejected.
 - id: TC-008
   type: test_case
-  title: "Verify air detection \u2014 case 008"
+  title: Verify air detection — case 008
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise air detection with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1444,7 +1499,7 @@ artifacts:
       an alarm; a missing or disconnected sample has the same inhibited outcome.
 - id: TC-009
   type: test_case
-  title: "Verify pressure sampling \u2014 case 009"
+  title: Verify pressure sampling — case 009
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise pressure sampling with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1460,7 +1515,7 @@ artifacts:
       samples inhibit output; valid ordered samples preserve their measured value.
 - id: TC-010
   type: test_case
-  title: "Verify sensor diagnostics \u2014 case 010"
+  title: Verify sensor diagnostics — case 010
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise sensor diagnostics with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1475,7 +1530,7 @@ artifacts:
       alone cannot clear it without an explicit safe acknowledgement.
 - id: TC-011
   type: test_case
-  title: "Verify alarm priority \u2014 case 011"
+  title: Verify alarm priority — case 011
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise alarm priority with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1491,7 +1546,7 @@ artifacts:
       event has critical priority; ties use stable code order.
 - id: TC-012
   type: test_case
-  title: "Verify alarm priority \u2014 case 012"
+  title: Verify alarm priority — case 012
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise alarm priority with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1507,7 +1562,7 @@ artifacts:
       event has critical priority; ties use stable code order.
 - id: TC-013
   type: test_case
-  title: "Verify alarm acknowledgement \u2014 case 013"
+  title: Verify alarm acknowledgement — case 013
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise alarm acknowledgement with nominal
     input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1522,7 +1577,7 @@ artifacts:
       active state; acknowledging an unknown code raises KeyError.
 - id: TC-014
   type: test_case
-  title: "Verify audible alarm \u2014 case 014"
+  title: Verify audible alarm — case 014
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise audible alarm with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1538,7 +1593,7 @@ artifacts:
       interval; expired mute requests resume the scheduled pulse.
 - id: TC-015
   type: test_case
-  title: "Verify display status \u2014 case 015"
+  title: Verify display status — case 015
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise display status with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1554,7 +1609,7 @@ artifacts:
       displayed volume is clamped to zero and never changes control state.
 - id: TC-016
   type: test_case
-  title: "Verify input validation \u2014 case 016"
+  title: Verify input validation — case 016
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise input validation with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1570,7 +1625,7 @@ artifacts:
       empty, malformed, negative and out-of-bounds text is rejected.
 - id: TC-017
   type: test_case
-  title: "Verify configuration confirmation \u2014 case 017"
+  title: Verify configuration confirmation — case 017
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise configuration confirmation with nominal
     input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1586,7 +1641,7 @@ artifacts:
       settings byte-for-byte; accepting returns a copy of the proposed validated settings.
 - id: TC-018
   type: test_case
-  title: "Verify drug limit validation \u2014 case 018"
+  title: Verify drug limit validation — case 018
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise drug limit validation with nominal
     input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1602,7 +1657,7 @@ artifacts:
       values below minimum or above maximum are rejected before volume calculation.
 - id: TC-019
   type: test_case
-  title: "Verify drug lookup \u2014 case 019"
+  title: Verify drug lookup — case 019
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise drug lookup with nominal input; (2)
     challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
@@ -1617,7 +1672,7 @@ artifacts:
       missing keys raise KeyError and never return a default drug.
 - id: TC-020
   type: test_case
-  title: "Verify library checksum \u2014 case 020"
+  title: Verify library checksum — case 020
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise library checksum with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1632,7 +1687,7 @@ artifacts:
       a mismatched checksum prevents library activation.
 - id: TC-021
   type: test_case
-  title: "Verify occlusion threshold \u2014 case 021"
+  title: Verify occlusion threshold — case 021
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise occlusion threshold with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1649,7 +1704,7 @@ artifacts:
       does not trigger; invalid samples inhibit output.
 - id: TC-022
   type: test_case
-  title: "Verify pressure filtering \u2014 case 022"
+  title: Verify pressure filtering — case 022
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise pressure filtering with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1665,7 +1720,7 @@ artifacts:
       20, 30] yields 20, and an invalid sample leaves the window unchanged.
 - id: TC-023
   type: test_case
-  title: "Verify sensor calibration \u2014 case 023"
+  title: Verify sensor calibration — case 023
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise sensor calibration with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1681,7 +1736,7 @@ artifacts:
       calibration or nonpositive gain is rejected before activation.
 - id: TC-024
   type: test_case
-  title: "Verify event persistence \u2014 case 024"
+  title: Verify event persistence — case 024
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise event persistence with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1697,7 +1752,7 @@ artifacts:
       content; a decreasing timestamp is rejected without altering existing records.
 - id: TC-025
   type: test_case
-  title: "Verify log integrity \u2014 case 025"
+  title: Verify log integrity — case 025
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise log integrity with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1712,7 +1767,7 @@ artifacts:
       verification against the original digest returns false.
 - id: TC-026
   type: test_case
-  title: "Verify communication framing \u2014 case 026"
+  title: Verify communication framing — case 026
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise communication framing with nominal
     input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1727,7 +1782,7 @@ artifacts:
       terminator, oversized or empty payload is rejected.'
 - id: TC-027
   type: test_case
-  title: "Verify communication timeout \u2014 case 027"
+  title: Verify communication timeout — case 027
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise communication timeout with nominal
     input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1743,7 +1798,7 @@ artifacts:
       an age greater than the timeout signals a retained communication fault.
 - id: TC-028
   type: test_case
-  title: "Verify delivery estimation \u2014 case 028"
+  title: Verify delivery estimation — case 028
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise delivery estimation with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1758,7 +1813,7 @@ artifacts:
       1 mL while running; paused or inhibited sessions deliver zero.
 - id: TC-029
   type: test_case
-  title: "Verify watchdog \u2014 case 029"
+  title: Verify watchdog — case 029
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise watchdog with nominal input; (2) challenge
     its boundary; (3) repeat with invalid input; (4) record controller mode, result
@@ -1773,7 +1828,7 @@ artifacts:
       backwards or non-finite clock input raises a fault.
 - id: TC-030
   type: test_case
-  title: "Verify power loss recovery \u2014 case 030"
+  title: Verify power loss recovery — case 030
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise power loss recovery with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1788,7 +1843,7 @@ artifacts:
       is applied only after complete bounds and checksum validation.
 - id: TC-031
   type: test_case
-  title: "Verify time validation \u2014 case 031"
+  title: Verify time validation — case 031
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise time validation with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1803,7 +1858,7 @@ artifacts:
       preserves the prior event sequence.
 - id: TC-032
   type: test_case
-  title: "Verify residual anomaly display \u2014 case 032"
+  title: Verify residual anomaly display — case 032
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise residual anomaly display with nominal
     input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1819,7 +1874,7 @@ artifacts:
       in the review input; an unlisted open defect is reported as a gap.
 - id: TC-033
   type: test_case
-  title: "Verify flow bounds \u2014 case 033"
+  title: Verify flow bounds — case 033
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise flow bounds with nominal input; (2)
     challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
@@ -1836,7 +1891,7 @@ artifacts:
       change.
 - id: TC-034
   type: test_case
-  title: "Verify volume limit \u2014 case 034"
+  title: Verify volume limit — case 034
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise volume limit with nominal input; (2)
     challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
@@ -1852,7 +1907,7 @@ artifacts:
       requesting more than the remaining volume is clamped to that remaining volume.
 - id: TC-035
   type: test_case
-  title: "Verify start interlock \u2014 case 035"
+  title: Verify start interlock — case 035
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise start interlock with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1868,7 +1923,7 @@ artifacts:
       inhibited output and records a fault; start with valid settings enters RUNNING.
 - id: TC-036
   type: test_case
-  title: "Verify pause control \u2014 case 036"
+  title: Verify pause control — case 036
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise pause control with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1883,7 +1938,7 @@ artifacts:
       next tick and preserves accumulated delivered volume.
 - id: TC-037
   type: test_case
-  title: "Verify stop control \u2014 case 037"
+  title: Verify stop control — case 037
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise stop control with nominal input; (2)
     challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
@@ -1898,7 +1953,7 @@ artifacts:
       delivered volume and the stop event remain available.
 - id: TC-038
   type: test_case
-  title: "Verify rate conversion \u2014 case 038"
+  title: Verify rate conversion — case 038
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise rate conversion with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1913,7 +1968,7 @@ artifacts:
       rate or calibration raises ValueError.
 - id: TC-039
   type: test_case
-  title: "Verify dose calculation \u2014 case 039"
+  title: Verify dose calculation — case 039
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise dose calculation with nominal input;
     (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
@@ -1928,7 +1983,7 @@ artifacts:
       volume is 0.5 mL; zero concentration is rejected.
 - id: TC-040
   type: test_case
-  title: "Verify diagnostic summary without allocated requirement \u2014 case 040"
+  title: Verify diagnostic summary without allocated requirement — case 040
   body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
     event recorder enabled. Steps: (1) exercise diagnostic summary without allocated
     requirement with nominal input; (2) challenge its boundary; (3) repeat with invalid
@@ -1972,7 +2027,8 @@ artifacts:
   type: defect
   title: Audit export ordering
   body: 'Exporting a log with equal timestamps returns records in non-stable order.
-    Impact assessment: Audit reconstruction may be ambiguous; the export ordering issue remains under investigation. Status rationale: Follow-up review required.'
+    Impact assessment: Audit reconstruction may be ambiguous; the export ordering
+    issue remains under investigation. Status rationale: Follow-up review required.'
   attributes:
     synthetic: true
     state: Active

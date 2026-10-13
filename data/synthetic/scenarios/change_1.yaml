@@ -43,24 +43,32 @@ expected_sections:
       status: stale
       artifacts:
       - UNIT-sensor_pressure
+    architecture_overview:
+      status: stale
+      artifacts:
+      - UNIT-sensor_pressure
     components:
       status: possibly_affected
       artifacts:
       - SRS-021
       - UNIT-sensor_pressure
     component_responsibility.COMP-03:
-      status: possibly_affected
+      status: stale
       artifacts:
-      - SRS-021
       - UNIT-sensor_pressure
     component_allocation.COMP-03:
       status: stale
       artifacts:
       - SRS-021
+      - UNIT-sensor_pressure
     interfaces:
       status: stale
       artifacts:
       - SRS-021
+      - UNIT-sensor_pressure
+    runtime:
+      status: stale
+      artifacts:
       - UNIT-sensor_pressure
     risk_controls:
       status: stale
@@ -77,6 +85,10 @@ expected_sections:
       - SRS-021
       - UNIT-sensor_pressure
   sdd:
+    conventions:
+      status: stale
+      artifacts:
+      - UNIT-sensor_pressure
     unit_trace:
       status: stale
       artifacts:
@@ -282,4 +294,5 @@ expected_sections:
 impact_basis: Frozen after inspecting baseline cited revisions and confirmed 1-hop
   edges. Stale also includes changed deterministic query facts; each entry names its
   changed evidence causes. Possibly affected sections are reported but never automatically
-  regenerated.
+  regenerated. AST-derived signatures include the changed pressure default; component
+  responsibility, overview and runtime therefore receive changed structural facts.

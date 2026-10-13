@@ -4,6 +4,8 @@ import math
 from dataclasses import dataclass
 from enum import StrEnum
 
+from kestrel.alarm_latch import latched
+
 
 def occluded(pressure: float, threshold: float = 80.0) -> bool:
     if pressure < 0:
@@ -76,3 +78,8 @@ class PressureMonitor:
         self.latched = False
         self.crossing_since = None
         return True
+
+
+def pressure_alarm(decision: PressureDecision, active: bool, acknowledged: bool) -> bool:
+    """Route a validated pressure decision through the shared alarm latch."""
+    return latched(active, acknowledged, decision.alarm_required)

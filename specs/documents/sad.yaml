@@ -51,7 +51,7 @@ sections:
   title: Architecture overview
   mode: ai
   query: runtime_view
-  prompt: design.architecture@1
+  prompt: design.architecture@2
   allowed_kinds:
   - sourced
   - inferred
@@ -73,7 +73,7 @@ sections:
   title: Component design
   mode: ai
   query: component_design
-  prompt: design.component@1
+  prompt: design.component@2
   allowed_kinds:
   - sourced
   - inferred
@@ -143,7 +143,7 @@ sections:
   title: Runtime and deployment view
   mode: ai
   query: runtime_view
-  prompt: design.runtime@1
+  prompt: design.runtime@2
   allowed_kinds:
   - sourced
   - inferred

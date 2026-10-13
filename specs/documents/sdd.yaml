@@ -43,7 +43,7 @@ sections:
   title: Purpose
   mode: ai
   query: unit_purpose
-  prompt: design.unit_purpose@1
+  prompt: design.unit_purpose@2
   allowed_kinds:
   - sourced
   - inferred
@@ -66,7 +66,7 @@ sections:
   title: Behavior and algorithm
   mode: ai
   query: unit_behavior
-  prompt: design.unit_behavior@1
+  prompt: design.unit_behavior@2
   allowed_kinds:
   - sourced
   - inferred
@@ -89,7 +89,7 @@ sections:
   title: Error handling
   mode: ai
   query: unit_errors
-  prompt: design.unit_errors@1
+  prompt: design.unit_errors@2
   allowed_kinds:
   - sourced
   - inferred

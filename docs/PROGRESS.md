@@ -138,3 +138,9 @@ Current milestone: M7 (done) · Development resumed by owner · Last updated: 20
 - `dhf consistency` → `2 consistency findings`: approved `sad-v1` misses COMP-06 (C01) and names COMP-03 Pressure Monitoring (C04). Fresh documents pass all four rules. Separate stale/unknown citation and summary mismatch tests exercise C02/C03.
 - Expanded `generate-section` now accepts per-unit/per-component IDs (R-034). The impact command persists stale evidence status and readiness blocks it.
 - Before M8 document work: address R-033 synthesis evidence; R-030/R-031 remain scheduled before M10.
+
+### Pre-M8 R-033
+- `pytest tests/test_design.py tests/test_impact.py tests/test_generate.py -q` → `17 passed in 27.25s`; final hazard-context query tests → `2 passed in 2.43s`. Ruff clean.
+- AST detects exactly `UNIT-sensor_pressure → UNIT-alarm_latch: kestrel.alarm_latch.latched`, represented as COMP-03 → COMP-04 in the Mermaid source. All twenty units/signatures and traced hazard/control context are supplied to synthesis.
+- Six component descriptions now differ in responsibility, collaborators and safety mechanisms. The source architecture.yaml is built from these same records. Separate v2 unit prompts cover why/what, algorithm, and invalid-input/recovery behavior.
+- Source enrichment legitimately changes component/unit revisions in the RTM golden. Structural signatures contain the pressure default, so change_1 also stales overview/runtime/component responsibility and SDD conventions; frozen expectations record that cause. No IDs or trace links changed; dataset validator remains 248 artifacts / 473 links / exact answer key.

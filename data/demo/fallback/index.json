@@ -1,0 +1,40 @@
+{
+  "source_run": {
+    "explorer_baseline": "out/demo/9c927fe7a7/explorer-baseline.html",
+    "redline": "out/demo/9c927fe7a7/redline-sstr.docx",
+    "provider": "mock",
+    "live": false,
+    "explorer": "out/demo/9c927fe7a7/explorer.html",
+    "explorer_stale": "out/demo/9c927fe7a7/explorer-stale.html",
+    "root": "out/demo/9c927fe7a7",
+    "documents": "out/demo/9c927fe7a7/documents",
+    "db": "out/demo/9c927fe7a7/evidence.sqlite",
+    "impact": "out/demo/9c927fe7a7/impact-before-regeneration.json",
+    "metrics": "out/metrics.md",
+    "audit": "out/demo/9c927fe7a7/audit-pack.zip",
+    "status": "drafts require human review"
+  },
+  "provider": "mock",
+  "notice": "Recorded synthetic offline drafts, not a live system or approval",
+  "files": {
+    "audit-pack.zip": "df51d932a5ab706699224d905861f9e3d9ccdbc6c5c4d73dce879eaee26e1769",
+    "clause_coverage.md": "4fc683dd1ccdfad56e1730925213b82c900675330ca0cfa04355e269e2be4a4f",
+    "drr.docx": "29da9d2f315a669fcb522004f93941afdee8b5e239e5032504fe7c0b6fea1600",
+    "explorer-baseline.html": "63ec0a3f10e37ea80a84031659e6888eb3c1c66da7d8a7df68a899c21d60af4c",
+    "explorer-stale.html": "36b3a9bc184dd1790d141c897283c210b1fd752e2d96d131d16aa48272e7e959",
+    "explorer.html": "04fa3dd5462baff49648d724f5cfc8781107e7f905dbe39642c49b4055fba8e2",
+    "gaps.md": "817845a161a8a2346ac92a68a0a43afb53ce4d07fc504e45cfc7cc898400ee6d",
+    "impact.json": "6128a72470c998748ff35a75f2787256c2d14182a19a974b547f0c60b44335d3",
+    "metrics.md": "33edbe34b1c4b1b6e64a1bf3bef2d9c4b3f668daf499255649299b97e81c7681",
+    "redline-sstr.docx": "caa68c962f6acb3067923334c77122890a3b4d7ac76ca5e955dea3a2104cc2cb",
+    "rtm.docx": "3c3032da2ca42412e0fdb65c873490e16166ddd124270549d8bf51c3e3966861",
+    "rtm.md": "1dfcdda0ef903108c494ba813a50d6d9606142374c468d70f6219ff97e8988c5",
+    "sad.docx": "5b7746f83d195aa063d23289378f6dddcc5decbfc449a6a5f321e98af5083f7a",
+    "sdd.docx": "0005f5d764304949e00c84323b952145484ac834af0f727b4323238aff0cb1ea",
+    "sfmea.docx": "c5c34e99723eb6acf8133b39e53196f3cdd425c8a80722ee4a76ce3dde1a823e",
+    "sstr.docx": "ca8c6c679d8bae10b7e84758e21d57be85b7d4806d00cd4b2b550d5c110f67de",
+    "sstr.manifest.json": "c9d7195e0e4e46ca832a86710a85800186bdea7c3a5f93c2bff1201870463ff7",
+    "sutr.docx": "e866d87c4d52402ae24d5405b1d9aac73848f26557d52aa13689aff404b2591e",
+    "transcript.txt": "d22eb5f83d730317a67db4d03aaaf54bea37215c2a50effc1dcfec91722cc0ab"
+  }
+}

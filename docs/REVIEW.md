@@ -70,6 +70,8 @@ Resolved in 8233c49: exact unavailable reasons, one ledger-protected rationale r
   - "Reset filters" may not clear the search text; please check.
 - The reviewer's copy for the owner: `out/review-samples/explorer-stale-m13.html`.
 
+Resolved in c6795b4: compact lane layout and viewport for filtered/focused nodes, actual SRS-021 trace chain on selection, inline source excerpt, subdued non-chain edges, baseline C01/C04 filter, and reset clearing text and focus. Automated graph/DOM regressions pass; the owner-provided screenshot prompted the final inspector and canvas tightening. Browser repaint still requires owner visual confirmation.
+
 **R-050 [non-blocking — include in M15; required before the sandbox build] PM — Adapt BUILD_PLAN and the day-1 kit to BD's sandbox guardrails** (`port/copilot_studio/BUILD_PLAN.md`, `day1/`, `agent.md`, `governance.md`)
 - The owner supplied BD's Citizen Developer guardrails. They're summarised at the top of `docs/SANDBOX_QUESTIONS.md`. Fold them in:
   1. **Credit-aware architecture.** There's a hard limit of **600 Copilot credits per agent per month**.

@@ -3,7 +3,6 @@
 import hashlib
 import json
 import os
-import sys
 import threading
 import uuid
 from pathlib import Path
@@ -13,7 +12,7 @@ from mock_ado.state import apply_scenario, merge_docs_pr
 from typer.testing import CliRunner
 
 from dhf.cli import app
-from dhf.config import load_env
+from dhf.config import load_env, setting
 from dhf.ingest.ado import ADO, git_command
 from dhf.review import DocsReview, claim_key
 
@@ -35,25 +34,63 @@ def human_fixture_review(result: dict) -> str:
             "<!-- endsection:" + section["id"] + " -->",
             decisions + "<!-- endsection:" + section["id"] + " -->",
         )
+    text += "\n" + "".join(
+        f"<!-- dhf-validation:{claim_key(event)} reviewed reviewer=SyntheticDemoReviewer "
+        "rationale=Discarded invalid fixture draft claim reviewed; human approval pending -->\n"
+        for event in result["manifest"]["validation"]["rejected"]
+    )
     return text.replace(
         "[Human input required — complete in the controlled review workflow.]",
         "Synthetic reviewer supplied draft content. eQMS approval remains pending.",
     )
 
 
-def run_demo() -> dict:
-    root = Path("out/demo") / uuid.uuid4().hex[:10]
-    root.mkdir(parents=True)
+def cumulative_spend(provider: str) -> float:
+    path = Path("out/ledger.json")
+    entry = json.loads(path.read_text()).get(provider, {}) if path.exists() else {}
+    return entry.get("actual_usd", 0) + entry.get("reserved_usd", 0)
+
+
+def demo_configuration(root: Path, live: bool) -> dict:
+    provider = setting("DHF_LIVE_PROVIDER", "openai") if live else "mock"
+    if live:
+        if provider not in ("openai", "anthropic"):
+            raise ValueError("DHF_LIVE_PROVIDER must be openai or anthropic")
+        if not setting(provider.upper() + "_API_KEY"):
+            raise ValueError(
+                "Live demo needs the configured provider key; use ./scripts/demo.sh offline"
+            )
     empty = root / "empty.env"
     empty.write_text("")
+    run_cap = min(0.25, float(setting("DHF_MAX_USD_PER_RUN", "0.25")))
+    return {
+        "provider": provider,
+        "run_cap": run_cap,
+        "starting_spend": cumulative_spend(provider) if live else 0,
+        "environment": {
+            **({} if live else {"DHF_ENV_FILE": str(empty)}),
+            "DHF_CACHE_ROOT": "out" if live else str(root / "llm"),
+            "DHF_PROVIDER": provider,
+        },
+    }
+
+
+def remaining_run_cap(config: dict) -> float:
+    spent = cumulative_spend(config["provider"]) - config["starting_spend"]
+    return max(0.0, config["run_cap"] - max(0.0, spent))
+
+
+def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
+    root = Path("out/demo") / uuid.uuid4().hex[:10]
+    root.mkdir(parents=True)
+    config = demo_configuration(root, live)
     os.environ.update(
         {
-            "DHF_ENV_FILE": str(empty),
+            **config["environment"],
             "APP_ADO_PAT": "mock-app-token",
             "ADO_PROJECT": "Kestrel",
             "ADO_DOCS_REPO": "kestrel-dhf-docs",
             "DHF_MODEL_MOCK": "mock-v2",
-            "DHF_CACHE_ROOT": str(root / "llm"),
         }
     )
     load_env.cache_clear()
@@ -64,10 +101,19 @@ def run_demo() -> dict:
     db = root / "evidence.sqlite"
     docs = root / "documents"
     docs.mkdir()
+    Path("out/demo-active.json").write_text(
+        json.dumps({"root": str(root), "db": str(db), "documents": str(docs)}, indent=2)
+    )
     runner = CliRunner()
     ado = ADO()
 
     def command(args: list[str], expected_exit: int = 0) -> str:
+        if live:
+            os.environ["DHF_MAX_USD_PER_RUN"] = str(remaining_run_cap(config))
+        if args[0] == "explore":
+            args = args + ["--baseline-file", "data/synthetic/sad_v1.md"]
+        if args[0] in ("generate", "propose", "verify-support"):
+            args = args + ["--provider", config["provider"]]
         print("$ dhf " + " ".join(args), flush=True)
         result = runner.invoke(app, args)
         print(result.output, flush=True)
@@ -80,6 +126,17 @@ def run_demo() -> dict:
         command(["ingest", "--db", str(db)])
         for doc in ("sstr", "sad", "sdd", "sfmea"):
             command(["generate", doc, "--db", str(db), "--documents", str(docs), "--open-pr"])
+        command(
+            [
+                "explore",
+                "--db",
+                str(db),
+                "--documents",
+                str(docs),
+                "--output",
+                str(root / "explorer-baseline.html"),
+            ]
+        )
         command(["gaps", "--db", str(db)])
         command(["rtm", "--db", str(db)])
         command(["propose", "--db", str(db), "--documents", str(docs)])
@@ -162,6 +219,8 @@ def run_demo() -> dict:
         for suffix in (".md", ".docx", ".manifest.json"):
             (review_docs / ("drr" + suffix)).write_bytes((docs / ("drr" + suffix)).read_bytes())
             (docs / ("drr" + suffix)).unlink()
+        if pause_before_change:
+            input("Ready for change_1. Press Enter to apply the synthetic source update… ")
         timer = threading.Timer(2, apply_scenario, args=("change_1", server.root))
         timer.start()
         command(
@@ -185,6 +244,7 @@ def run_demo() -> dict:
             ]
         )
         command(["regenerate", "--stale", "--open-pr", "--db", str(db), "--documents", str(docs)])
+        (root / "redline-sstr.docx").write_bytes((docs / "sstr.docx").read_bytes())
         sstr = json.loads((docs / "sstr.manifest.json").read_text())
         command(
             ["check", "sstr", "--pr-id", str(int(sstr["review"]["pr_url"].rsplit("/", 1)[1]))],
@@ -213,6 +273,19 @@ def run_demo() -> dict:
                 "1",
                 "--impact-file",
                 str(saved),
+            ]
+        )
+        command(
+            [
+                "verify-support",
+                "--doc",
+                "sstr",
+                "--sample",
+                "1",
+                "--db",
+                str(db),
+                "--documents",
+                str(docs),
             ]
         )
         command(["eval", "--db", str(db), "--documents", str(docs), "--impact-file", str(saved)])
@@ -246,6 +319,10 @@ def run_demo() -> dict:
             ]
         )
         result = {
+            "explorer_baseline": str(root / "explorer-baseline.html"),
+            "redline": str(root / "redline-sstr.docx"),
+            "provider": config["provider"],
+            "live": live,
             "explorer": str(root / "explorer.html"),
             "explorer_stale": str(root / "explorer-stale.html"),
             "root": str(root),
@@ -268,6 +345,15 @@ def run_demo() -> dict:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        raise SystemExit("demo.sh takes no arguments; each run owns a fresh out/demo folder")
-    run_demo()
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Synthetic local demo; paid mode uses shared ledger"
+    )
+    parser.add_argument("--live", action="store_true")
+    parser.add_argument("--pause-before-change", action="store_true")
+    args = parser.parse_args()
+    try:
+        run_demo(live=args.live, pause_before_change=args.pause_before_change)
+    except (ValueError, RuntimeError) as error:
+        raise SystemExit(str(error) + "; use data/demo/fallback artifacts") from None

@@ -1,0 +1,1085 @@
+[
+  {
+    "document": "sad",
+    "changed_artifacts": [
+      "PR-8",
+      "RES-3-021",
+      "RUN-3",
+      "SRS-021",
+      "UNIT-sensor_pressure"
+    ],
+    "sections": [
+      {
+        "id": "classification",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "architecture",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "architecture_overview",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "components",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "component_responsibility.COMP-03",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "component_allocation.COMP-03",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "component_allocation.COMP-04",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "RC-04",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "interfaces",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "runtime",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "risk_controls",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "allocation_matrix",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "gaps",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "document": "sdd",
+    "changed_artifacts": [
+      "PR-8",
+      "RES-3-021",
+      "RUN-3",
+      "SRS-021",
+      "UNIT-sensor_pressure"
+    ],
+    "sections": [
+      {
+        "id": "conventions",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "unit_trace",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "allocation.UNIT-alarm_latch",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "RC-04",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "identity.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "purpose.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "interfaces.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "behavior.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "structures.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "errors.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "allocation.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "tests.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "identity.UNIT-sensor_calibration",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "purpose.UNIT-sensor_calibration",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "interfaces.UNIT-sensor_calibration",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "behavior.UNIT-sensor_calibration",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "structures.UNIT-sensor_calibration",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "errors.UNIT-sensor_calibration",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "allocation.UNIT-sensor_calibration",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "tests.UNIT-sensor_calibration",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "identity.UNIT-sensor_filter",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "purpose.UNIT-sensor_filter",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "interfaces.UNIT-sensor_filter",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "behavior.UNIT-sensor_filter",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "structures.UNIT-sensor_filter",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "errors.UNIT-sensor_filter",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "allocation.UNIT-sensor_filter",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "SRS-021",
+            "via": "RC-04",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "tests.UNIT-sensor_filter",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "identity.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "purpose.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "interfaces.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "behavior.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "structures.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "errors.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "allocation.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "tests.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "document": "sfmea",
+    "changed_artifacts": [
+      "PR-8",
+      "RES-3-021",
+      "RUN-3",
+      "SRS-021",
+      "UNIT-sensor_pressure"
+    ],
+    "sections": [
+      {
+        "id": "inventory",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "function_trace.UNIT-alarm_latch",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "function_modes.UNIT-alarm_latch",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "function_trace.UNIT-infusion_motor",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "function_trace.UNIT-sensor_air",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "function_trace.UNIT-sensor_calibration",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "function_modes.UNIT-sensor_calibration",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "function_trace.UNIT-sensor_filter",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "function_modes.UNIT-sensor_filter",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "function_trace.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "function_modes.UNIT-sensor_pressure",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "SRS-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "risk_row.HAZ-02",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "control_trace.HAZ-02",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "risk_row.HAZ-03",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "control_trace.HAZ-03",
+        "status": "possibly_affected",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "via": "COMP-03",
+            "reason": "one_hop_neighbor"
+          }
+        ]
+      },
+      {
+        "id": "risk_row.HAZ-04",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "control_trace.HAZ-04",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      },
+      {
+        "id": "failure_modes.HAZ-04",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          },
+          {
+            "artifact": "SRS-021",
+            "reason": "query_facts_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "gaps",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "document": "sstr",
+    "changed_artifacts": [
+      "PR-8",
+      "RES-3-021",
+      "RUN-3",
+      "SRS-021",
+      "UNIT-sensor_pressure"
+    ],
+    "sections": [
+      {
+        "id": "purpose_scope",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RUN-3",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "references",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "RUN-3",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "results_summary",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "results_by_requirement",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "SRS-021",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "UNIT-sensor_pressure",
+            "reason": "cited_revision_changed"
+          },
+          {
+            "artifact": "PR-8",
+            "reason": "query_facts_changed"
+          },
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "anomaly_assessment",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          },
+          {
+            "artifact": "RUN-3",
+            "reason": "query_facts_changed"
+          },
+          {
+            "artifact": "SRS-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "retest_results",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "verification_gaps",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          },
+          {
+            "artifact": "SRS-021",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "release_conclusion",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          },
+          {
+            "artifact": "RUN-3",
+            "reason": "query_facts_changed"
+          }
+        ]
+      },
+      {
+        "id": "evidence_index",
+        "status": "stale",
+        "causes": [
+          {
+            "artifact": "RES-3-021",
+            "reason": "query_facts_changed"
+          },
+          {
+            "artifact": "RUN-3",
+            "reason": "query_facts_changed"
+          }
+        ]
+      }
+    ]
+  }
+]

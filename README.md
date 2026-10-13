@@ -1,4 +1,19 @@
 # A-C
+## 60-second quick start
+
+With Python 3.12 and uv installed:
+
+```sh
+git clone --branch dev https://github.com/Rahulreddy-23/A-C.git
+cd A-C
+uv sync --locked
+./scripts/demo.sh
+```
+
+The offline demo owns a fresh native ADO mock and mock LLM config. No keys or .env changes are needed. Read `out/demo-latest.json` for generated Word drafts, explorers, tracked redline and audit ZIP. Use [the timed demo script](docs/DEMO_SCRIPT.md) and [judging map](docs/JUDGING_MAP.md); [checked-in fallbacks](data/demo/fallback/README.md) work before a demo run.
+
+`./scripts/demo.sh --pause-before-change` pauses for the on-stage update. `./scripts/demo.sh --live` explicitly uses configured paid models through the shared ledger; it keeps the whole-demo run cap and provider hard caps. Real ADO seeding and Copilot Studio tenant execution are separate owner-controlled onboarding steps.
+
 ## DHF Automation — How to run
 
 Python 3.12 and uv are required (`out/bin/uv` is the local workstation install).

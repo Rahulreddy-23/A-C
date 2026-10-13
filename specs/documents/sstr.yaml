@@ -1,6 +1,6 @@
 id: sstr
 title: Software System Test Report
-spec_version: 3
+spec_version: 4
 standard_refs:
 - IEC 62304 5.7
 - IEC 62304 5.8
@@ -70,6 +70,12 @@ sections:
   title: Failed tests and anomaly assessment
   mode: ai
   query: failed_results_with_defects
+  columns:
+    result: Result
+    case: Test case
+    outcome: Outcome
+    requirements: Requirements
+    defects: Linked defect
   prompt: sstr.anomaly_assessment@2
   output_schema: claims.v1
   allowed_kinds:

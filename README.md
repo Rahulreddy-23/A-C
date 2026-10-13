@@ -126,3 +126,17 @@ subsequent drafts. The product never merges a PR. Test tooling separately offers
 OpenAI prompt tuning uses `gpt-4.1-mini` ($0.40 input / $1.60 output per million tokens, verified against https://developers.openai.com/api/docs/models/gpt-4.1-mini). Existing `.env` files are preserved; override old settings with `DHF_MODEL_OPENAI=gpt-4.1-mini DHF_OPENAI_INPUT_PER_MILLION=0.40 DHF_OPENAI_OUTPUT_PER_MILLION=1.60`. Nano remains an optional smoke test with its matching prices. Offline runs still default to mock.
 
 Redlines compare visible paragraphs and individual cells in source-keyed table rows. Hyperlink destination updates alone do not mark text changed; Git artifact labels show short revisions. Word comments are reserved for review items. Synthesis sections use a 12k-token input budget with deterministic context reduction; the manifest records reductions and distinct failure reasons.
+
+Generate design drafts and check their component inventories:
+
+```sh
+uv run dhf generate sad --release 1.1
+uv run dhf generate sdd --release 1.1
+uv run dhf consistency
+```
+
+The SAD includes a checksummed local Mermaid source file. The SDD groups extracted
+interfaces, structures and explicit allocations per unit. Missing recorded unit
+tests are shown as gaps in the source evidence. Offline mock prose verifies the
+pipeline structure; use a configured provider for human-reviewed prose tuning.
+The SSTR always lists every failed or blocked result before its AI assessment.

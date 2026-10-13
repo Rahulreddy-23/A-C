@@ -37,11 +37,21 @@ class PythonExtractor:
             tree = ast.parse(code)
             signatures = [
                 ast.unparse(node).split(":\n", 1)[0]
-                for node in tree.body
+                for node in ast.walk(tree)
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
             ]
             structures = [
                 ast.unparse(n)
+                if not isinstance(n, ast.ClassDef)
+                else {
+                    "name": n.name,
+                    "bases": [ast.unparse(b) for b in n.bases],
+                    "fields": [
+                        ast.unparse(field)
+                        for field in n.body
+                        if isinstance(field, (ast.Assign, ast.AnnAssign))
+                    ],
+                }
                 for n in tree.body
                 if isinstance(n, (ast.ClassDef, ast.Assign, ast.AnnAssign))
             ]

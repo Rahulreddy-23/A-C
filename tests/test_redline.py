@@ -70,6 +70,14 @@ def test_change_1_regeneration_and_redline_are_confined(ado_server, tmp_path: Pa
     finally:
         ado.close()
     assert all(s["status"] != "ai_unavailable" for s in after["manifest"]["sections"])
+    anomaly = next(s for s in after["manifest"]["sections"] if s["id"] == "anomaly_assessment")
+    assert {r["result"] for r in anomaly["facts"]["rows"]} == {"RES-2-008", "RES-3-021"}
+    assert "none — see G05" in anomaly["markdown"]
+    assert {id for c in anomaly["claims"] for id in c["citations"] if id.startswith("RES-")} == {
+        "RES-2-008",
+        "RES-3-021",
+    }
+
     summaries = [
         next(s for s in r["manifest"]["sections"] if s["id"] == "results_summary")["facts"][
             "summary"

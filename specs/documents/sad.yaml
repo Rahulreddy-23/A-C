@@ -1,0 +1,198 @@
+spec_version: 1
+params:
+  release:
+    type: string
+    required: true
+id: sad
+title: Software Architecture Document
+sections:
+- id: purpose
+  title: Purpose, scope and definitions
+  mode: ai
+  query: design_scope
+  prompt: design.scope@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+- id: context
+  title: System context and external interfaces
+  mode: ai
+  query: system_context
+  prompt: design.context@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+- id: classification
+  title: Software safety classification reference
+  mode: deterministic
+  query: components
+  columns:
+    id: Component
+    name: Name
+    safety_class: Source safety class
+  standard_refs:
+  - IEC 62304 5.3
+- id: architecture
+  title: Component and unit allocation diagram
+  mode: deterministic
+  query: architecture_diagram
+  columns: {}
+  standard_refs:
+  - IEC 62304 5.3
+- id: architecture_overview
+  title: Architecture overview
+  mode: ai
+  query: runtime_view
+  prompt: design.architecture@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+- id: components
+  title: Component responsibilities
+  mode: deterministic
+  query: components
+  columns:
+    id: Component
+    name: Name
+    responsibility: Responsibility
+  standard_refs:
+  - IEC 62304 5.3
+- id: component_responsibility
+  title: Component design
+  mode: ai
+  query: component_design
+  prompt: design.component@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  repeat: component
+  synthesis: true
+  standard_refs:
+  - IEC 62304 5.3
+- id: component_allocation
+  title: Allocated requirements
+  mode: deterministic
+  query: component_allocation
+  columns:
+    requirement: Requirement
+    revision: Rev
+    title: Title
+  repeat: component
+  standard_refs:
+  - IEC 62304 5.3
+- id: interfaces
+  title: Extracted internal interfaces
+  mode: deterministic
+  query: interfaces
+  columns:
+    unit: Unit
+    component: Component
+    signatures: Signatures
+  standard_refs:
+  - IEC 62304 5.3
+- id: interface_context
+  title: Interface context
+  mode: ai
+  query: system_context
+  prompt: design.context@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+- id: soup
+  title: SOUP inventory
+  mode: deterministic
+  query: soup_inventory
+  columns:
+    id: SOUP
+    name: Name
+    version: Pinned version
+    requirements: Recorded requirements
+  standard_refs:
+  - IEC 62304 5.3
+- id: soup_purpose
+  title: SOUP purpose and constraints
+  mode: ai
+  query: soup_purpose
+  prompt: design.soup@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+- id: runtime
+  title: Runtime and deployment view
+  mode: ai
+  query: runtime_view
+  prompt: design.runtime@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+- id: risk_controls
+  title: Architectural risk-control measures
+  mode: deterministic
+  query: architecture_risks
+  columns:
+    hazard: Hazard
+    severity: Source severity
+    controls: Existing controls
+  standard_refs:
+  - IEC 62304 5.3
+- id: allocation_matrix
+  title: Requirements-to-architecture matrix
+  mode: deterministic
+  query: architecture_matrix
+  columns:
+    requirement: Requirement
+    revision: Rev
+    components: Components
+  standard_refs:
+  - IEC 62304 5.3
+- id: decisions
+  title: Architectural decisions
+  mode: deterministic
+  query: architectural_decisions
+  columns:
+    id: Decision record
+    decision: Source decision
+  standard_refs:
+  - IEC 62304 5.3
+- id: gaps
+  title: Open design and verification gaps
+  mode: deterministic
+  query: verification_gaps
+  columns:
+    rule: Rule
+    artifact_id: Artifact
+    message: Finding
+    action: Action
+  standard_refs:
+  - IEC 62304 5.3
+- id: open_issues
+  title: Additional open issues and dispositions
+  mode: human
+  standard_refs:
+  - IEC 62304 5.3

@@ -85,4 +85,4 @@
   title: Add diagnostic summary
   workitems: []
   files:
-  - kestrel/diagnostics_orphan.py
+  - kestrel/diagnostics_trace.py

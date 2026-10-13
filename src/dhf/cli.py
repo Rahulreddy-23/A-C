@@ -291,3 +291,27 @@ def baseline_command(doc: str, pr_id: int = typer.Option(...)) -> None:
         typer.echo(DocsReview(ado).create_baseline(doc, pr_id))
     finally:
         ado.close()
+
+
+@app.command("consistency")
+def consistency_command(db: str = "out/evidence.sqlite", documents: str = "out/documents") -> None:
+    """Check source and document component sets; emit reviewable findings."""
+    import json
+    from pathlib import Path
+
+    from dhf.graph import Store
+    from dhf.trace.consistency import component_consistency
+
+    store = Store(Path(db))
+    try:
+        graph = store.graph()
+    finally:
+        store.close()
+    manifests = [
+        json.loads(p.read_text())
+        for p in sorted(Path(documents).glob("*.manifest.json"))
+        if p.stem.split(".")[0] in ("sad", "sdd", "sfmea")
+    ]
+    findings = component_consistency(graph, manifests)
+    Path("out/consistency.json").write_text(json.dumps(findings, indent=2))
+    typer.echo(f"{len(findings)} consistency findings → out/consistency.json")

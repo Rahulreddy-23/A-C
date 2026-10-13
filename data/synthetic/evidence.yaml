@@ -1259,15 +1259,15 @@ artifacts:
     synthetic: true
     component: COMP-06
     path: kestrel/comms_timeout.py
-- id: UNIT-diagnostics_orphan
+- id: UNIT-diagnostics_trace
   type: software_unit
-  title: diagnostics_orphan
+  title: diagnostics_trace
   body: "def diagnostic_summary(values: list[float]) -> dict:\n    return {\"count\"\
     : len(values), \"maximum\": max(values, default=0.0)}"
   attributes:
     synthetic: true
     component: COMP-06
-    path: kestrel/diagnostics_orphan.py
+    path: kestrel/diagnostics_trace.py
 - id: PR-1
   type: code_change
   title: Implement UI
@@ -1972,8 +1972,7 @@ artifacts:
   type: defect
   title: Audit export ordering
   body: 'Exporting a log with equal timestamps returns records in non-stable order.
-    Impact assessment: Audit reconstruction may be ambiguous; residual-anomaly listing
-    is intentionally missing. Status rationale: Follow-up review required.'
+    Impact assessment: Audit reconstruction may be ambiguous; the export ordering issue remains under investigation. Status rationale: Follow-up review required.'
   attributes:
     synthetic: true
     state: Active
@@ -3638,7 +3637,7 @@ links:
   type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
-- src: UNIT-diagnostics_orphan
+- src: UNIT-diagnostics_trace
   dst: COMP-06
   type: allocated_to
   origin: explicit

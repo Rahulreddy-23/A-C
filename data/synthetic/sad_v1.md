@@ -29,4 +29,4 @@ The UI is a view and configuration entry surface. The control and alarm paths re
 Pinned dependency versions are recorded in the device repository. The synthetic bench package runs locally and records system-run evidence. This baseline must be reconciled with the current repository before release.
 
 ## Open architecture actions
-Verify boundary and recovery traces, confirm interface descriptions against extracted signatures, and reconcile the complete component set with current code. The component inventory and Pressure Monitoring name are intentionally older than the current implementation for the consistency demonstration.
+Verify boundary and recovery traces, confirm interface descriptions against extracted signatures, and reconcile the complete component set with current code. This baseline records the component inventory and Pressure Monitoring name at its original design review; later implementation revisions require reconciliation.

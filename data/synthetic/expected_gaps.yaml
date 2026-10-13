@@ -8,7 +8,7 @@ G02:
 - SRS-035
 G03:
 - PR-7
-- UNIT-diagnostics_orphan
+- UNIT-diagnostics_trace
 G04:
 - TC-040
 G05:

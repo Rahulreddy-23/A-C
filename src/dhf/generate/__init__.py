@@ -47,6 +47,35 @@ def load_prompt(reference: str) -> dict:
     return {**meta, "body": body.strip(), "sha256": sha(raw)}
 
 
+def expand_sections(spec: dict, graph: dict) -> list[dict]:
+    """Pure expansion of data-defined repeated component/unit sections."""
+    sections = []
+    pending = list(spec["sections"])
+    while pending:
+        first = pending.pop(0)
+        if "repeat" not in first:
+            sections.append(first)
+            continue
+        group = [first]
+        while pending and pending[0].get("repeat") == first["repeat"]:
+            group.append(pending.pop(0))
+        for artifact in sorted(graph["artifacts"], key=lambda a: a["id"]):
+            if artifact["type"] == first["repeat"]:
+                for section in group:
+                    sections.append(
+                        {
+                            **section,
+                            "id": section["id"] + "." + artifact["id"],
+                            "title": section["title"]
+                            + " — "
+                            + artifact["id"]
+                            + (": " + artifact["title"] if artifact["type"] == "component" else ""),
+                            "entity": artifact["id"],
+                        }
+                    )
+    return sections
+
+
 def partition_pack(pack: dict, budget: int) -> list[dict]:
     """Token-estimated evidence bound; never silently discard evidence."""
     groups = []
@@ -225,7 +254,7 @@ def finish_section(
         claims = claims[:limit]
     ids = (
         {a["id"] for a in pack["evidence"]}
-        if section["mode"] == "deterministic"
+        if section["mode"] == "deterministic" or section.get("columns")
         else {id for c in claims for id in c["citations"]}
     )
     rendered = render_section(
@@ -237,6 +266,7 @@ def finish_section(
         "title": section["title"],
         "mode": section["mode"],
         "query": section.get("query"),
+        "entity": section.get("entity"),
         "query_fingerprint": fingerprint(pack),
         "facts": pack["facts"],
         "status": "ai_unavailable"
@@ -258,7 +288,11 @@ def finish_section(
 
 def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict:
     pack = (
-        query(graph, section["query"], params)
+        query(
+            graph,
+            section["query"],
+            {**params, **({"entity": section["entity"]} if "entity" in section else {})},
+        )
         if section["mode"] != "human"
         else {"facts": {}, "evidence": []}
     )
@@ -353,6 +387,14 @@ def assemble(spec: dict, graph: dict, params: dict, sections: list[dict], contex
         ],
         "params": params,
         "sections": sections,
+        "component_set": sorted(
+            {
+                a["id"]
+                for a in graph["artifacts"]
+                if a["type"] == "component"
+                and any(a["id"] in s["cited_revisions"] for s in sections)
+            }
+        ),
         "validation": validation,
         "document_sha256": sha(text),
         "review": {"pr_url": None, "reviewers": [], "status": "draft"},
@@ -376,7 +418,9 @@ def generate_document(
     llm = llm or LLM(provider)
     start = time.monotonic()
     initial_cost, initial_hits, initial_calls = llm.run_spend, llm.hits, llm.calls
-    sections = [generate_section(section, graph, params, llm) for section in spec["sections"]]
+    sections = [
+        generate_section(section, graph, params, llm) for section in expand_sections(spec, graph)
+    ]
     version = (
         subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
         or "uncommitted"
@@ -396,6 +440,14 @@ def generate_document(
     }
     result = assemble(spec, graph, params, sections, context)
     out.mkdir(parents=True, exist_ok=True)
+    diagrams = []
+    for section in sections:
+        if "diagram" in section["facts"]:
+            path = out / (doc + "." + section["id"] + ".mmd")
+            source = section["facts"]["diagram"] + "\n"
+            path.write_text(source)
+            diagrams.append({"file": path.name, "sha256": sha(source), "format": "mermaid-source"})
+    result["manifest"]["diagrams"] = diagrams
     from dhf.render import render_docx
 
     result["manifest"]["docx"] = render_docx(

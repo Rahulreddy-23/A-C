@@ -1,0 +1,122 @@
+spec_version: 1
+params:
+  release:
+    type: string
+    required: true
+id: sdd
+title: Software Design Description
+sections:
+- id: conventions
+  title: Design conventions
+  mode: ai
+  query: runtime_view
+  prompt: design.conventions@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.4
+- id: unit_trace
+  title: Software unit traceability
+  mode: deterministic
+  query: unit_trace
+  columns:
+    unit: Unit
+    component: Component
+    requirements: Requirements
+  standard_refs:
+  - IEC 62304 5.4
+- id: identity
+  title: Unit identification
+  mode: deterministic
+  query: unit_identity
+  columns:
+    unit: Unit
+    component: Parent component
+    path: Source path
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+- id: purpose
+  title: Purpose
+  mode: ai
+  query: unit_purpose
+  prompt: design.unit_purpose@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  repeat: software_unit
+  synthesis: true
+  standard_refs:
+  - IEC 62304 5.4
+- id: interfaces
+  title: Extracted interfaces
+  mode: deterministic
+  query: unit_interfaces
+  columns:
+    signature: Signature
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+- id: behavior
+  title: Behavior and algorithm
+  mode: ai
+  query: unit_behavior
+  prompt: design.unit_behavior@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  repeat: software_unit
+  synthesis: true
+  standard_refs:
+  - IEC 62304 5.4
+- id: structures
+  title: Extracted data structures
+  mode: deterministic
+  query: unit_structures
+  columns:
+    structure: Data structure
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+- id: errors
+  title: Error handling
+  mode: ai
+  query: unit_errors
+  prompt: design.unit_errors@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  repeat: software_unit
+  synthesis: true
+  standard_refs:
+  - IEC 62304 5.4
+- id: allocation
+  title: Allocated requirements and risk controls
+  mode: deterministic
+  query: unit_allocation
+  columns:
+    requirement: Requirement
+    revision: Rev
+    controls: Risk controls
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+- id: tests
+  title: Explicitly traced unit tests
+  mode: deterministic
+  query: unit_tests
+  columns:
+    test: Test case
+    title: Title
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4

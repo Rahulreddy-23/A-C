@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M5 (refreshed) · Development paused by owner · Last updated: 2026-10-13 IST
+Current milestone: M6 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -11,8 +11,8 @@ Current milestone: M5 (refreshed) · Development paused by owner · Last updated
 | M4 | done | m4-done | bfae4d5 | 12-section SSTR and exact deterministic golden |
 | M5 | done (refreshed) | m5-done | 18ee5e8 implementation | Localized change_1 redlines; token budgets; review fixes |
 ## Now / Next
-- Working on: completed M5 blocker fixes; development stops at the owner’s request.
-- Next: resume M6 only after the owner instructs. Unfinished M6 work is preserved in stash e1736bb3469388f8a6abf2d2a11d4c3d19617726 (`Paused M6 for R-025 R-026`). It has no completed milestone tag and still needs verification.
+- Working on: M6 complete; starting M7 impact and selective regeneration.
+- Next: M7 impact and selective regeneration, then M8–M10. The restored stash remains as a backup.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -117,3 +117,14 @@ Current milestone: M5 (refreshed) · Development paused by owner · Last updated
 - Paused M6 smoke test had one unverified allocation expectation; it is not counted as acceptance evidence. Resume by inspecting/applying the preserved stash and resolving conflicts with these M5 fixes, then verify M6 fully.
 
 - Implementation and R-025–R-028 resolutions: 18ee5e8. m5-done is refreshed on the resolution checkpoint. M6 remains paused; no m6-done tag is claimed.
+
+### M6
+- Restored the named M6 stash without conflicts after committing the current review file in dd41a81. The stash remains as a backup.
+- `uv run pytest -q` → `53 passed in 41.49s`; ruff → `All checks passed!`, `88 files already formatted`.
+- `dhf generate sad --db out/m6.sqlite` → `sad: 28 sections`; `dhf generate sdd --db out/m6.sqlite` → `sdd: 162 sections`; both report zero validation events. All six components and twenty units are represented, with deterministic allocations and extracted signatures/data structures.
+- `dhf consistency --db out/m6.sqlite` → `0 consistency findings`. Test removes COMP-06 from a manifest and proves C01 detects it.
+- `python -m mock_ado.validate` → `{'artifacts': 248, 'links': 473, 'answer_key': 'exact', 'rules': 11}` after the diagnostics_trace rename and natural BUG-03 wording (R-018).
+- Architecture diagram is a checksummed local Mermaid source file with 26 nodes and 20 explicit allocation edges; no online renderer. Five SOUP entries use parsed dependency versions. Unit verification tables honestly state the absence of explicitly linked unit-level tests.
+- Local LibreOffice renders inspected: SAD 11 pages; final compact SDD 28 pages. PDF text extraction confirms full unit labels and source claims. Desktop Word visual verification remains pending.
+- R-029 regression: change_1 anomaly table contains RES-2-008 and RES-3-021, with the missing defect explicitly shown as `none — see G05`; offline narrative cites both. The complete deterministic table precedes any AI failure placeholder.
+- Mock model version is mock-v2 to invalidate obsolete cached narratives; mock prose is a structural demonstration and still requires human review. No paid calls made.

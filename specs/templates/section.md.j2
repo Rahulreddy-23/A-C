@@ -1,12 +1,18 @@
 <!-- section:{{ section.id }} -->
 ## {{ section.title }}
 
-{% if section.ai_unavailable is defined %}AI drafting unavailable ({{ section.ai_unavailable.reason }}) — author manually.
-{% elif section.mode == 'human' %}[Human input required — complete in the controlled review workflow.]
-{% else %}{% if facts.rows is defined and facts.rows %}| {% for key, label in section.columns.items() %}{{ label }} | {% endfor %}
+{% if facts.rows is defined and facts.rows %}| {% for key, label in section.columns.items() %}{{ label }} | {% endfor %}
 | {% for key in section.columns %}--- | {% endfor %}
 {% for row in facts.rows %}| {% for key in section.columns %}{{ (row.get(key, '—') | revision if key == 'revision' else row.get(key, '—')) | cell }} | {% endfor %}
 {% endfor %}
+{% endif %}{% if section.ai_unavailable is defined %}AI drafting unavailable ({{ section.ai_unavailable.reason }}) — author manually.
+{% elif section.mode == 'human' %}[Human input required — complete in the controlled review workflow.]
+{% else %}{% if facts.notice is defined and facts.notice %}{{ facts.notice }}
+
+{% endif %}{% if facts.diagram is defined %}```mermaid
+{{ facts.diagram }}
+```
+
 {% endif %}{% for claim in claims %}<!-- dhf-claim:{{ claim | claim_key }} -->
 {% if claim.kind == 'inferred' %}**[Inferred]** {% elif claim.kind == 'suggested' %}**[Suggested — review required]** {% endif %}{{ claim.text }}{% for id in claim.citations %} [{{ id }}@r{{ evidence[id].source.revision | revision }}]({{ evidence[id].source.url }}){% endfor %}{% if claim.kind == 'inferred' %}[^{{ section.id }}-{{ loop.index }}]{% endif %}
 

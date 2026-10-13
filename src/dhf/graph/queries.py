@@ -66,10 +66,30 @@ def query(graph: dict, name: str, params: dict) -> dict:
         evidence = [nodes[id] for id in sorted(ids)]
         facts = {"rows": rows}
     elif name == "failed_results_with_defects":
-        evidence = linked([a for a in results if a["attributes"]["outcome"] == "Failed"])
+        adverse = [a for a in results if a["attributes"]["outcome"] in ("Failed", "Blocked")]
+        evidence = linked(adverse)
         facts = {
             "summary": results_summary(graph, release),
-            "failed_results": [a["id"] for a in results if a["attributes"]["outcome"] == "Failed"],
+            "failed_results": [a["id"] for a in adverse],
+            "rows": [
+                {
+                    "result": a["id"],
+                    "case": a["attributes"]["test_case"],
+                    "outcome": a["attributes"]["outcome"],
+                    "requirements": [
+                        e["dst"]
+                        for e in edges
+                        if e["src"] == a["attributes"]["test_case"] and e["type"] == "verifies"
+                    ],
+                    "defects": [
+                        e["dst"]
+                        for e in edges
+                        if e["src"] == a["id"] and e["type"] == "reports_defect"
+                    ]
+                    or "none — see G05",
+                }
+                for a in adverse
+            ],
             "recorded_defect_links": [
                 {"result": e["src"], "defect": e["dst"], "origin": e["origin"]}
                 for e in edges
@@ -133,7 +153,10 @@ def query(graph: dict, name: str, params: dict) -> dict:
         evidence = types("software_req", "code_change", "test_case", "test_result")
         facts = {"rows": rtm(graph, release), "coverage": coverage(graph, release)}
     else:
-        raise ValueError("Unknown named query: " + name)
+        from dhf.graph.design import design_query
+
+        design = design_query(graph, name, params)
+        facts, evidence = design["facts"], design["evidence"]
     selected = {a["id"]: a for a in evidence}
     # Keep referenced context in the pack, including when prose names a component.
     pending = list(selected.values())

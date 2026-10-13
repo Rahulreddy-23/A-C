@@ -33,7 +33,7 @@ class LLM:
         total_cap: float | None = None,
     ) -> None:
         self.provider = provider
-        defaults = {"mock": "mock-v1", "openai": "gpt-4.1-mini", "anthropic": "claude-haiku-5-5"}
+        defaults = {"mock": "mock-v2", "openai": "gpt-4.1-mini", "anthropic": "claude-haiku-5-5"}
         self.model = setting(f"DHF_MODEL_{provider.upper()}", defaults.get(provider, ""))
         self.root = root
         self.root.mkdir(parents=True, exist_ok=True)

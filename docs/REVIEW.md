@@ -16,6 +16,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - For example, SAD `interfaces` and `architecture` are listed for a threshold change in one unit.
 - In M7, derive the expected list from the impact rule (sections whose cited revisions include a changed artifact, plus labelled 1-hop "possibly affected"). Annotate each expected section with the artifact that makes it stale, so the impact precision/recall metric is honest.
 
+Resolved in e42e8cb: frozen section/status/cause expectations distinguish cited changes, query-fact changes and one-hop possible impact; watch regression checks exact membership.
+
 **R-013 [non-blocking, by M10] M2 — Test-case steps are one template repeated across all cases** (`data/synthetic/evidence.yaml`, test_case entries)
 - Every case has the same four generic steps ("exercise … with nominal input; challenge its boundary; repeat with invalid input"), and titles end in "— case 0NN".
 - That's acceptable for the SSTR tables. The demo will open a few cases, though, so give 5–6 safety-critical cases specific stimuli and values: TC-021 occlusion, the air-in-line case, the over-infusion bound, the alarm latch/acknowledge case and the drug-limit case.
@@ -43,6 +45,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - Score them against the C entries in `expected_gaps.yaml`, alongside G01–G11.
   - This is the "stale documentation" problem from the brief, so it needs to show up in the demo.
 
+Resolved in e42e8cb: all four consistency checks inspect current drafts and latest approved docs-repo tags; sad-v1 emits C01/COMP-06 and C04/COMP-03. Evaluation scoring follows in M10.
+
 ### Live sample of M6 (OpenAI `gpt-4.1-mini`, run by the reviewer with owner approval; 7 sections, $0.0065, merged into `out/ledger.json`)
 
 - **SDD unit sections are excellent.** All three sections for `UNIT-sensor_pressure` passed validation with no issues and are accurate and code-grounded: threshold plus dwell latch, `PressureDecision` states, the exact fault reasons ("Decreasing sample timestamp"…), and the acknowledge/recovery path. This is the best output so far.
@@ -62,6 +66,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - `dhf generate-section sdd purpose.UNIT-sensor_pressure` and `sad component_responsibility.COMP-03` fail with "Unknown section", because the lookup uses `spec["sections"]` instead of `expand_sections(spec, graph)`.
 - That breaks the owner-facing cross-provider check for every per-component and per-unit section. Look the section up after expansion.
 
+
+Resolved in e42e8cb: generate-section resolves IDs after graph-driven expansion.
 
 ## Resolved
 

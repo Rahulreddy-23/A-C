@@ -123,7 +123,7 @@ Baseline tags (`sstr-v1`, `sstr-v2`, …) drive paragraph-level Word redlines in
 subsequent drafts. The product never merges a PR. Test tooling separately offers
 `mock-ado merge-docs-pr <id>` to simulate an owner's merge on the local mock.
 
-OpenAI prompt tuning uses `gpt-4.1-mini` ($0.40 input / $1.60 output per million tokens, verified against https://developers.openai.com/api/docs/models/gpt-4.1-mini). Existing `.env` files are preserved; override old settings with `DHF_MODEL_OPENAI=gpt-4.1-mini DHF_OPENAI_INPUT_PER_MILLION=0.40 DHF_OPENAI_OUTPUT_PER_MILLION=1.60`. Nano remains an optional smoke test with its matching prices. Offline runs still default to mock.
+OpenAI prompt tuning uses `gpt-4.1-mini` ($0.40 input / $1.60 output per million tokens, verified against https://developers.openai.com/api/docs/models/gpt-4.1-mini). Existing `.env` files are preserved; override old settings with `DHF_MODEL_OPENAI=gpt-4.1-mini DHF_OPENAI_INPUT_PER_MILLION=0.40 DHF_OPENAI_OUTPUT_PER_MILLION=1.60`. Offline runs still default to mock.
 
 Redlines compare visible paragraphs and individual cells in source-keyed table rows. Hyperlink destination updates alone do not mark text changed; Git artifact labels show short revisions. Word comments are reserved for review items. Synthesis sections use a 12k-token input budget with deterministic context reduction; the manifest records reductions and distinct failure reasons.
 

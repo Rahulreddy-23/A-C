@@ -20,6 +20,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - Keep the Mermaid source in the Markdown (ADO's markdown preview can render it) and the checksum in the manifest.
   - Never use an online renderer.
 
+Resolved in e707d9a: local deterministic PNG and Mermaid assets are checksummed and committed to docs PRs; Word embeds a numbered figure. Figure/Word and repeatability tests pass.
+
 ### Live sample after R-036 (OpenAI `gpt-4.1-mini`, owner-approved; 5 sections, $0.0114, merged into `out/ledger.json`)
 
 - **sFMEA HAZ-04 has improved substantially.** It now uses SRS-021/022/023, "80 kPa for a configured dwell time (3 seconds)", TC-021/TC-009 and COMP-03/COMP-04. The corrected traces work.
@@ -39,6 +41,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
     Add one worked example row.
 - **(b) Evidence/fact mismatch.** In `component_responsibility.COMP-03` and `runtime`, **2 of 4 claims were rejected** for citing `UNIT-sensor_pressure`, `UNIT-alarm_latch`, `COMP-02` and `COMP-04`. The structural facts mention these, but the evidence pack doesn't include them.
   - **Fix:** every ID referenced in a section's facts must be present in its evidence pack, as compact records. Add a test asserting `ids(facts) ⊆ ids(evidence)` for every AI section.
+
+Resolved in e707d9a: FMEA v2 prompts define failure-present local/system effects and a worked example; all AI fact IDs have source context, including compact synthesis records, with subset/reduction regressions.
 
 ### M9 review (tag `m9-done`, e972cb5) — verdict: **approved; plan the sandbox build next**
 
@@ -62,6 +66,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - **Tier C:** **no** Dataverse. Use SharePoint lists for Artifact, Link, Section and Run (state the row and size limits), keep the scope to the SSTR plus the impact demo, and show the rest from the reference implementation.
   - For each tier, list which flows and prompt tools are built, the hour estimates, the demo storyline, and which parity cases can pass. The owner's answers to `docs/SANDBOX_QUESTIONS.md` will pick the tier, so make the plan easy to collapse to one tier quickly.
 
+Resolved in e707d9a: BUILD_PLAN contains ordered MVP, estimates/cut line, A/B/C capability tiers, SharePoint row/file limits, fallback gates and scoped parity/native-offline storylines. Tenant execution is explicitly pending.
+
 **R-043 [non-blocking — before the sandbox build] M9 — Keep the core governance native, and pass prompt-tool inputs as text** (`port/copilot_studio/flows/04-generate-section.md`, `deterministic_logic.md`, `prompts/*.md`)
 - **The validator.** The pack makes the validator an "approved function", falling back to "manual drafting boundary" when none exists. But source-backed vs inferred governance is worth 20% of the score, so the MVP slice must validate claims **natively**:
   - citations ⊆ evidence IDs and IDs found in the text ⊆ evidence IDs (Power Automate `Filter array` / `contains` / `intersection`)
@@ -71,6 +77,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - **The numeric check:** use Power Fx `MatchAll` (in a topic or a Dataverse low-code plug-in) to extract numbers and compare them against facts. If that's impossible in the tenant, document a compensating control: numbers only in deterministic tables, and AI claims containing digits get `[Suggested]`. Don't silently drop the check.
 - **Prompt-tool inputs.** The converted prompt tools declare named inputs typed `object`/`array`. Copilot Studio prompt inputs are text (plus files/images), so pass `facts` and `evidence` as **JSON strings**. Note that the tenant's prompt input/output size limits must be checked against the 6k/12k-token budgets on day 1.
 
+Resolved in e707d9a: native validator recipe covers IDs, kinds, confidence, downgrade/coercion and numeric checks or blocked compensation; all prompt tools take text JSON. Actual tenant limits remain a day-1 gate.
+
 **R-044 [non-blocking — do with the next commit] Owner budget cap: $2.50 per provider, enforced in code** (`src/dhf/llm/__init__.py`, `.env.example`, `AGENTS.md` rule 7)
 - On 2026-10-13 the owner set a hard cap of **$2.50 per API for the whole hackathon**, counting all spend. The current cap logic is `min(build_cap 1.50, 0.8 × DHF_PROVIDER_BUDGET_USD 5.00 = 4.00)`. That keeps Codex's own build-time calls under 1.50, but it doesn't encode the owner's ceiling for demo and reviewer runs.
 - **Expected fix:**
@@ -78,6 +86,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - Show the remaining headroom in `dhf` output when a paid provider is used.
   - Add a test.
 - The reviewer's live checks currently copy `out/ledger.json` into a scratch worktree, run against it, and write it back. That way the cumulative cap already applies to reviewer spend.
+
+Resolved in e707d9a: provider hard caps enforce actual plus reserved spend (Anthropic 2.50/OpenAI 4.00), despite legacy higher config; paid CLI shows headroom. Both provider-cap regressions pass.
 
 ### Model bake-off (owner-approved; 5 hard sections × 7 OpenAI models, $0.227; raw outputs kept by the reviewer)
 
@@ -107,6 +117,8 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
   - (c) In the port pack, a Copilot Studio Prompt tool picks its model per prompt, so map the tiers to the tenant's prompt model options (sandbox question 3.2).
   - (d) Add the model ID and tier to each section's manifest entry.
 
+
+Resolved in e707d9a: section/rule data routes default/analytical models, with per-model prices/cache identity and section provenance. GPT-5 omits temperature, sets reasoning effort and reserves inclusive completion tokens; SDK/ledger/routing tests pass.
 
 ## Resolved
 

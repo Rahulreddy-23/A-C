@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M10 (in progress) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current milestone: M10 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -14,9 +14,10 @@ Current milestone: M10 (in progress) · Development resumed by owner · Last upd
 | M7 | done | m7-done | 3bde3d8 | Native watch, exact impact, selective PRs and C01–C04 |
 | M8 | done | m8-done | b82108b | DRR, sFMEA, proposals and readability fixes |
 | M9 | done | m9-done | e972cb5 | Complete port blueprint; tenant deployment pending |
+| M10 | done | m10-done | e707d9a implementation; checkpoint below | Evaluation, clause appendix, YAML extensions, audit export and offline demo |
 ## Now / Next
-- Working on: final M10 suite, offline demo and acceptance checkpoint. R-036/R-037 are complete; the latest model-tier/cap/tenant-plan follow-ups are implemented.
-- Next: tag/push m10-done after final checks. Copilot Studio tenant execution remains pending sandbox capabilities. The restored stash remains as a backup.
+- Completed: M6–M10 and review follow-ups R-030/R-036–R-045; all implementation checks green.
+- Next: owner chooses the sandbox capability tier for native Copilot Studio execution. M11 requires a real ADO org. The restored stash remains as a backup.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -195,3 +196,6 @@ Current milestone: M10 (in progress) · Development resumed by owner · Last upd
 - `./scripts/demo.sh` → exit 0; final pre-commit run `out/demo/03c71dc466`. `dhf ingest` → `Snapshot 1: 248 artifacts, 413 links`; `dhf gaps` → `21 deterministic gaps`; `dhf rtm` → `35 RTM rows`; `dhf propose` → `40 proposal checks`; product source PATCH → `403`. Native watch detects `2 changed, 3 added`; selective regeneration completes all four docs and readiness blocks the new SSTR suggestions. All AI sections available, zero validation events.
 - `dhf eval` → `Unknown IDs: 0; gaps precision=1.00 recall=1.00`; `out/metrics.md`/JSON and clause appendix produced. Saved change_1 impact → 75 exact section/status/cause records, precision/recall 1.00. Historical sad-v1 C01/C04 → 2 true positives, no false positives/negatives; current draft consistency → 0. Deterministic baseline goldens → SAD 4 / SDD 5 / SSTR 7 checked, no mismatches. Current coverage → SRS-to-test 31/35 (88.57%), SRS-to-code 33/35 (94.29%), hazard-control-verification paths 8/8; retained G06/G07 remain explicit findings.
 - `dhf audit-pack` → `32 verified files`; tampered ZIP/document and absent manifest-referenced source revisions are rejected by regression tests. `sutr` has 2 sections and `rtm` 2 sections via specs only; Python hash inventory unchanged. SUTR explicitly records no source unit-test results; a separate classified-unit-result test proves filtering.
+
+- Committed-code checkpoint: `./scripts/demo.sh` → exit 0, fresh run `out/demo/80077d4952`, generator version `e707d9a6acbc3da02fa1d8924d1aa2545a41dc4d`. Same exact metrics/goldens and 32 verified audit files. Section manifest records `{provider: mock, name: mock-v2, tier: analytical}` for the conclusion; no unavailable AI sections.
+- Before the documentation checkpoint commit: full suite → `74 passed in 81.93s`; ruff → `All checks passed!`, `147 files already formatted`. Review scan → `Unresolved blocking items: []`. R-030/R-041–R-045 marked `Resolved in e707d9a`; earlier R-036/R-037 remain marked with their implementation SHAs.

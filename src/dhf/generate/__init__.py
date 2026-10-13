@@ -12,6 +12,7 @@ import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from pydantic import ValidationError
 
+from dhf.config import setting
 from dhf.generate.validator import ID_PATTERN, validate_claims
 from dhf.graph.queries import fingerprint, prompt_pack, query
 from dhf.llm import LLM, BudgetExceeded, canonical
@@ -318,8 +319,8 @@ def finish_section(
     }
 
 
-def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict:
-    pack = (
+def section_pack(section: dict, graph: dict, params: dict) -> dict:
+    return (
         query(
             graph,
             section["query"],
@@ -332,31 +333,46 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
         if section["mode"] != "human"
         else {"facts": {}, "evidence": []}
     )
+
+
+def prepare_ai(section: dict, pack: dict) -> tuple[dict, list[dict], dict]:
+    """Pure section plan shared by generation, preview and folder batching."""
+    prompt = load_prompt(section["prompt"])
+    budget = (
+        prompt["max_input_tokens"]
+        - estimate_tokens(prompt["body"] + canonical(strict_claims_schema()))
+        - 512
+    )
+    reduction = {"reduced": False}
+    model_pack = prompt_pack(pack)
+    if section.get("synthesis"):
+        model_pack, reduction = reduce_synthesis(model_pack, pack, budget)
+        chunks = [model_pack]
+    else:
+        chunks = partition_pack(model_pack, budget)
+    for chunk in chunks:
+        chunk["max_claims"] = section.get("max_claims", 6)
+        chunk["preferred_kind"] = (
+            "suggested" if section["allowed_kinds"] == ["suggested"] else "sourced"
+        )
+    return prompt, chunks, reduction
+
+
+def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict:
+    pack = section_pack(section, graph, params)
     responses = []
     prompts = []
     tier = section.get("model_tier", "default")
     model = {"provider": llm.provider, "name": llm.model_for(tier), "tier": tier}
+    if llm.provider == "copilotstudio":
+        model["requested_tier"] = tier
+        model["tier"] = "basic"
     if section["mode"] == "ai":
         prompt = load_prompt(section["prompt"])
         prompts = [{k: prompt[k] for k in ("id", "version", "sha256")}]
-        budget = (
-            prompt["max_input_tokens"]
-            - estimate_tokens(prompt["body"] + canonical(strict_claims_schema()))
-            - 512
-        )
-        reduction = {"reduced": False}
         try:
-            model_pack = prompt_pack(pack)
-            if section.get("synthesis"):
-                model_pack, reduction = reduce_synthesis(model_pack, pack, budget)
-                chunks = [model_pack]
-            else:
-                chunks = partition_pack(model_pack, budget)
+            prompt, chunks, reduction = prepare_ai(section, pack)
             for chunk in chunks:
-                chunk["max_claims"] = section.get("max_claims", 6)
-                chunk["preferred_kind"] = (
-                    "suggested" if section["allowed_kinds"] == ["suggested"] else "sourced"
-                )
                 raw = llm.generate(
                     prompt["id"],
                     prompt["version"],
@@ -365,6 +381,10 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
                     prompt["max_output_tokens"],
                     model_tier=tier,
                 )
+                if llm.provider == "copilotstudio" and llm.last_model:
+                    if model["name"] != llm.model_for(tier) and model["name"] != llm.last_model:
+                        raise DraftingUnavailable("model_mismatch", "copilotstudio")
+                    model["name"] = llm.last_model
                 chunk_ids = {a["id"] for a in chunk["evidence"]}
                 validation_pack = {
                     "facts": chunk["facts"],
@@ -416,6 +436,7 @@ def assemble(spec: dict, graph: dict, params: dict, sections: list[dict], contex
         "prompts": list(prompts.values()),
         "model": context["model"],
         "llm_cost_usd": context["llm_cost_usd"],
+        **({"copilot_credits": context["copilot_credits"]} if "copilot_credits" in context else {}),
         "source_snapshot": [
             {
                 "artifact_id": a["id"],
@@ -462,9 +483,29 @@ def generate_document(
     llm = llm or LLM(provider)
     start = time.monotonic()
     initial_cost, initial_hits, initial_calls = llm.run_spend, llm.hits, llm.calls
-    sections = [
-        generate_section(section, graph, params, llm) for section in expand_sections(spec, graph)
-    ]
+    expanded = expand_sections(spec, graph)
+    if llm.provider == "copilotstudio" and setting("DHF_COPILOT_MODE", "http") == "folder":
+        jobs = []
+        for section in expanded:
+            if section["mode"] != "ai":
+                continue
+            try:
+                prompt, chunks, _ = prepare_ai(section, section_pack(section, graph, params))
+            except EvidenceOverBudget:
+                continue  # The ordinary section path records its human placeholder.
+            jobs.extend(
+                (
+                    prompt["id"],
+                    prompt["version"],
+                    prompt["body"],
+                    chunk,
+                    prompt["max_output_tokens"],
+                    section.get("model_tier", "default"),
+                )
+                for chunk in chunks
+            )
+        llm.preload_copilot_folder(doc, jobs)
+    sections = [generate_section(section, graph, params, llm) for section in expanded]
     version = (
         subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
         or "uncommitted"
@@ -474,8 +515,17 @@ def generate_document(
         "generated_at": datetime.now(UTC).isoformat(),
         "generator_version": version,
         "template_sha256": sha(Path(f"specs/documents/{doc}.yaml").read_text()),
-        "model": {"provider": provider, "name": llm.model},
-        "llm_cost_usd": llm.run_spend - initial_cost,
+        "model": {
+            "provider": llm.provider,
+            "name": llm.last_model or llm.model,
+            **({"tier": "basic"} if llm.provider == "copilotstudio" else {}),
+        },
+        "llm_cost_usd": 0 if llm.provider == "copilotstudio" else llm.run_spend - initial_cost,
+        **(
+            {"copilot_credits": llm.run_spend - initial_cost}
+            if llm.provider == "copilotstudio"
+            else {}
+        ),
         "telemetry": {
             "seconds": time.monotonic() - start,
             "cache_hits": llm.hits - initial_hits,

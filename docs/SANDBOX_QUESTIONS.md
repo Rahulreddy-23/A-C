@@ -36,6 +36,7 @@ Sources: the BD Citizen Developer onboarding deck (July 2026) and the Citizen De
 - ★ **1.2** Can you **create Dataverse tables** in the sandbox?
 - ★ **New:** can a **Power Automate cloud flow** use the AI Builder **"Run a prompt"** action, and be triggered from the agent (or from a Dataverse/SharePoint row the agent creates)?
 - ★ **New (M16 adapter):** can a cloud flow use the **"When an HTTP request is received"** trigger (premium) under the sandbox DLP? If not, is the **OneDrive for Business** connector allowed, and is the OneDrive sync client on your laptop (the folder-exchange fallback)?
+- **New (validator):** are **Dataverse low-code (instant) plug-ins** available? They'd host the Power Fx `MatchAll` number check; the alternative is a Copilot Studio topic formula.
 - **3.2** Which GPT models does the Prompt builder list, and is each labelled Basic, Standard or Premium?
 - **4.1** Is the real hackathon dataset cleared as non-sensitive, so it may go into the sandbox?
 - **1.3** Is there a SharePoint site with a document library you can write to?

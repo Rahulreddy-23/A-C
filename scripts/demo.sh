@@ -7,5 +7,5 @@ if command -v uv >/dev/null 2>&1; then
 else
   dhf_uv="out/bin/uv"
 fi
-# No dependency downloads. Offline by default; --live explicitly selects paid models.
+# No dependency downloads. Offline by default; --live selects the configured model provider.
 exec "$dhf_uv" run --offline --no-sync python tools/demo.py "$@"

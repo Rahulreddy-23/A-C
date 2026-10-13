@@ -38,6 +38,53 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 - **A genuine catch, worth showing in the demo:** `sdd/errors.UNIT-alarm_latch` claimed explicit invalid-input rejection, but the verifier found that "the provided code in UNIT-alarm_latch does not show handling of invalid input". The model had carried the requirement's wording into the code description.
 - R-046 helped: SAD generation rejections dropped from 6 to 2.
 
+**R-052 [DECIDED 2026-10-13: owner chose option B, the hybrid approved-model adapter; build it as M16, BRIEF §18.1] M14 — The official demo must use BD-approved AI only; the demo pack's AI paths don't meet that** (`docs/DEMO_SCRIPT.md`, `tools/demo.py`, port pack)
+- The problem statement says to *"leverage only BD approved AI tools"*. BD's sandbox rules say GPT models through Copilot Studio.
+- In the demo pack, the offline mode uses the **mock** provider, so every AI-written section in the fallback Word files is structural mock prose that judges will read. `--live` uses the owner's **personal OpenAI API key**, which is fine for development testing but is not a BD-approved tool for the official demo.
+- **Proposed direction (the PM recommends B, with A as the fallback):**
+  - **A — Native MVP only.** Build the BUILD_PLAN slice in the sandbox. Copilot Studio generates 1–2 sections live with an approved GPT model. Everything else is shown from the reference engine and clearly labelled "structural/mock AI".
+  - **B — Approved-model adapter (hybrid).** Add a `copilotstudio` provider to the dhf LLM layer:
+    - It sends each section's prompt, the facts JSON and the evidence JSON to a **Power Automate cloud flow in the BD sandbox**. The flow runs AI Builder **"Run a prompt"** with an approved GPT model (Basic tier) and returns claims JSON.
+    - Our tested engine still does ingest, validation, rendering, redlines, impact and the audit pack, but **all AI text comes from BD-approved models in the BD tenant**.
+    - The Copilot Studio agent is the conversational front door (start generation, show gaps and status) and calls the same flows.
+    - Cost: about 120 sections × about 4K tokens × 0.1 credits per 1K ≈ **50 credits per full five-document run**, well inside 600 per month.
+    - It depends on: an HTTP-request trigger, or a request queue (SharePoint list or Dataverse row) if HTTP triggers are DLP-blocked, plus the "Run a prompt" action and a GPT model listed in the prompt builder.
+- **Expected once the owner chooses:**
+  - (1) The adapter, offline-tested against a stub HTTP endpoint, with the same budget, cache and validator path. The `--live` demo then uses `DHF_LIVE_PROVIDER=copilotstudio`.
+  - (2) A flow spec and day-1 kit entry for the prompt-runner flow.
+  - (3) The demo script states which provider produced each AI section and never presents mock prose or personal-API output as the official path.
+  - (4) A **Copilot Studio beat** in the 6:40 script (agent in the test pane or Teams: "Draft the release test report" → status → PR or SharePoint link), with a screenshot fallback.
+
+**R-053 [non-blocking — fix before the owner's first sandbox session] M15 — Day-1 validator cards: say where each formula runs; cloud flows can't run Power Fx** (`port/copilot_studio/day1/validator_powerfx.md`, `click_path_tier_b.md` step 5)
+- The cards present the citation-subset, kind and confidence checks as **Power Fx** "after Parse JSON and Select in flow 04". Flow 04 is a **Power Automate cloud flow**, and cloud flows use workflow expressions (WDL), not Power Fx. Pasting these into flow 04 will fail on day 1.
+- `native_validator.md` does say "a Power Fx extraction step in a topic or supported Dataverse low-code plug-in", but the day-1 card and the click path don't make the split clear.
+- **Expected fix:**
+  - (a) For flow 04, give **paste-ready WDL**:
+    - citation subset: `Filter array` (From: citations; condition `@not(contains(variables('EvidenceIds'), item()))`) then `@equals(length(body('Filter_array')), 0)`
+    - kind: `@contains(createArray('sourced','inferred','suggested'), items('Apply_to_each')?['kind'])`
+    - confidence: a range check with `greaterOrEquals`/`lessOrEquals` and an `empty()` check
+  - (b) State that **only the `MatchAll` ID/number extraction** needs Power Fx, and give the host options with how flow 04 calls each:
+    - a Dataverse low-code (instant) plug-in, called through "Perform an unbound action", or
+    - a Copilot Studio topic formula
+  - (c) Add "Are Dataverse low-code plug-ins available?" to `SANDBOX_QUESTIONS.md`.
+  - (d) Keep the `numeric_unverified` compensation as the documented fallback.
+
+
+## Resolved
+
+### M15 (tag `m15-done`, 5a88eb9; kit in 6c1d7cd) — verdict: **approved; R-053 before the first sandbox session**
+
+Verified independently:
+- 93 tests pass; ruff is clean.
+- `port/copilot_studio/day1/` has:
+  - paste-ready SSTR-anomaly and SAD-component prompts, each with four **Text** inputs (`facts_json`, `evidence_json`, `max_claims`, `preferred_kind`) and fixed JSON output
+  - literal sample inputs and expected validated outputs
+  - validator cards with reference cases
+  - an `mvp_columns.csv` worksheet for 4 Dataverse tables
+  - a 9-step Tier B click path (flows 01→07 as cloud flows, then the thin agent)
+- It's honest throughout ("offline construction guide; no tenant step executed").
+- Follow-up: R-053, where the validator expressions run.
+
 **R-050 [non-blocking — include in M15; required before the sandbox build] PM — Adapt BUILD_PLAN and the day-1 kit to BD's sandbox guardrails** (`port/copilot_studio/BUILD_PLAN.md`, `day1/`, `agent.md`, `governance.md`)
 - The owner supplied BD's Citizen Developer guardrails. They're summarised at the top of `docs/SANDBOX_QUESTIONS.md`. Fold them in:
   1. **Credit-aware architecture.** There's a hard limit of **600 Copilot credits per agent per month**.
@@ -61,6 +108,7 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 - Keep the honesty rules: nothing claims tenant execution.
 
 Resolved in 6c1d7cd: Basic-tier GPT and thin-agent cloud-flow plan with 600-credit Monitor/400-credit guard estimates, mandatory Standard-agent description/path, synthetic-only and five-person sharing gates, and Tier C-prime reviewed JSON/CSV snapshot import with a working `dhf export-snapshot` command. Day-1 files include prompts, validator cards, CSV columns and flow click path; tenant checks remain pending.
+- *Reviewer verified at m15-done: the day-1 README covers the sandbox name, original-experience Agent creation path, never the GitHub Copilot options, the mandatory agent description (paste-ready), one thin topic with StartGeneration/GetRunStatus, loops in cloud flows (not agent flows), Basic-tier GPT only, no Anthropic/Premium, Monitor checks, Teams with at most 5 named users, and synthetic-only data. BUILD_PLAN has a credit plan with a 400-credit local guard under BD's 600 and a Tier C-prime (no ADO connector) path with a snapshot export (`src/dhf/graph/export.py`).*
 
 **R-051 [non-blocking, polish before the demo] M13 — Explorer details from the reviewer's second visual check (c6795b4)**
 - **Truncated labels.** Text like "UNIT-sensor_pr…" and "RES-3-021 · Fa…" is cut off. Widen lane boxes slightly or wrap to two lines, and add a `title` tooltip with the full ID and outcome.
@@ -68,26 +116,7 @@ Resolved in 6c1d7cd: Basic-tier GPT and thin-agent cloud-flow plan with 600-cred
 - **Size for projection.** The focused trace chain is small inside a large canvas. Add a "fit / zoom" control, or scale the focused chain to fill the lane area, so it reads on a projector.
 
 Resolved in 6c1d7cd: node IDs/outcomes wrap to two lines with full SVG tooltips, filtering selects a matching inspector record, and Expand graph makes the lane board full width for projection. The refreshed offline fallback and DOM regressions pass; final projector/browser viewing is an owner check.
-
-**R-052 [DECIDED 2026-10-13: owner chose option B, the hybrid approved-model adapter; build it as M16, BRIEF §18.1] M14 — The official demo must use BD-approved AI only; the demo pack's AI paths don't meet that** (`docs/DEMO_SCRIPT.md`, `tools/demo.py`, port pack)
-- The problem statement says to *"leverage only BD approved AI tools"*. BD's sandbox rules say GPT models through Copilot Studio.
-- In the demo pack, the offline mode uses the **mock** provider, so every AI-written section in the fallback Word files is structural mock prose that judges will read. `--live` uses the owner's **personal OpenAI API key**, which is fine for development testing but is not a BD-approved tool for the official demo.
-- **Proposed direction (the PM recommends B, with A as the fallback):**
-  - **A — Native MVP only.** Build the BUILD_PLAN slice in the sandbox. Copilot Studio generates 1–2 sections live with an approved GPT model. Everything else is shown from the reference engine and clearly labelled "structural/mock AI".
-  - **B — Approved-model adapter (hybrid).** Add a `copilotstudio` provider to the dhf LLM layer:
-    - It sends each section's prompt, the facts JSON and the evidence JSON to a **Power Automate cloud flow in the BD sandbox**. The flow runs AI Builder **"Run a prompt"** with an approved GPT model (Basic tier) and returns claims JSON.
-    - Our tested engine still does ingest, validation, rendering, redlines, impact and the audit pack, but **all AI text comes from BD-approved models in the BD tenant**.
-    - The Copilot Studio agent is the conversational front door (start generation, show gaps and status) and calls the same flows.
-    - Cost: about 120 sections × about 4K tokens × 0.1 credits per 1K ≈ **50 credits per full five-document run**, well inside 600 per month.
-    - It depends on: an HTTP-request trigger, or a request queue (SharePoint list or Dataverse row) if HTTP triggers are DLP-blocked, plus the "Run a prompt" action and a GPT model listed in the prompt builder.
-- **Expected once the owner chooses:**
-  - (1) The adapter, offline-tested against a stub HTTP endpoint, with the same budget, cache and validator path. The `--live` demo then uses `DHF_LIVE_PROVIDER=copilotstudio`.
-  - (2) A flow spec and day-1 kit entry for the prompt-runner flow.
-  - (3) The demo script states which provider produced each AI section and never presents mock prose or personal-API output as the official path.
-  - (4) A **Copilot Studio beat** in the 6:40 script (agent in the test pane or Teams: "Draft the release test report" → status → PR or SharePoint link), with a screenshot fallback.
-
-
-## Resolved
+- *Reviewer verified at m15-done through tests and `tools/check_explorer.cjs`; the explorer HTML was updated. A visual re-check is optional before the demo.*
 
 ### M14 (commit c49b24b) — verdict: **approved as a rehearsal pack; R-052 decides the official-demo AI path**
 

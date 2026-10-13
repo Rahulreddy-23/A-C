@@ -1,6 +1,6 @@
 # Day-1 native claim validator cards
 
-These are Power Fx formulas for **typed** values after `Parse JSON` and `Select` in flow 04. `ClaimCitations`, `EvidenceIds`, `ClaimNumbers`, and `FactNumbers` are single-column tables named `Value`; `ClaimKind` is text and `ClaimConfidence` is number or blank. Keep the flow's rejection/downgrade event arrays and render only accepted claims. Paste/test each card in the actual tenant before enabling unattended generation. The offline cases below exercise the reference validator, not Power Fx execution.
+These are **Power Fx** formulas for a Copilot Studio topic or a supported Dataverse low-code plug-in, **not for a Power Automate cloud-flow expression box**. Cloud flow 04 uses the [WDL validator cards](validator_flow_wdl.md) for citation, kind and confidence. `ClaimCitations`, `EvidenceIds`, `ClaimNumbers`, and `FactNumbers` are single-column tables named `Value`; `ClaimKind` is text and `ClaimConfidence` is number or blank. Keep the rejection/downgrade events and render only accepted claims. The offline cases below exercise the reference validator, not tenant execution.
 
 ## Citation subset and kind
 
@@ -27,7 +27,7 @@ If(ClaimKind = "sourced",
 
 ## Numeric extraction and subset
 
-First remove **known artifact-ID spans** from a separate working copy of claim text in the cloud flow. Preserve the original text for rendering. Flatten numeric leaf values of computed `facts_json` into `FactNumbers`; exclude booleans. The pattern is an authoring-time constant in Power Fx. `MatchAll` produces `FullMatch`; `Value(..., "en-US")` normalizes 39 and 39.0 to the same decimal value.
+First remove **known artifact-ID spans** from a separate working copy of claim text. Preserve the original text for rendering. Flatten numeric leaf values of computed `facts_json` into `FactNumbers`; exclude booleans. The pattern is an authoring-time constant in Power Fx. `MatchAll` produces `FullMatch`; `Value(..., "en-US")` normalizes 39 and 39.0 to the same decimal value. Flow 04 may call a Dataverse instant plug-in with **Perform an unbound action**. If the formula lives in the agent topic instead, flow 04 returns the typed candidate and evidence IDs to the topic; the topic runs the formula and calls a separate SaveValidatedClaims flow only for accepted results. An unattended flow cannot call a topic formula directly. If neither host is available, use `numeric_unverified` compensation rather than claim full numeric parity.
 
 ```powerfx
 ForAll(

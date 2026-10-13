@@ -2,7 +2,7 @@
 
 This is an implementation blueprint and parity fixture pack, not an imported solution or a claim that a tenant deployment was tested. Build in a dedicated development environment using only synthetic evidence first. Capability gates and fallbacks are in [governance](governance.md). No Python reading is needed to follow the flow specs.
 
-For the owner's BD Experiment sandbox, start with the [day-1 kit](day1/README.md): paste-ready two-section prompts, reference-validated sample inputs/outputs, native validator cards, four-table CSV worksheet, and the Tier B click path. [BUILD_PLAN.md](BUILD_PLAN.md) budgets Copilot Credits and includes Tier C-prime when the ADO connector is blocked. The M16 BD-approved model runner is a later adapter milestone; this M15 kit alone does not claim approved tenant prose or tenant execution.
+For the owner's BD Experiment sandbox, start with the [day-1 kit](day1/README.md): paste-ready two-section prompts, reference-validated sample inputs/outputs, WDL and hosted Power Fx validator cards, four-table CSV worksheet, and the Tier B click path. [BUILD_PLAN.md](BUILD_PLAN.md) budgets Copilot Credits and includes Tier C-prime when the ADO connector is blocked. M16 adds the [generic BD-approved prompt](day1/generic_prompt.md), [HTTP flow](day1/http_prompt_flow.md) and [OneDrive fallback](day1/onedrive_prompt_flow.md). These are offline construction and contract artifacts; no tenant execution is claimed.
 
 | Reference step | Copilot Studio / Power Automate construct | Input → output | Spec |
 |---|---|---|---|

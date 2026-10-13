@@ -38,7 +38,12 @@ class LLM:
         total_cap: float | None = None,
     ) -> None:
         self.provider = provider
-        defaults = {"mock": "mock-v2", "openai": "gpt-4.1-mini", "anthropic": "claude-haiku-5-5"}
+        defaults = {
+            "mock": "mock-v2",
+            "openai": "gpt-4.1-mini",
+            "anthropic": "claude-haiku-5-5",
+            "copilotstudio": "bd-basic-gpt",
+        }
         self.model = setting(f"DHF_MODEL_{provider.upper()}", defaults.get(provider, ""))
         root = root or Path(setting("DHF_CACHE_ROOT", "out"))
         self.root = root
@@ -67,6 +72,9 @@ class LLM:
         self.run_spend = 0.0
         self.hits = 0
         self.calls = 0
+        self.last_model: str | None = None
+        self.preload_errors: dict[str, Exception] = {}
+        self.preloaded_keys: set[str] = set()
         if adapter is None:
             if provider == "mock":
                 from dhf.llm.adapters.mock import MockAdapter
@@ -80,6 +88,10 @@ class LLM:
                 from dhf.llm.adapters.openai import OpenAIAdapter
 
                 adapter = OpenAIAdapter()
+            elif provider == "copilotstudio":
+                from dhf.llm.adapters.copilotstudio import CopilotStudioAdapter
+
+                adapter = CopilotStudioAdapter()
             else:
                 raise ValueError("Unknown provider")
         self.adapter = adapter
@@ -87,6 +99,8 @@ class LLM:
     def model_for(self, tier: str = "default") -> str:
         if tier not in ("default", "analytical"):
             raise ValueError("Unknown model tier")
+        if self.provider == "copilotstudio":
+            return self.model  # Both document tiers use the tenant-approved Basic model.
         model = self.model
         if tier == "analytical":
             model = setting(
@@ -141,6 +155,17 @@ class LLM:
         path = self.root / "ledger.json"
         ledger = json.loads(path.read_text()) if path.exists() else {}
         entry = ledger.get(self.provider, {})
+        if self.provider == "copilotstudio":
+            cap = self.copilot_cap()
+            actual = entry.get("actual_credits", 0.0)
+            reserved = entry.get("reserved_credits", 0.0)
+            return {
+                "provider": self.provider,
+                "actual_credits": actual,
+                "reserved_credits": reserved,
+                "hard_cap_credits": cap,
+                "remaining_credits": max(0.0, cap - actual - reserved),
+            }
         actual = entry.get("actual_usd", 0.0)
         reserved = entry.get("reserved_usd", 0.0)
         return {
@@ -151,29 +176,26 @@ class LLM:
             "remaining_usd": max(0.0, self.hard_cap - actual - reserved),
         }
 
-    def generate(
+    def copilot_cap(self) -> float:
+        """Keep the local guard below BD's 600-credit monthly tenant limit."""
+        value = float(setting("DHF_COPILOT_CREDIT_CAP", "400"))
+        if value <= 0:
+            raise ValueError("Copilot credit cap must be positive")
+        return min(value, 400.0)
+
+    def request_key(
         self,
         prompt_id: str,
         version: int,
         prompt: str,
         pack: dict,
-        max_output_tokens: int = 4000,
-        *,
-        model_tier: str = "default",
-        output_schema: str = "claims.v1",
-    ) -> dict:
-        if self.provider != "mock" and (
-            any(
-                not a.get("attributes", {}).get("synthetic", False)
-                for a in pack.get("evidence", [])
-            )
-        ):
-            raise ValueError("External APIs require exclusively synthetic evidence")
-        schema = strict_output_schema(output_schema)
-        response_model = output_model(output_schema)
-        model = self.model_for(model_tier)
-        completion_limit = self.completion_limit(model, max_output_tokens)
-        key = hashlib.sha256(
+        schema: dict,
+        model: str,
+        model_tier: str,
+        completion_limit: int,
+        output_schema: str,
+    ) -> str:
+        return hashlib.sha256(
             canonical(
                 {
                     "prompt_id": prompt_id,
@@ -192,17 +214,107 @@ class LLM:
                 }
             ).encode()
         ).hexdigest()
+
+    def copilot_request(
+        self,
+        prompt_id: str,
+        version: int,
+        prompt: str,
+        pack: dict,
+        max_output_tokens: int = 4000,
+        model_tier: str = "default",
+    ) -> dict:
+        """Preview the exact adapter envelope without reserving credits or sending it."""
+        from dhf.llm.adapters.copilotstudio import request_payload
+
+        if self.provider != "copilotstudio":
+            raise ValueError("Copilot request preview requires copilotstudio provider")
+        if any(
+            not a.get("attributes", {}).get("synthetic", False) for a in pack.get("evidence", [])
+        ):
+            raise ValueError("External APIs require exclusively synthetic evidence")
+        schema = strict_output_schema("claims.v1")
+        model = self.model_for(model_tier)
+        limit = self.completion_limit(model, max_output_tokens)
+        key = self.request_key(
+            prompt_id, version, prompt, pack, schema, model, model_tier, limit, "claims.v1"
+        )
+        return request_payload(key, prompt_id, version, prompt, pack, schema)
+
+    def generate(
+        self,
+        prompt_id: str,
+        version: int,
+        prompt: str,
+        pack: dict,
+        max_output_tokens: int = 4000,
+        *,
+        model_tier: str = "default",
+        output_schema: str = "claims.v1",
+    ) -> dict:
+        if self.provider == "copilotstudio" and output_schema != "claims.v1":
+            from dhf.llm.errors import DraftingUnavailable
+
+            raise DraftingUnavailable("unsupported_schema", "copilotstudio")
+        if self.provider != "mock" and (
+            any(
+                not a.get("attributes", {}).get("synthetic", False)
+                for a in pack.get("evidence", [])
+            )
+        ):
+            raise ValueError("External APIs require exclusively synthetic evidence")
+        schema = strict_output_schema(output_schema)
+        response_model = output_model(output_schema)
+        model = self.model_for(model_tier)
+        completion_limit = self.completion_limit(model, max_output_tokens)
+        key = self.request_key(
+            prompt_id,
+            version,
+            prompt,
+            pack,
+            schema,
+            model,
+            model_tier,
+            completion_limit,
+            output_schema,
+        )
         cached = self.cache / f"{self.provider}-{key}.json"
         lock = self.root / "ledger.lock"
         with lock.open("a") as handle:
             fcntl.flock(handle, fcntl.LOCK_EX)
+            if key in self.preload_errors:
+                raise self.preload_errors[key]
             if cached.exists():
-                self.hits += 1
+                if key in self.preloaded_keys:
+                    self.preloaded_keys.remove(key)
+                else:
+                    self.hits += 1
+                if self.provider == "copilotstudio":
+                    saved = json.loads(cached.read_text())
+                    self.last_model = saved["model"]
+                    return response_model.model_validate(saved["response"]).model_dump(mode="json")
                 return response_model.model_validate_json(cached.read_text()).model_dump(
                     mode="json"
                 )
             # UTF-8 bytes bound input tokens conservatively; reserve all output tokens.
             input_tokens = len((prompt + canonical(pack) + canonical(schema)).encode()) + 512
+            if self.provider == "copilotstudio":
+                from dhf.llm.adapters.copilotstudio import request_payload
+
+                request = request_payload(key, prompt_id, version, prompt, pack, schema)
+                input_tokens = max(input_tokens, len(canonical(request).encode()) + 512)
+                return self._generate_copilot(
+                    prompt_id,
+                    version,
+                    prompt,
+                    pack,
+                    schema,
+                    completion_limit,
+                    key,
+                    cached,
+                    input_tokens,
+                    response_model,
+                )
             if self.provider != "mock" and input_tokens > 100_000:
                 raise ValueError("Input exceeds configured small-prompt pricing tier")
             in_price, out_price = self.prices(model)
@@ -263,3 +375,176 @@ class LLM:
                 temp.replace(ledger_path)
             cached.write_text(result.model_dump_json())
             return result.model_dump(mode="json")
+
+    def _generate_copilot(
+        self,
+        prompt_id: str,
+        version: int,
+        prompt: str,
+        pack: dict,
+        schema: dict,
+        completion_limit: int,
+        key: str,
+        cached: Path,
+        input_tokens: int,
+        response_model: type,
+    ) -> dict:
+        """Reserve estimated credits, call the tenant transport, settle reported usage."""
+        from dhf.llm.adapters.copilotstudio import request_payload
+
+        rate = float(setting("DHF_COPILOT_CREDITS_PER_1K", "0.1"))
+        run_cap = float(setting("DHF_COPILOT_CREDITS_PER_RUN", "250"))
+        if rate < 0.1 or run_cap < 0:
+            raise ValueError(
+                "Copilot Basic credit rate must be at least 0.1 and run cap nonnegative"
+            )
+        reserve = (input_tokens + completion_limit) * rate / 1000
+        path = self.root / "ledger.json"
+        ledger = json.loads(path.read_text()) if path.exists() else {}
+        entry = ledger.get("copilotstudio", {})
+        actual = entry.get("actual_credits", 0.0)
+        outstanding = entry.get("reserved_credits", 0.0)
+        if (
+            self.run_spend + reserve > run_cap
+            or actual + outstanding + reserve > self.copilot_cap()
+        ):
+            raise BudgetExceeded("Copilot credit cap reached")
+        self.run_spend += reserve
+        ledger["copilotstudio"] = {
+            **entry,
+            "actual_credits": actual,
+            "reserved_credits": outstanding + reserve,
+            "calls": entry.get("calls", 0) + 1,
+        }
+        temp = path.with_suffix(".tmp")
+        temp.write_text(canonical(ledger))
+        temp.replace(path)
+        self.calls += 1
+        request = request_payload(key, prompt_id, version, prompt, pack, schema)
+        raw = self.adapter.complete_request(request)
+        usage = raw.pop("_usage", None)
+        reported_model = raw.pop("_model", None)
+        if not isinstance(reported_model, str) or not reported_model:
+            from dhf.llm.errors import DraftingUnavailable
+
+            raise DraftingUnavailable("invalid_schema", "copilotstudio")
+        result = response_model.model_validate(raw)
+        if not isinstance(usage, dict) or any(
+            not isinstance(usage.get(k), int) or isinstance(usage[k], bool) or usage[k] < 0
+            for k in ("input_tokens", "output_tokens")
+        ):
+            from dhf.llm.errors import DraftingUnavailable
+
+            raise DraftingUnavailable("invalid_usage", "copilotstudio")
+        billed = (usage["input_tokens"] + usage["output_tokens"]) * rate / 1000
+        entry = ledger["copilotstudio"]
+        entry["reserved_credits"] = max(0.0, entry["reserved_credits"] - reserve)
+        entry["actual_credits"] += billed
+        entry["input_tokens"] = entry.get("input_tokens", 0) + usage["input_tokens"]
+        entry["output_tokens"] = entry.get("output_tokens", 0) + usage["output_tokens"]
+        self.run_spend += billed - reserve
+        temp.write_text(canonical(ledger))
+        temp.replace(path)
+        self.last_model = reported_model
+        output = result.model_dump(mode="json")
+        cached.write_text(canonical({"response": output, "model": reported_model}))
+        return output
+
+    def preload_copilot_folder(self, doc: str, jobs: list[tuple]) -> None:
+        """Exchange one document file, then populate the normal per-section cache."""
+        from dhf.llm.adapters.copilotstudio import CopilotStudioAdapter
+        from dhf.llm.errors import DraftingUnavailable
+
+        if self.provider != "copilotstudio":
+            raise ValueError("Folder preload requires copilotstudio")
+        pending = {}
+        for prompt_id, version, prompt, pack, visible_limit, tier in jobs:
+            request = self.copilot_request(prompt_id, version, prompt, pack, visible_limit, tier)
+            key = request["request_id"]
+            cache = self.cache / f"copilotstudio-{key}.json"
+            if not cache.exists():
+                pending[key] = (request, visible_limit)
+        if not pending:
+            return
+        rate = float(setting("DHF_COPILOT_CREDITS_PER_1K", "0.1"))
+        run_cap = float(setting("DHF_COPILOT_CREDITS_PER_RUN", "250"))
+        if rate < 0.1 or run_cap < 0:
+            raise ValueError(
+                "Copilot Basic credit rate must be at least 0.1 and run cap nonnegative"
+            )
+        reservations = {
+            key: (len(canonical(request).encode()) + 512 + limit) * rate / 1000
+            for key, (request, limit) in pending.items()
+        }
+        total = sum(reservations.values())
+        lock = self.root / "ledger.lock"
+        with lock.open("a") as handle:
+            fcntl.flock(handle, fcntl.LOCK_EX)
+            path = self.root / "ledger.json"
+            ledger = json.loads(path.read_text()) if path.exists() else {}
+            entry = ledger.get("copilotstudio", {})
+            if (
+                self.run_spend + total > run_cap
+                or entry.get("actual_credits", 0) + entry.get("reserved_credits", 0) + total
+                > self.copilot_cap()
+            ):
+                self.preload_errors.update(
+                    {key: BudgetExceeded("Copilot credit cap reached") for key in pending}
+                )
+                return
+            entry = {
+                **entry,
+                "actual_credits": entry.get("actual_credits", 0),
+                "reserved_credits": entry.get("reserved_credits", 0) + total,
+                "calls": entry.get("calls", 0) + len(pending),
+            }
+            ledger["copilotstudio"] = entry
+            temp = path.with_suffix(".tmp")
+            temp.write_text(canonical(ledger))
+            temp.replace(path)
+            self.run_spend += total
+            self.calls += len(pending)
+            batch_id = hashlib.sha256(
+                canonical({"doc": doc, "ids": sorted(pending)}).encode()
+            ).hexdigest()
+            envelope = {
+                "request_id": batch_id,
+                "document_id": doc,
+                "sections": [value[0] for value in pending.values()],
+            }
+            try:
+                raw = self.adapter.complete_batch(envelope)
+            except DraftingUnavailable as exc:
+                self.preload_errors.update({key: exc for key in pending})
+                return
+            replies = {
+                row.get("request_id"): row
+                for row in raw["sections"]
+                if isinstance(row, dict) and isinstance(row.get("request_id"), str)
+            }
+            for key in pending:
+                try:
+                    parsed = CopilotStudioAdapter._parse(replies.get(key), key)
+                    usage = parsed.pop("_usage")
+                    model = parsed.pop("_model")
+                    result = output_model("claims.v1").model_validate(parsed)
+                except (DraftingUnavailable, ValueError, KeyError) as exc:
+                    self.preload_errors[key] = (
+                        exc
+                        if isinstance(exc, DraftingUnavailable)
+                        else DraftingUnavailable("invalid_schema", "copilotstudio")
+                    )
+                    continue
+                billed = (usage["input_tokens"] + usage["output_tokens"]) * rate / 1000
+                entry["reserved_credits"] = max(0.0, entry["reserved_credits"] - reservations[key])
+                entry["actual_credits"] += billed
+                entry["input_tokens"] = entry.get("input_tokens", 0) + usage["input_tokens"]
+                entry["output_tokens"] = entry.get("output_tokens", 0) + usage["output_tokens"]
+                self.run_spend += billed - reservations[key]
+                cache = self.cache / f"copilotstudio-{key}.json"
+                cache.write_text(
+                    canonical({"model": model, "response": result.model_dump(mode="json")})
+                )
+                self.preloaded_keys.add(key)
+            temp.write_text(canonical(ledger))
+            temp.replace(path)

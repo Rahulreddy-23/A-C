@@ -11,10 +11,10 @@ Use one topic, **Draft the release test report**. Its two actions are `StartGene
 Files in this folder:
 
 - [SSTR anomaly prompt](sstr_anomaly_prompt.md) and [SAD component prompt](sad_component_prompt.md): ready-to-paste instructions, four text inputs, fixed JSON output and [sample inputs/outputs](samples/).
-- [Power Fx validator cards](validator_powerfx.md): citation, kind, confidence and `MatchAll` numeric checks, with reference cases and a clearly blocked compensation.
+- [Flow WDL validator cards](validator_flow_wdl.md) for citation/kind/confidence and [Power Fx cards](validator_powerfx.md) for hosted `MatchAll` number/ID extraction, with reference cases and a blocked compensation.
 - [Dataverse columns CSV](mvp_columns.csv): four MVP tables. It is a column worksheet for table creation/import, not an exported solution.
 - [Tier B click path](click_path_tier_b.md): agent and flows 01→07, including the source-write boundary and day-1 capability gates.
 
 First answer the starred questions in [SANDBOX_QUESTIONS.md](../../../docs/SANDBOX_QUESTIONS.md). If the ADO connector is restricted, use the [Tier C′ reviewed snapshot path](../BUILD_PLAN.md#tier-c-prime-no-ado-connector) while seeking a Digital Innovation Request for the Prototype environment; do not treat that request as a demo dependency. Use only synthetic data until the owner confirms the real hackathon dataset is cleared. Test in the agent pane; after publishing, share through a Teams channel with at most five named individuals, no groups, and republish after each change.
 
-The M16 generic BD-approved model runner will add HTTP and OneDrive flow instructions here. These two MVP prompt files remain useful for native Option A if both model-runner modes are unavailable.
+M16 adds the [generic BD-approved model runner](generic_prompt.md), [HTTP flow](http_prompt_flow.md) and [OneDrive folder flow](onedrive_prompt_flow.md). These two MVP prompt files remain useful for native Option A only if both model-runner modes are unavailable.

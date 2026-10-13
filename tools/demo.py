@@ -48,21 +48,32 @@ def human_fixture_review(result: dict) -> str:
 def cumulative_spend(provider: str) -> float:
     path = Path("out/ledger.json")
     entry = json.loads(path.read_text()).get(provider, {}) if path.exists() else {}
+    if provider == "copilotstudio":
+        return entry.get("actual_credits", 0) + entry.get("reserved_credits", 0)
     return entry.get("actual_usd", 0) + entry.get("reserved_usd", 0)
 
 
 def demo_configuration(root: Path, live: bool) -> dict:
     provider = setting("DHF_LIVE_PROVIDER", "openai") if live else "mock"
     if live:
-        if provider not in ("openai", "anthropic"):
-            raise ValueError("DHF_LIVE_PROVIDER must be openai or anthropic")
-        if not setting(provider.upper() + "_API_KEY"):
+        if provider not in ("openai", "anthropic", "copilotstudio"):
+            raise ValueError("DHF_LIVE_PROVIDER must be openai, anthropic or copilotstudio")
+        if provider == "copilotstudio":
+            mode = setting("DHF_COPILOT_MODE", "http")
+            required = "DHF_COPILOT_FLOW_URL" if mode == "http" else "DHF_COPILOT_EXCHANGE_DIR"
+            if mode not in ("http", "folder") or not setting(required):
+                raise ValueError("Configure the approved Copilot flow or synced folder in .env")
+        elif not setting(provider.upper() + "_API_KEY"):
             raise ValueError(
                 "Live demo needs the configured provider key; use ./scripts/demo.sh offline"
             )
     empty = root / "empty.env"
     empty.write_text("")
-    run_cap = min(0.25, float(setting("DHF_MAX_USD_PER_RUN", "0.25")))
+    run_cap = (
+        min(250.0, float(setting("DHF_COPILOT_CREDITS_PER_RUN", "250")))
+        if provider == "copilotstudio"
+        else min(0.25, float(setting("DHF_MAX_USD_PER_RUN", "0.25")))
+    )
     return {
         "provider": provider,
         "run_cap": run_cap,
@@ -109,7 +120,12 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
 
     def command(args: list[str], expected_exit: int = 0) -> str:
         if live:
-            os.environ["DHF_MAX_USD_PER_RUN"] = str(remaining_run_cap(config))
+            key = (
+                "DHF_COPILOT_CREDITS_PER_RUN"
+                if config["provider"] == "copilotstudio"
+                else "DHF_MAX_USD_PER_RUN"
+            )
+            os.environ[key] = str(remaining_run_cap(config))
         if args[0] == "explore":
             args = args + ["--baseline-file", "data/synthetic/sad_v1.md"]
         if args[0] in ("generate", "propose", "verify-support"):
@@ -275,19 +291,26 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
                 str(saved),
             ]
         )
-        command(
-            [
-                "verify-support",
-                "--doc",
-                "sstr",
-                "--sample",
-                "1",
-                "--db",
-                str(db),
-                "--documents",
-                str(docs),
-            ]
-        )
+        if config["provider"] == "copilotstudio":
+            print(
+                "Advisory support verifier: pending approved tenant flow; "
+                "not claimed in this rehearsal.",
+                flush=True,
+            )
+        else:
+            command(
+                [
+                    "verify-support",
+                    "--doc",
+                    "sstr",
+                    "--sample",
+                    "1",
+                    "--db",
+                    str(db),
+                    "--documents",
+                    str(docs),
+                ]
+            )
         command(["eval", "--db", str(db), "--documents", str(docs), "--impact-file", str(saved)])
         metrics = json.loads(Path("out/metrics.json").read_text())
         assert metrics["unknown_id_count"] == 0

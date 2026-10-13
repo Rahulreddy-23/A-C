@@ -123,6 +123,11 @@ queries:
 - unit_trace
 - verification_gaps
 prompts:
+- id: copilot.generic_drafter
+  version: 1
+  source: specs/prompts/copilot.generic_drafter.md
+  sha256: e4b7890cde5d3d00f68b49870bc2040d8cfca93285677544c7951395ab620dc5
+  tool: prompts/copilot.generic_drafter.md
 - id: design.architecture
   version: 2
   source: specs/prompts/design.architecture.md

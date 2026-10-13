@@ -205,9 +205,69 @@ def generate(
             ado.close()
 
 
+@app.command("copilot-request")
+def copilot_request(
+    doc: str,
+    section: str,
+    release: str = "1.1",
+    db: str = "out/evidence.sqlite",
+) -> None:
+    """Print an exact section request for the tenant prompt builder; send nothing."""
+    import json
+    from pathlib import Path
+
+    from dhf.generate import expand_sections, load_spec, prepare_ai, section_pack
+    from dhf.graph import Store
+    from dhf.llm import LLM
+
+    store = Store(Path(db))
+    try:
+        graph = store.graph()
+    finally:
+        store.close()
+    if not graph["artifacts"]:
+        raise typer.BadParameter("Ingest evidence first")
+    matches = [
+        item
+        for item in expand_sections(load_spec(doc), graph)
+        if item["id"] == section and item["mode"] == "ai"
+    ]
+    if len(matches) != 1:
+        raise typer.BadParameter("Choose one AI section ID from the document spec")
+    item = matches[0]
+    prompt, chunks, _ = prepare_ai(item, section_pack(item, graph, {"release": release}))
+    if len(chunks) != 1:
+        raise typer.BadParameter(
+            "Section needs multiple evidence chunks; choose a single-chunk section"
+        )
+    llm = LLM("copilotstudio")
+    typer.echo(
+        json.dumps(
+            llm.copilot_request(
+                prompt["id"],
+                prompt["version"],
+                prompt["body"],
+                chunks[0],
+                prompt["max_output_tokens"],
+                model_tier=item.get("model_tier", "default"),
+            ),
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
+
+
 def report_budget(llm: "LLM") -> None:
     if llm.provider != "mock":
         budget = llm.budget_status()
+        if llm.provider == "copilotstudio":
+            typer.echo(
+                f"copilotstudio local headroom: {budget['remaining_credits']:.3f} credits "
+                f"of {budget['hard_cap_credits']:.1f} cap "
+                f"(actual {budget['actual_credits']:.3f}, "
+                f"reserved {budget['reserved_credits']:.3f}); check tenant Monitor"
+            )
+            return
         typer.echo(
             f"{budget['provider']} cumulative headroom: ${budget['remaining_usd']:.6f} "
             f"of ${budget['hard_cap_usd']:.2f} hard cap "

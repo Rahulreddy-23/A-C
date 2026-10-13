@@ -1,0 +1,7 @@
+{
+  "request_id": "1505c5dc2ffd937e919921d3968574033eacc1726126e69eb49f811b4a7653a0",
+  "claims_json": "{\"claims\":[{\"text\":\"RES-2-008 is a recorded failed result. BUG-01 describes an air alarm that clears before acknowledgement.\",\"kind\":\"sourced\",\"citations\":[\"RES-2-008\",\"BUG-01\"],\"confidence\":1.0},{\"text\":\"The air-alarm disposition needs reviewer follow-up.\",\"kind\":\"suggested\",\"citations\":[\"BUG-01\"],\"confidence\":0.75}]}",
+  "model": "EXAMPLE-BD-Basic-GPT-not-a-tenant-result",
+  "input_tokens": 0,
+  "output_tokens": 0
+}

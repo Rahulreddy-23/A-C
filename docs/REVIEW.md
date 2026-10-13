@@ -17,6 +17,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - That's acceptable for the SSTR tables. The demo will open a few cases, though, so give 5–6 safety-critical cases specific stimuli and values: TC-021 occlusion, the air-in-line case, the over-infusion bound, the alarm latch/acknowledge case and the drug-limit case.
 - Keep IDs and links unchanged.
 
+Resolved in b82108b: six safety-critical cases have distinct stimuli/boundaries/recovery steps; IDs and links retained and exact dataset validation passes.
+
 **R-030 [non-blocking, by M10 — demo impact] M6 — The architecture diagram is Mermaid source only, so the Word SAD shows a code listing, not a diagram** (`out/documents/sad.architecture.mmd`, SAD `architecture` section)
 - No local Mermaid or Graphviz renderer exists, so the DOCX gets a monospace block of `flowchart LR …`. A rendered architecture figure is one of the most visible parts of a SAD for reviewers and judges.
 - **Expected fix:**
@@ -30,6 +32,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - **Data-structure table.** Each cell is a key-sorted blob ("bases: StrEnum; fields: …; name: PressureState"). Use columns: Name | Kind/bases | Fields.
 - **IDs without names.** The risk-control and SOUP tables show bare IDs (`HAZ-01`, `RC-01`). Add title columns (hazard name, control name) so a reviewer can read them without clicking through.
 - **Missing SOUP requirements.** Every SOUP row says "Recorded requirements: —". Make that a finding rather than a silent dash: add a gap rule, e.g. **G12 "SOUP item has no recorded functional/performance requirements or anomaly-list evaluation"** (IEC 62304 §5.3.3–5.3.4, §7.1.3), and render it in "Open design and verification gaps".
+
+Resolved in b82108b: H2 entity groups/H3 subsections, structured data columns, hazard/control names and G12 SOUP gaps appear in the design documents; golden/coverage tests pass.
 
 ### Live sample of M6 (OpenAI `gpt-4.1-mini`, run by the reviewer with owner approval; 7 sections, $0.0065, merged into `out/ledger.json`)
 
@@ -55,6 +59,8 @@ Resolved in fd91a5c: distinct component records feed architecture.yaml; AST reso
   - Or collapse siblings in the report: "possibly affected: 3 sibling units of COMP-03 — review optional".
   - Put a per-document summary (stale / possibly affected counts) at the top of `out/impact.md`. The demo will show this report.
 
+
+Resolved in b82108b: impact Markdown starts with document counts and collapses sibling subsection flags into three optional unit groups; these do not block readiness.
 
 ## Resolved
 

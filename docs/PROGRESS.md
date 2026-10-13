@@ -12,7 +12,7 @@ Current milestone: M8 (done) · Development resumed by owner · Last updated: 20
 | M5 | done (refreshed) | m5-done | 18ee5e8 implementation | Localized change_1 redlines; token budgets; review fixes |
 | M6 | done | m6-done | c98915a | SAD/SDD, allocations and local diagram source |
 | M7 | done | m7-done | 3bde3d8 | Native watch, exact impact, selective PRs and C01–C04 |
-| M8 | done | m8-done | implementation below | DRR, sFMEA, proposals and readability fixes |
+| M8 | done | m8-done | b82108b | DRR, sFMEA, proposals and readability fixes |
 ## Now / Next
 - Working on: M6 complete; starting M7 impact and selective regeneration.
 - Next: M7 impact and selective regeneration, then M8–M10. The restored stash remains as a backup.

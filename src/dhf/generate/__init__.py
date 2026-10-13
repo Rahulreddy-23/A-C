@@ -15,7 +15,7 @@ from pydantic import ValidationError
 from dhf.config import setting
 from dhf.generate.validator import ID_PATTERN, validate_claims
 from dhf.graph.queries import fingerprint, prompt_pack, query
-from dhf.llm import LLM, BudgetExceeded, canonical
+from dhf.llm import LLM, BudgetExceeded, canonical, combine_usage_sources
 from dhf.llm.errors import DraftingUnavailable
 from dhf.llm.tokens import estimate_tokens
 from dhf.models import strict_claims_schema
@@ -362,6 +362,7 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
     pack = section_pack(section, graph, params)
     responses = []
     prompts = []
+    usage_sources = []
     tier = section.get("model_tier", "default")
     model = {"provider": llm.provider, "name": llm.model_for(tier), "tier": tier}
     if llm.provider == "copilotstudio":
@@ -381,6 +382,8 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
                     prompt["max_output_tokens"],
                     model_tier=tier,
                 )
+                if llm.provider == "copilotstudio":
+                    usage_sources.append(llm.last_usage_source)
                 if llm.provider == "copilotstudio" and llm.last_model:
                     if model["name"] != llm.model_for(tier) and model["name"] != llm.last_model:
                         raise DraftingUnavailable("model_mismatch", "copilotstudio")
@@ -411,6 +414,8 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
             )
             return {**finish_section(section, pack, [], prompts, failure.details), "model": model}
     result = {**finish_section(section, pack, responses, prompts), "model": model}
+    if section["mode"] == "ai" and llm.provider == "copilotstudio":
+        result["usage_source"] = combine_usage_sources(usage_sources)
     if section["mode"] == "ai":
         result["evidence_reduction"] = reduction
     return result
@@ -436,7 +441,22 @@ def assemble(spec: dict, graph: dict, params: dict, sections: list[dict], contex
         "prompts": list(prompts.values()),
         "model": context["model"],
         "llm_cost_usd": context["llm_cost_usd"],
-        **({"copilot_credits": context["copilot_credits"]} if "copilot_credits" in context else {}),
+        **(
+            {
+                "copilot_credits": context["copilot_credits"],
+                "usage_source": combine_usage_sources(
+                    [
+                        s.get("usage_source", "reported")
+                        for s in sections
+                        if s.get("model", {}).get("provider") == "copilotstudio"
+                        and s["mode"] == "ai"
+                        and s["status"] != "ai_unavailable"
+                    ]
+                ),
+            }
+            if "copilot_credits" in context
+            else {}
+        ),
         "source_snapshot": [
             {
                 "artifact_id": a["id"],

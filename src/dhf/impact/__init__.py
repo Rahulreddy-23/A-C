@@ -149,7 +149,8 @@ def regenerate(
         "doc_version": manifest["doc_version"] + 1,
         "generated_at": datetime.now(UTC).isoformat(),
         "template_sha256": sha(Path(f"specs/documents/{manifest['doc_id']}.yaml").read_text()),
-        "llm_cost_usd": llm.run_spend - cost,
+        "llm_cost_usd": 0 if llm.provider == "copilotstudio" else llm.run_spend - cost,
+        **({"copilot_credits": llm.run_spend - cost} if llm.provider == "copilotstudio" else {}),
         "telemetry": {
             "seconds": time.monotonic() - start,
             "cache_hits": llm.hits - hits,

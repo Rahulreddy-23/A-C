@@ -168,6 +168,14 @@ def evaluate(
                 },
                 "validation": {k: len(v) for k, v in doc["validation"].items()},
                 "cost_usd": doc["llm_cost_usd"],
+                **(
+                    {
+                        "copilot_credits": doc["copilot_credits"],
+                        "usage_source": doc.get("usage_source", "unavailable"),
+                    }
+                    if "copilot_credits" in doc
+                    else {}
+                ),
                 "seconds": telemetry.get("seconds"),
                 "calls": calls,
                 "cache_hits": hits,
@@ -299,6 +307,17 @@ def metrics_markdown(result: dict) -> str:
             f" | {d['validation']['rejected']} / {d['validation']['downgraded']} | "
             f"{d['cost_usd']:.6f} | {d['seconds']:.3f} | {hit} |\n"
         )
+    copilot_documents = [d for d in result["documents"] if "copilot_credits" in d]
+    if copilot_documents:
+        text += (
+            "\nCopilot credits are local estimates at the configured tier rate; "
+            "tenant Monitor is authoritative for billing. Usage source describes token counts, "
+            "not a tenant billing measurement.\n\n"
+            "| Document | Copilot estimated credits | Token usage source |\n"
+            "|---|---:|---|\n"
+        )
+        for d in copilot_documents:
+            text += f"| {d['document']} | {d['copilot_credits']:.6f} | {d['usage_source']} |\n"
     text += (
         "\n| Document | AI / deterministic / human sections | Assumed authoring hours | "
         "Estimated hours saved | Support rate | Supported / partial / unsupported | "

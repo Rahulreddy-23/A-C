@@ -115,7 +115,9 @@ def test_http_transport_error_redacts_signed_url(tmp_path, monkeypatch):
     assert "SECRET" not in str(error.value.details)
 
 
-def test_copilot_cap_exhaustion_prevents_transport(tmp_path, monkeypatch):
+@pytest.mark.parametrize("mode", ["reported", "estimated"])
+def test_copilot_cap_exhaustion_prevents_transport(tmp_path, monkeypatch, mode):
+    monkeypatch.setenv("DHF_COPILOT_USAGE", mode)
     monkeypatch.setenv("DHF_COPILOT_CREDIT_CAP", "0.001")
     monkeypatch.setenv("DHF_COPILOT_FLOW_URL", "https://example.invalid/flow")
     sent = []
@@ -138,7 +140,9 @@ def test_basic_tier_and_owner_credit_ceiling_cannot_be_raised(tmp_path, monkeypa
     assert llm.budget_status()["hard_cap_credits"] == 400
 
 
-def test_folder_document_is_one_file_with_section_failures(tmp_path, monkeypatch):
+@pytest.mark.parametrize("mode", ["reported", "estimated"])
+def test_folder_document_is_one_file_with_section_failures(tmp_path, monkeypatch, mode):
+    monkeypatch.setenv("DHF_COPILOT_USAGE", mode)
     exchange = tmp_path / "exchange"
     monkeypatch.setenv("DHF_COPILOT_MODE", "folder")
     monkeypatch.setenv("DHF_COPILOT_EXCHANGE_DIR", str(exchange))
@@ -158,6 +162,10 @@ def test_folder_document_is_one_file_with_section_failures(tmp_path, monkeypatch
                 seen.append(batch)
                 rows = [reply(item) for item in batch["sections"]]
                 rows[0] = reply(batch["sections"][0], status="refused")
+                if mode == "estimated":
+                    for row in rows:
+                        row.pop("input_tokens")
+                        row.pop("output_tokens")
                 responses = exchange / "responses"
                 responses.mkdir(exist_ok=True)
                 (responses / requests[0].name).write_text(
@@ -188,9 +196,24 @@ def test_folder_document_is_one_file_with_section_failures(tmp_path, monkeypatch
     assert result["manifest"]["model"]["provider"] == "copilotstudio"
     assert result["manifest"]["model"]["tier"] == "basic"
     assert result["manifest"]["copilot_credits"] > 0
+    assert result["manifest"]["usage_source"] == mode
+    assert llm.budget_status()["usage_source"] == mode
+    assert all(
+        s["usage_source"] == mode
+        for s in sections
+        if s["mode"] == "ai" and s["status"] != "ai_unavailable"
+    )
     assert result["manifest"]["telemetry"]["cache_hits"] == 0
     assert result["manifest"]["telemetry"]["calls"] == len(seen[0]["sections"])
     assert "Human input required" in result["markdown"]
+    successful = next(s for s in sections if s["mode"] == "ai" and s["status"] != "ai_unavailable")
+    definition = next(
+        s for s in expand_sections(load_spec("sstr"), graph) if s["id"] == successful["id"]
+    )
+    calls = llm.calls
+    cached = generate_section(definition, graph, {"release": "1.1"}, llm)
+    assert cached["usage_source"] == mode
+    assert llm.calls == calls
 
 
 def test_folder_timeout_is_sanitized(tmp_path, monkeypatch):
@@ -312,3 +335,156 @@ def test_copilot_request_cli_is_read_only(tmp_path, monkeypatch):
         Path("port/copilot_studio/day1/samples/copilot_request.json").read_text()
     )
     assert not (tmp_path / "llm/ledger.json").exists()
+
+
+@pytest.mark.parametrize("mode", ["reported", "estimated"])
+@pytest.mark.parametrize("available", [True, False])
+def test_http_usage_mode_provenance_and_cache(tmp_path, monkeypatch, mode, available):
+    monkeypatch.setenv("DHF_COPILOT_USAGE", mode)
+    monkeypatch.setenv("DHF_COPILOT_FLOW_URL", "https://example.invalid/flow?sig=SECRET")
+    requests = []
+    claims_json = json.dumps({"claims": []})
+
+    def endpoint(request):
+        payload = json.loads(request.content)
+        requests.append(payload)
+        response = reply(payload)
+        if not available:
+            response.pop("input_tokens")
+            response.pop("output_tokens")
+        return httpx.Response(200, json=response)
+
+    adapter = CopilotStudioAdapter(httpx.Client(transport=httpx.MockTransport(endpoint)))
+    llm = LLM("copilotstudio", tmp_path, adapter)
+    if mode == "reported" and not available:
+        with pytest.raises(DraftingUnavailable) as error:
+            llm.generate("test", 1, "Write café claims", PACK, 100)
+        assert error.value.details["reason"] == "invalid_usage"
+        assert llm.budget_status()["reserved_credits"] > 0
+        assert not list(llm.cache.glob("*.json"))
+        return
+    assert llm.generate("test", 1, "Write café claims", PACK, 100) == {"claims": []}
+    source = "reported" if available else "estimated"
+    expected_input = (
+        150 if available else (len("".join(str(v) for v in requests[0].values()).encode()) + 2) // 3
+    )
+    expected_output = 40 if available else (len(claims_json.encode()) + 2) // 3
+    entry = json.loads((tmp_path / "ledger.json").read_text())["copilotstudio"]
+    assert entry["input_tokens"] == expected_input
+    assert entry["output_tokens"] == expected_output
+    assert entry["actual_credits"] == pytest.approx((expected_input + expected_output) * 0.1 / 1000)
+    assert entry["usage_source"] == source
+    assert entry["credits_by_usage_source"] == {source: entry["actual_credits"]}
+    assert llm.last_usage_source == source
+    # Cache provenance survives a new process and switching the configured mode.
+    monkeypatch.setenv("DHF_COPILOT_USAGE", "reported")
+    cached = LLM("copilotstudio", tmp_path, adapter)
+    before = (tmp_path / "ledger.json").read_text()
+    assert cached.generate("test", 1, "Write café claims", PACK, 100) == {"claims": []}
+    assert cached.last_usage_source == source
+    assert (cached.calls, cached.hits) == (0, 1)
+    assert len(requests) == 1
+    assert (tmp_path / "ledger.json").read_text() == before
+    assert "SECRET" not in before
+
+
+@pytest.mark.parametrize("bad", [True, -1, "150", 1.5])
+def test_estimated_mode_rejects_supplied_corrupt_counts(tmp_path, monkeypatch, bad):
+    monkeypatch.setenv("DHF_COPILOT_USAGE", "estimated")
+    request = LLM("copilotstudio", tmp_path).copilot_request("test", 1, "Write", PACK)
+    with pytest.raises(DraftingUnavailable) as error:
+        CopilotStudioAdapter._parse(
+            reply(request, input_tokens=bad), request["request_id"], request
+        )
+    assert error.value.details["reason"] == "invalid_usage"
+
+
+def test_estimated_partial_usage_and_mixed_cumulative_ledger(tmp_path, monkeypatch):
+    monkeypatch.setenv("DHF_COPILOT_USAGE", "estimated")
+    monkeypatch.setenv("DHF_COPILOT_FLOW_URL", "https://example.invalid/flow")
+    count = 0
+
+    def endpoint(request):
+        nonlocal count
+        count += 1
+        payload = json.loads(request.content)
+        return httpx.Response(
+            200, json=reply(payload, **({"output_tokens": None} if count == 2 else {}))
+        )
+
+    llm = LLM(
+        "copilotstudio",
+        tmp_path,
+        CopilotStudioAdapter(httpx.Client(transport=httpx.MockTransport(endpoint))),
+    )
+    llm.generate("test", 1, "Reported", PACK, 100)
+    legacy = json.loads((tmp_path / "ledger.json").read_text())
+    legacy["copilotstudio"].pop("usage_source")
+    legacy["copilotstudio"].pop("credits_by_usage_source")
+    (tmp_path / "ledger.json").write_text(json.dumps(legacy))
+    llm.generate("test", 1, "Estimated", PACK, 100)
+    entry = json.loads((tmp_path / "ledger.json").read_text())["copilotstudio"]
+    assert entry["usage_source"] == "mixed"
+    assert entry["credits_by_usage_source"]["reported"] == pytest.approx(0.019)
+    assert entry["credits_by_usage_source"]["estimated"] > 0
+    assert sum(entry["credits_by_usage_source"].values()) == pytest.approx(entry["actual_credits"])
+    assert entry["reserved_credits"] == pytest.approx(0)
+
+
+@pytest.mark.parametrize("mode", ["reported", "estimated", "mixed"])
+def test_usage_in_document_regeneration_and_metrics(tmp_path, monkeypatch, mode):
+    from dhf.evaluation import evaluate, metrics_markdown
+    from dhf.impact import regenerate
+
+    monkeypatch.setenv("DHF_COPILOT_USAGE", "estimated" if mode == "mixed" else mode)
+    monkeypatch.setenv("DHF_COPILOT_FLOW_URL", "https://example.invalid/flow")
+
+    request_count = 0
+
+    def endpoint(request):
+        nonlocal request_count
+        request_count += 1
+        response = reply(json.loads(request.content))
+        if mode == "estimated" or (mode == "mixed" and request_count % 2 == 0):
+            response.pop("input_tokens")
+            response.pop("output_tokens")
+        return httpx.Response(200, json=response)
+
+    graph = ingest_fixtures()
+    llm = LLM(
+        "copilotstudio",
+        tmp_path / "llm",
+        CopilotStudioAdapter(httpx.Client(transport=httpx.MockTransport(endpoint))),
+    )
+    result = generate_document("sstr", graph, {"release": "1.1"}, out=tmp_path / "docs", llm=llm)
+    manifest = result["manifest"]
+    assert manifest["usage_source"] == mode
+    assert manifest["llm_cost_usd"] == 0
+    assert not any(s["status"] == "ai_unavailable" for s in manifest["sections"])
+    metrics = evaluate(graph, graph, [manifest], {"sstr": result["markdown"]})
+    measured = metrics["documents"][0]
+    assert measured["usage_source"] == mode
+    assert measured["copilot_credits"] == manifest["copilot_credits"] > 0
+    markdown = metrics_markdown(metrics)
+    assert "Copilot estimated credits" in markdown and "tenant Monitor" in markdown
+    assert f"| {mode} |" in markdown
+    # A free cached regeneration must not retain the prior run's credits or bill USD.
+    section = next(s["id"] for s in manifest["sections"] if s["mode"] == "ai")
+    regenerated = regenerate(
+        graph,
+        manifest,
+        result["markdown"],
+        {"sections": [{"id": section, "status": "stale", "causes": []}]},
+        tmp_path / "regen",
+        llm,
+    )
+    assert regenerated["manifest"]["usage_source"] == mode
+    assert regenerated["manifest"]["copilot_credits"] == pytest.approx(0)
+    assert regenerated["manifest"]["llm_cost_usd"] == 0
+
+
+def test_invalid_usage_mode_prevents_dispatch(tmp_path, monkeypatch):
+    monkeypatch.setenv("DHF_COPILOT_USAGE", "invented")
+    with pytest.raises(ValueError, match="DHF_COPILOT_USAGE"):
+        LLM("copilotstudio", tmp_path)
+    assert not (tmp_path / "ledger.json").exists()

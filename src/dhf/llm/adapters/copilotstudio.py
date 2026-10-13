@@ -9,6 +9,7 @@ import httpx
 
 from dhf.config import setting
 from dhf.llm.errors import DraftingUnavailable
+from dhf.llm.tokens import estimate_tokens
 
 
 def request_payload(
@@ -34,6 +35,19 @@ def request_payload(
     }
 
 
+def usage_mode() -> str:
+    mode = setting("DHF_COPILOT_USAGE", "reported")
+    if mode not in ("reported", "estimated"):
+        raise ValueError("DHF_COPILOT_USAGE must be reported or estimated")
+    return mode
+
+
+def estimated_usage(request: dict, claims_json: str) -> dict:
+    """Estimate the eight prompt text inputs and serialized output, never the URL."""
+    text = "".join(str(value) for value in request.values())
+    return {"input_tokens": estimate_tokens(text), "output_tokens": estimate_tokens(claims_json)}
+
+
 class CopilotStudioAdapter:
     """One request/response envelope; the LLM layer handles budget and cache."""
 
@@ -41,6 +55,7 @@ class CopilotStudioAdapter:
         self.client = client
 
     def complete_request(self, request: dict) -> dict:
+        usage_mode()  # Reject invalid configuration before dispatch.
         mode = setting("DHF_COPILOT_MODE", "http")
         if mode == "http":
             raw = self._http(request)
@@ -48,10 +63,11 @@ class CopilotStudioAdapter:
             raw = self._folder(request)
         else:
             raise ValueError("DHF_COPILOT_MODE must be http or folder")
-        return self._parse(raw, request["request_id"])
+        return self._parse(raw, request["request_id"], request)
 
     def complete_batch(self, request: dict) -> dict:
         """One file per document; the cloud flow loops its section requests."""
+        usage_mode()
         raw = self._folder(request)
         if not isinstance(raw, dict) or raw.get("request_id") != request["request_id"]:
             raise DraftingUnavailable("request_id_mismatch", "copilotstudio")
@@ -113,7 +129,7 @@ class CopilotStudioAdapter:
         raise DraftingUnavailable("timeout", "copilotstudio")
 
     @staticmethod
-    def _parse(raw: object, request_id: str) -> dict:
+    def _parse(raw: object, request_id: str, request: dict | None = None) -> dict:
         if not isinstance(raw, dict):
             raise DraftingUnavailable("invalid_schema", "copilotstudio")
         if raw.get("request_id") != request_id:
@@ -136,7 +152,18 @@ class CopilotStudioAdapter:
         model = raw.get("model")
         if not isinstance(model, str) or not model or len(model) > 120:
             raise DraftingUnavailable("invalid_schema", "copilotstudio")
+        mode = usage_mode()
         usage = {k: raw.get(k) for k in ("input_tokens", "output_tokens")}
-        if any(not isinstance(v, int) or isinstance(v, bool) or v < 0 for v in usage.values()):
+        # Missing/null fields mean usage is unavailable. Supplied invalid values
+        # remain failures in both modes; estimation must not hide corrupt reports.
+        if any(
+            v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 0)
+            for v in usage.values()
+        ):
             raise DraftingUnavailable("invalid_usage", "copilotstudio")
-        return {**claims, "_usage": usage, "_model": model}
+        source = "reported"
+        if any(v is None for v in usage.values()):
+            if mode != "estimated" or request is None:
+                raise DraftingUnavailable("invalid_usage", "copilotstudio")
+            usage, source = estimated_usage(request, claims_json), "estimated"
+        return {**claims, "_usage": usage, "_usage_source": source, "_model": model}

@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current work: owner-approved workspace layout; smaller-arrow follow-up complete (browser paint timing pending) · M0–M16 offline implementation complete · Last updated: 2026-10-14 IST
+Current milestone: M16 done (offline) · M13 visual check completed by the reviewer per REVIEW.md · Waiting for owner sandbox answers · Last updated: 2026-10-14 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -17,13 +17,13 @@ Current work: owner-approved workspace layout; smaller-arrow follow-up complete 
 | M10 | done | m10-done | ecac18b | Evaluation, clause appendix, YAML extensions, audit export and offline demo |
 | M11 | done | m11-done | 279debf | Native synthetic seeder, read-only discovery and onboarding |
 | M12 | done | m12-done | cbf0a85 implementation | Advisory support, effort assumptions and R-046/R-047 |
-| M13 | implemented; visual check pending | m13-done | checkpoint tag | Offline explorer, audit/demo inclusion; browser policy limitation recorded |
+| M13 | done; reviewer visual check complete | m13-done | 2ae290c | REVIEW.md records offline browser rendering, search, filters and inspector verification; R-049 visually verified at c6795b4 |
 | M14 | done | m14-done | 275c62c | Verified offline rehearsal and frozen demo pack |
 | M15 | done | m15-done | 5a88eb9 | Day-1 kit and sandbox guardrails; tenant validation pending |
 | M16 | done offline | m16-done | a4963c4 | Copilot HTTP/folder transport and credit guard; tenant execution pending |
 ## Now / Next
-- Working on: completed smaller-arrow follow-up; owner approved the replacement layout and colour direction.
-- Next: R-054 before the first tenant run. Real tenant execution and true browser paint timing remain pending.
+- Working on: R-054 implementation and offline verification complete; development stops after the resolution checkpoint.
+- Next: wait for the owner’s sandbox answers. No tenant setup or execution until instructed; M13 visual verification is complete per the reviewer’s evidence in REVIEW.md.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -299,3 +299,16 @@ Current work: owner-approved workspace layout; smaller-arrow follow-up complete 
 ### Owner acceptance and smaller arrowheads — 2026-10-14
 - Owner feedback: “looking much better now”, “rest looks good”; requested reduced arrow size. Reduced both normal and selected SVG marker dimensions 8×8 → 6×6 (25%). Routes, line weights and workspace layout are unchanged. Re-rendered the populated preview and all three fallback snapshots, rebuilt audit HTML and refreshed checksums. Owner feedback accepts layout/colour direction; no under-two-second browser paint measurement is claimed.
 - Verification: `pytest -q tests/test_explorer.py` → `4 passed in 2.64s`; populated workspace contract → 502 graph contexts / six views / all direction, geometry and interaction checks pass (108.16 ms simulated DOM only); ruff check/format → `All checks passed!` / `189 files already formatted`; demo pack → 51 links / 19 hashed fallbacks / 33 verified audit files / tracked redline pass.
+
+
+### M16 follow-up — R-054 missing token-usage fallback
+- Added `DHF_COPILOT_USAGE=reported|estimated`, default `reported`, to `.env.example`. Reported mode rejects missing/null counts; estimated mode prefers valid reported counts and otherwise applies the shared rounded-up UTF-8 bytes ÷ 3 estimate to the eight prompt text inputs and serialized `claims_json`. Supplied boolean, negative, fractional or string counts remain `invalid_usage`. Invalid mode fails before dispatch.
+- Both HTTP and OneDrive batches persist `usage_source` in cache/ledger and section/document manifests. Cache hits retain the original source even after changing mode and incur no credits. Cumulative ledger credits distinguish reported and estimated contributions; aggregates report `mixed`. Existing successful pre-R-054 caches/ledgers retain reported provenance without rebilling. Metrics JSON includes credits/source and Markdown labels **Copilot estimated credits**, with tenant Monitor authoritative for billing.
+- Selective Copilot regeneration now records its own run's credits (zero for cached regeneration), keeps credit amounts out of `llm_cost_usd`, and preserves provenance on reused sections. Refusal/timeout and other parsing/validation failures retain reservations and their existing human-placeholder path.
+- `pytest -q tests/test_copilot.py tests/test_llm.py tests/test_evaluation.py` → `53 passed in 11.76s` before the added both-mode cap and legacy-ledger cases. Final `pytest -q tests/test_copilot.py` → `31 passed in 7.23s`. Covers strict reported rejection, missing/partial estimated usage, preference for real counts, malformed usage, mixed totals, legacy migration, both transports, cached sources, document/metrics source and cached-regeneration credits.
+- `python out/r054/verify_usage.py` (HTTP MockTransport only; model explicitly named `OFFLINE STUB - Basic placeholder`) → reported mode: 12 sections, 0 ai_unavailable, 0.076 local credits, source `reported`; estimated mode with omitted usage: 12 sections, 0 ai_unavailable, 0.9967 local credits, source `estimated`. Review artifacts: `out/r054/{reported,estimated}/documents/sstr.manifest.json`, `metrics.json`, `metrics.md`, and isolated stub ledgers. These are structural offline checks, **not tenant calls or narrative-quality verification**.
+- Updated HTTP, OneDrive and generic prompt flow notes plus README/demo guidance: return measured fields when available; otherwise omit them and select estimated mode. Never return illustrative zero fields as actual usage. The tenant model and Monitor still require owner verification. No `.env` edit, paid call or tenant action.
+- `ruff check .` → `All checks passed!`; `ruff format --check .` → `189 files already formatted`. `check_port.py` → 7 flows / 22 rules / 47 queries / 24 prompt tools / reference contracts pass / tenant parity pending. `check_demo_pack.py` → 51 links / 19 fallbacks / 33 verified audit files / tracked redline pass / tenant execution pending.
+- M13 current status now credits the reviewer's completed visual check at `m13-done`/R-049, as recorded in REVIEW.md. The later workspace layout/colour acceptance from the owner is recorded above. Historical pending-check notes describe their original checkpoints; the current status supersedes them. No new browser paint-time measurement is claimed.
+- **Stop state:** M16 offline implementation done, R-054 fixed; waiting for owner sandbox answers. Real ADO/BD capabilities, prompt model identity, DLP, Monitor billing and transport execution remain unverified. No further development or sandbox operation is started.
+- Final complete offline regression: `.venv/bin/pytest -q` → **`126 passed in 119.27s (0:01:59)`**. Tests used approved loopback binding only, blocked all external sockets, and made no paid or tenant calls. No skipped or xfailed tests.

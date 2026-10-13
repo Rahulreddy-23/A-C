@@ -17,6 +17,13 @@ def canonical(value: object) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def combine_usage_sources(sources: list[str | None]) -> str:
+    valid = {source for source in sources if source in ("reported", "estimated", "mixed")}
+    if "mixed" in valid or len(valid) > 1:
+        return "mixed"
+    return next(iter(valid), "unavailable")
+
+
 class Adapter(Protocol):
     def complete(
         self, model: str, prompt: str, pack: dict, limit: int, schema: dict | None = None
@@ -73,6 +80,11 @@ class LLM:
         self.hits = 0
         self.calls = 0
         self.last_model: str | None = None
+        self.last_usage_source: str | None = None
+        if provider == "copilotstudio":
+            from dhf.llm.adapters.copilotstudio import usage_mode
+
+            usage_mode()
         self.preload_errors: dict[str, Exception] = {}
         self.preloaded_keys: set[str] = set()
         if adapter is None:
@@ -165,6 +177,8 @@ class LLM:
                 "reserved_credits": reserved,
                 "hard_cap_credits": cap,
                 "remaining_credits": max(0.0, cap - actual - reserved),
+                "usage_source": entry.get("usage_source", "unavailable"),
+                "credits_by_usage_source": entry.get("credits_by_usage_source", {}),
             }
         actual = entry.get("actual_usd", 0.0)
         reserved = entry.get("reserved_usd", 0.0)
@@ -292,6 +306,7 @@ class LLM:
                 if self.provider == "copilotstudio":
                     saved = json.loads(cached.read_text())
                     self.last_model = saved["model"]
+                    self.last_usage_source = saved.get("usage_source", "reported")
                     return response_model.model_validate(saved["response"]).model_dump(mode="json")
                 return response_model.model_validate_json(cached.read_text()).model_dump(
                     mode="json"
@@ -389,7 +404,7 @@ class LLM:
         input_tokens: int,
         response_model: type,
     ) -> dict:
-        """Reserve estimated credits, call the tenant transport, settle reported usage."""
+        """Reserve estimated credits, then settle attributed reported/estimated usage."""
         from dhf.llm.adapters.copilotstudio import request_payload
 
         rate = float(setting("DHF_COPILOT_CREDITS_PER_1K", "0.1"))
@@ -423,32 +438,54 @@ class LLM:
         request = request_payload(key, prompt_id, version, prompt, pack, schema)
         raw = self.adapter.complete_request(request)
         usage = raw.pop("_usage", None)
+        usage_source = raw.pop("_usage_source", "reported")
         reported_model = raw.pop("_model", None)
         if not isinstance(reported_model, str) or not reported_model:
             from dhf.llm.errors import DraftingUnavailable
 
             raise DraftingUnavailable("invalid_schema", "copilotstudio")
         result = response_model.model_validate(raw)
-        if not isinstance(usage, dict) or any(
-            not isinstance(usage.get(k), int) or isinstance(usage[k], bool) or usage[k] < 0
-            for k in ("input_tokens", "output_tokens")
+        if (
+            usage_source not in ("reported", "estimated")
+            or not isinstance(usage, dict)
+            or any(
+                not isinstance(usage.get(k), int) or isinstance(usage[k], bool) or usage[k] < 0
+                for k in ("input_tokens", "output_tokens")
+            )
         ):
             from dhf.llm.errors import DraftingUnavailable
 
             raise DraftingUnavailable("invalid_usage", "copilotstudio")
-        billed = (usage["input_tokens"] + usage["output_tokens"]) * rate / 1000
-        entry = ledger["copilotstudio"]
-        entry["reserved_credits"] = max(0.0, entry["reserved_credits"] - reserve)
-        entry["actual_credits"] += billed
-        entry["input_tokens"] = entry.get("input_tokens", 0) + usage["input_tokens"]
-        entry["output_tokens"] = entry.get("output_tokens", 0) + usage["output_tokens"]
-        self.run_spend += billed - reserve
+        self._settle_copilot(ledger["copilotstudio"], usage, usage_source, rate, reserve)
         temp.write_text(canonical(ledger))
         temp.replace(path)
         self.last_model = reported_model
+        self.last_usage_source = usage_source
         output = result.model_dump(mode="json")
-        cached.write_text(canonical({"response": output, "model": reported_model}))
+        cached.write_text(
+            canonical({"response": output, "model": reported_model, "usage_source": usage_source})
+        )
         return output
+
+    def _settle_copilot(
+        self, entry: dict, usage: dict, source: str, rate: float, reserve: float
+    ) -> None:
+        """Keep cumulative estimates distinct from reported usage across both transports."""
+        billed = (usage["input_tokens"] + usage["output_tokens"]) * rate / 1000
+        # Legacy successful calls required reported token counts. Preserve that
+        # provenance when extending an existing ledger, without rebilling them.
+        if "credits_by_usage_source" not in entry:
+            entry["credits_by_usage_source"] = {}
+            if entry.get("input_tokens", 0) or entry.get("output_tokens", 0):
+                entry["credits_by_usage_source"]["reported"] = entry["actual_credits"]
+        by_source = entry["credits_by_usage_source"]
+        by_source[source] = by_source.get(source, 0.0) + billed
+        entry["usage_source"] = combine_usage_sources(list(by_source))
+        entry["reserved_credits"] = max(0.0, entry["reserved_credits"] - reserve)
+        entry["actual_credits"] += billed  # Legacy key: settled local credits, not tenant billing.
+        entry["input_tokens"] = entry.get("input_tokens", 0) + usage["input_tokens"]
+        entry["output_tokens"] = entry.get("output_tokens", 0) + usage["output_tokens"]
+        self.run_spend += billed - reserve
 
     def preload_copilot_folder(self, doc: str, jobs: list[tuple]) -> None:
         """Exchange one document file, then populate the normal per-section cache."""
@@ -524,9 +561,10 @@ class LLM:
             }
             for key in pending:
                 try:
-                    parsed = CopilotStudioAdapter._parse(replies.get(key), key)
+                    parsed = CopilotStudioAdapter._parse(replies.get(key), key, pending[key][0])
                     usage = parsed.pop("_usage")
                     model = parsed.pop("_model")
+                    usage_source = parsed.pop("_usage_source")
                     result = output_model("claims.v1").model_validate(parsed)
                 except (DraftingUnavailable, ValueError, KeyError) as exc:
                     self.preload_errors[key] = (
@@ -535,15 +573,16 @@ class LLM:
                         else DraftingUnavailable("invalid_schema", "copilotstudio")
                     )
                     continue
-                billed = (usage["input_tokens"] + usage["output_tokens"]) * rate / 1000
-                entry["reserved_credits"] = max(0.0, entry["reserved_credits"] - reservations[key])
-                entry["actual_credits"] += billed
-                entry["input_tokens"] = entry.get("input_tokens", 0) + usage["input_tokens"]
-                entry["output_tokens"] = entry.get("output_tokens", 0) + usage["output_tokens"]
-                self.run_spend += billed - reservations[key]
+                self._settle_copilot(entry, usage, usage_source, rate, reservations[key])
                 cache = self.cache / f"copilotstudio-{key}.json"
                 cache.write_text(
-                    canonical({"model": model, "response": result.model_dump(mode="json")})
+                    canonical(
+                        {
+                            "model": model,
+                            "response": result.model_dump(mode="json"),
+                            "usage_source": usage_source,
+                        }
+                    )
                 )
                 self.preloaded_keys.add(key)
             temp.write_text(canonical(ledger))

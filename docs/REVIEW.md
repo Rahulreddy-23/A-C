@@ -47,6 +47,9 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
   - Add tests for both modes.
 
 
+Resolved in b1bf140: added strict reported/default and explicit estimated missing-usage fallback for HTTP and OneDrive; shared rounded-up UTF-8 bytes ÷ 3 estimates, persistent cache/ledger/section/document/metrics usage_source (including mixed), source-separated cumulative credits and labelled estimated-credit metrics. Supplied invalid usage remains rejected; cache hits remain free. Updated flow guidance, both-mode cap/cache/manifest/metrics/regeneration tests and legacy-ledger coverage. Full offline suite: 126 passed; lint/format and port/demo checks green. No tenant or paid calls. PROGRESS now credits the reviewer's completed M13 visual check and records M16 done offline; development stopped for owner sandbox answers.
+
+
 ## Resolved
 
 ### M16 (commit f8964e6) — verdict: **approved; R-054 before the first tenant run**

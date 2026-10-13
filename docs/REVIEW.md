@@ -25,12 +25,16 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - BUG-03's body says "residual-anomaly listing is intentionally missing", and a unit is named `diagnostics_orphan`. Both appear in generated documents the judges will read.
 - Rewrite them as natural engineering text and rename the module (e.g. `diagnostics_trace.py`). Update the answer key and IDs consistently, and re-run the validator.
 
+Resolved in 6922f61: natural BUG-03 wording and diagnostics_trace naming retain exact graph/answer-key parity.
+
 **R-029 [non-blocking, before M10 demo script] M5 — The anomaly section's completeness depends on the model; offline, the demo's new failure is missing** (`specs/documents/sstr.yaml` anomaly_assessment, `src/dhf/llm/adapters/mock.py`)
 - After `change_1`, release 1.1 has two failures: `RES-2-008` and `RES-3-021` (the occlusion test, with no linked defect). The query facts list both correctly.
 - With the mock adapter, though, "Failed tests and anomaly assessment" only discusses TC-008/BUG-01, because the mock emits the first three evidence bodies. So the offline `scripts/demo.sh` won't show the key new failure there.
 - **Expected fix:**
   - Open the section with a **deterministic table of every failed or blocked result**: result, test case, requirement, linked defect, or "none — see G05". Completeness then never depends on the model, and the AI narrative follows the table.
   - Also make the mock produce one claim per `facts.failed_results` entry, so the offline narrative is representative.
+
+Resolved in 6922f61: all failed/blocked results render in a deterministic table even on AI failure; mock claims cover both change_1 failures and the regression verifies them.
 
 ## Resolved
 

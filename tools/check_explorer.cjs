@@ -24,7 +24,8 @@ class Element {
 }
 
 const html = fs.readFileSync(process.argv[2], 'utf8');
-const payload = JSON.parse(Buffer.from(html.match(/atob\('([A-Za-z0-9+/=]+)'\)/)[1], 'base64').toString());
+const encoded = html.match(/atob\('([A-Za-z0-9+/=]+)'\)/);
+const payload = encoded ? JSON.parse(Buffer.from(encoded[1], 'base64').toString()) : null;
 const byId = new Map();
 const document = {
   documentElement: new Element('html'),
@@ -43,9 +44,15 @@ const context = {
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 vm.runInNewContext(script, context);
 const get = id => byId.get(id);
+if (!payload) {
+  if (document.documentElement.dataset.ready !== 'error' || get('load-status').hidden) throw Error('Raw template left a silent blank page');
+  console.log(JSON.stringify({ template: 'clear missing-evidence message', embedded_evidence: false }));
+  process.exit(0);
+}
 const walk = (root, match) => [root, ...root.children.flatMap(child => walk(child, match))].filter(match);
 const click = node => node.listeners.click();
 const stats = { ...context.window.explorerStats };
+if (get('load-status').hidden !== true) throw Error('Loaded evidence still shows an error notice');
 if (![248, 251].includes(stats.nodes) || stats.nodes !== payload.nodes.length || stats.links !== payload.links.length || stats.render_ms >= 2000) throw Error('Graph payload incomplete or DOM build slow');
 if (stats.selected !== 'SRS-021' || stats.focus.length < 10 || !stats.focus.includes('HAZ-04')) throw Error('Initial trace missing');
 if (get('graph').children.length !== 3 || stats.directLinks < 2) throw Error('Focused relationship map missing');

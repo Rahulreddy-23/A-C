@@ -28,12 +28,43 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 
 **Rejections don't separate the models.** Every model's rejections were `unknown_ids`, mostly `UNIT-alarm_latch`, `UNIT-sensor_pressure`, SRS-012/034/035 and fact keys like `gap_findings`/`summary`/`G01`. That's the R-041(b) pack problem, not model quality.
 
-### M10 live full-document run (owner-approved; OpenAI default `gpt-4.1-mini` plus analytical `gpt-5.4-mini`; **$0.227**; ledger now OpenAI $0.48 of $4.00)
-
-- All five documents generated: SSTR (4 AI sections), SAD (12), SDD (61), sFMEA (25), DRR (2).
 - **0 `ai_unavailable` sections and no refusals.** 14 claims were rejected out of roughly 440.
 - The analytical tier was routed correctly (sFMEA, DRR and SSTR conclusion on `gpt-5.4-mini`), and model and tier are recorded per section.
 - The live samples were judged review-ready drafts. The owner has the outputs as Word files.
+
+### Live claim-support check on real prose (owner-approved; SSTR, SAD and SDD regenerated live at cbf0a85, then `verify-support`; $0.16; OpenAI ledger $0.63 of $4.00)
+
+- **Support rates:**
+  - SSTR 5 supported / 1 partial / 1 unavailable (83%)
+  - SAD 34 / 1 / 7 (97%)
+  - SDD sample of 40: 36 supported / 1 partial / **1 unsupported** / 2 unavailable (95%)
+- **A genuine catch, worth showing in the demo:** `sdd/errors.UNIT-alarm_latch` claimed explicit invalid-input rejection, but the verifier found that "the provided code in UNIT-alarm_latch does not show handling of invalid input". The model had carried the requirement's wording into the code description.
+- R-046 helped: SAD generation rejections dropped from 6 to 2.
+
+**R-048 [non-blocking, before M14 demo pack] M12 — 11% of support checks are silently "unavailable", and the rate hides them** (`src/dhf/generate/support.py:92-104`, metrics/CLI)
+- 10 of 89 checks came back `unavailable`. The reason recorded is `type(error).__name__`, which is always "ValueError", so the real cause is lost.
+  - The reviewer patched a scratch copy to record `str(error)`. All 7 SAD failures were `invalid_verification_rationale`: the verdict's *rationale* text goes through `validate_claims`, and it fails when the explanation mentions an ID or number that isn't in the pack. A valid supported/partial/unsupported verdict is then thrown away.
+- The support rate excludes unavailable checks from the denominator. The SAD's "97%" really covers only 35 of 42 claims.
+- **Expected fix:**
+  - (a) Record the specific reason string.
+  - (b) Keep the verdict when only the rationale fails validation. Store the rationale flagged `rationale_unverified`, or strip the offending tokens, and count it separately.
+  - (c) The CLI and `out/metrics.md` report **coverage**, `verified / eligible`, next to the support rate, with the denominator stated explicitly.
+  - (d) Add one retry for the rationale with the allowed IDs listed, inside the ledger cap.
+
+
+## Resolved
+
+### M12 (tag `m12-done`, 58c2c19; code cbf0a85) — verdict: **approved**
+
+Verified independently in a clean worktree:
+- 82 tests pass; ruff is clean.
+- `dhf verify-support` is advisory only (manifest `claim_support.advisory_only=true`), records the prompt and model per result, flags rather than removes unsupported claims, and never touches readiness.
+- `dhf eval` adds effort telemetry: AI/deterministic/human section counts, assumed authoring hours from YAML (labelled as assumptions) and measured cost and time.
+- R-046 and R-047 are fixed:
+  - the default seeder mode no longer writes system dates and preserves chronology, so G11 flags only TC-030
+  - the mock rejects read-only dates unless `bypassRules=true`
+  - non-empty projects are refused unless `--allow-nonempty`
+- Follow-up: R-048.
 
 **R-046 [non-blocking] M10 — Small leftovers from the live run** (`src/dhf/graph/design.py`, `specs/prompts/sstr.conclusion.md`)
 - **(a)** 9 of the 14 rejections are collaborator component IDs (`COMP-01..05`) cited in SAD component and runtime prose. Collaborators named in a component's record should join its evidence pack as compact records, the same treatment R-041 gave to fact references.
@@ -41,6 +72,7 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 - **(c)** One numeric rejection each for "3" and "256" in narrative. Check that unit-bearing values quoted from evidence ("3 s") reach `source_numbers`.
 
 Resolved in cbf0a85: compact collaborator evidence, suggested-only conclusion v3 and unit-bearing quantity parsing are covered by regressions; unsupported SHA digits stay rejected.
+- *Reviewer verified at cbf0a85.*
 
 **R-047 [blocking before any real-ADO seeding — fix within Phase 2, before M15] M11 — The seeder will probably fail on a real ADO org, and it doesn't refuse non-empty projects** (`tools/seed_ado/__init__.py:175-211, 330-346`)
 - **(a) Read-only system dates.** The seeder writes `System.ChangedDate` (the mapped `changed_at` field) on create and on the SRS-030 revision update. On real Azure DevOps, `System.ChangedDate`/`CreatedDate` are read-only unless the request uses `bypassRules=true` **and** the identity has "Bypass rules on work item updates". So the first create will most likely return HTTP 400, and the seeder aborts on any error.
@@ -54,8 +86,7 @@ Resolved in cbf0a85: compact collaborator evidence, suggested-only conclusion v3
   - **Expected fix:** refuse to seed if the project contains any work items without `DHF:` identity tags, or any repos or runs not created by the seeder, unless `--allow-nonempty` is passed explicitly. Print what was found.
 
 Resolved in cbf0a85: default readonly-date-free chronology preserves exact gaps including only TC-030 G11; historical dates require --bypass-rules. Foreign work-item/repo/run inventory refuses before writes unless --allow-nonempty. Both modes, idempotence and guards pass offline; real tenant checks remain pending.
-
-## Resolved
+- *Reviewer verified at cbf0a85.*
 
 ### M11 (tag `m11-done`, 279debf) — verdict: **approved; R-047 must be fixed before seeding a real org**
 

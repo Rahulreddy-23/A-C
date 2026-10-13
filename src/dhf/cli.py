@@ -661,7 +661,12 @@ def verify_support_command(
         path.write_text(json.dumps(manifest, indent=2))
         report = manifest["claim_support"]
         typer.echo(
-            f"{id}: {report['counts']}; support rate={report['support_rate']}; advisory only"
+            f"{id}: {report['counts']}; support rate={report['support_rate']} "
+            f"among {report['support_rate_denominator']} verdicts; coverage "
+            f"{report['coverage']['verified']}/{report['coverage']['sampled_eligible']} "
+            "sampled eligible "
+            f"({report['coverage']['document_eligible']} in document); "
+            f"{report['rationale_unverified_count']} rationales unverified; advisory only"
         )
     report_budget(llm)
 

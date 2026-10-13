@@ -302,7 +302,9 @@ def metrics_markdown(result: dict) -> str:
     text += (
         "\n| Document | AI / deterministic / human sections | Assumed authoring hours | "
         "Estimated hours saved | Support rate | Supported / partial / unsupported | "
-        "Verifier USD / seconds |\n|---|---|---:|---:|---|---|---|\n"
+        "Coverage verified / sampled eligible (document eligible); "
+        "unverified rationale | Verifier USD / seconds |\n"
+        "|---|---|---:|---:|---|---|---|---|\n"
     )
     for d in result["documents"]:
         effort, support = d["effort"], d["claim_support"]
@@ -318,9 +320,13 @@ def metrics_markdown(result: dict) -> str:
             str(support.get("counts", {}).get(k, 0))
             for k in ("supported", "partial", "unsupported")
         )
+        coverage = support.get("coverage", {})
         text += (
             f"| {d['document']} | {section_counts} | {effort['baseline_hours']} | "
             f"{effort['estimated_hours_saved']} | {rate} | {counts} | "
+            f"{coverage.get('verified', 0)} / {coverage.get('sampled_eligible', 0)} "
+            f"({coverage.get('document_eligible', 'pending')}); "
+            f"{support.get('rationale_unverified_count', 0)} | "
             f"{support.get('cost_usd', 0):.6f} / {support.get('seconds', 0):.3f} |\n"
         )
     if result["documents"]:
@@ -328,7 +334,9 @@ def metrics_markdown(result: dict) -> str:
         text += (
             "Hours per section type: `"
             + json.dumps(result["documents"][0]["effort"]["assumptions"]["hours_per_section"])
-            + "`. Support assessments are advisory; mock rates are lexical fixture checks.\n"
+            + "`. Support rates use returned verdicts only; coverage states the sampled eligible "
+            "denominator. Unavailable checks remain visible. Support assessments are advisory; "
+            "mock rates are lexical fixture checks.\n"
         )
     text += "\nCoverage: `" + json.dumps(result["coverage"], sort_keys=True) + "`.\n\n"
     text += "Deterministic baseline goldens: `"

@@ -48,7 +48,11 @@ def verify_document(graph: dict, manifest: dict, llm: LLM, sample: int = 5) -> d
     prompt = load_prompt("verify.support@1")
     start, cost = time.monotonic(), llm.run_spend
     results = []
-    for job in support_jobs(graph, manifest, sample):
+    all_jobs = support_jobs(graph, manifest, 0)
+    jobs = all_jobs[:sample] if sample else all_jobs
+    if sample < 0:
+        raise ValueError("Sample must be nonnegative")
+    for job in jobs:
         evidence = [
             {
                 "id": a["id"],
@@ -93,15 +97,61 @@ def verify_document(graph: dict, manifest: dict, llm: LLM, sample: int = 5) -> d
                 raise ValueError("verification_subject_mismatch")
             verdict = verdicts[0]
             checked = validate_claims({"claims": [verdict["rationale"]]}, pack, ["suggested"])
-            if not checked["claims"]:
-                raise ValueError("invalid_verification_rationale")
+            if not checked["claims"] or any(checked["validation"].values()):
+                record["initial_rationale_validation"] = checked["validation"]
+                retry = load_prompt("verify.support.retry@1")
+                retry_pack = copy.deepcopy(pack)
+                retry_pack["facts"]["allowed_ids"] = [a["id"] for a in evidence]
+                retry_pack["facts"]["preserve_verdict"] = verdict["support"]
+                record["rationale_retry"] = True
+                try:
+                    repaired = llm.generate(
+                        retry["id"],
+                        retry["version"],
+                        retry["body"],
+                        retry_pack,
+                        retry["max_output_tokens"],
+                        output_schema="support.v1",
+                    )["results"]
+                    if (
+                        len(repaired) != 1
+                        or repaired[0]["claim_key"] != job["claim_key"]
+                        or repaired[0]["support"] != verdict["support"]
+                    ):
+                        raise ValueError("rationale_retry_subject_mismatch")
+                    checked_retry = validate_claims(
+                        {"claims": [repaired[0]["rationale"]]}, pack, ["suggested"]
+                    )
+                    if not checked_retry["claims"] or any(checked_retry["validation"].values()):
+                        raise ValueError("invalid_verification_rationale")
+                    checked = checked_retry
+                except ValueError as error:
+                    record.update(
+                        rationale_unverified=True,
+                        rationale_reason=str(error),
+                        unverified_rationale=verdict["rationale"],
+                    )
+                    checked = {
+                        "claims": [
+                            {
+                                "text": (
+                                    "Verifier explanation requires human review; "
+                                    "rationale validation failed."
+                                ),
+                                "kind": "suggested",
+                                "citations": [],
+                                "confidence": 0.0,
+                            }
+                        ],
+                        "validation": record["initial_rationale_validation"],
+                    }
             record.update(
                 support=verdict["support"],
                 rationale=checked["claims"][0],
                 validation=checked["validation"],
             )
         except ValueError as error:
-            record.update(support="unavailable", reason=type(error).__name__)
+            record.update(support="unavailable", reason=str(error))
         results.append(record)
     counts = Counter(r["support"] for r in results)
     judged = sum(counts[k] for k in ("supported", "partial", "unsupported"))
@@ -117,6 +167,17 @@ def verify_document(graph: dict, manifest: dict, llm: LLM, sample: int = 5) -> d
         "results": results,
         "counts": dict(counts),
         "support_rate": counts["supported"] / judged if judged else None,
+        "support_rate_denominator": judged,
+        "coverage": {
+            "verified": judged,
+            "sampled_eligible": len(jobs),
+            "document_eligible": len(all_jobs),
+            "rate": judged / len(jobs) if jobs else None,
+        },
+        "rationale_unverified_count": sum(bool(r.get("rationale_unverified")) for r in results),
+        "unavailable_reasons": dict(
+            Counter(r["reason"] for r in results if r["support"] == "unavailable")
+        ),
         "cost_usd": llm.run_spend - cost,
         "seconds": time.monotonic() - start,
     }
@@ -134,5 +195,6 @@ def support_comments(manifest: dict) -> list[dict]:
             + r.get("rationale", {}).get("text", r.get("reason", "")),
         }
         for r in manifest.get("claim_support", {}).get("results", [])
-        if r["support"] != "supported" and r["claim_key"] in claims
+        if (r["support"] != "supported" or r.get("rationale_unverified"))
+        and r["claim_key"] in claims
     ]

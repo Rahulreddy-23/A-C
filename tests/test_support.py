@@ -80,3 +80,62 @@ def test_support_schema_and_default_cache_budget_contract(tmp_path):
     llm.generate("verify.support", 1, "p", pack, output_schema="support.v1")
     assert llm.calls == 1 and llm.hits == 1
     assert strict_output_schema("support.v1")["additionalProperties"] is False
+
+
+def test_bad_rationale_keeps_verdict_retries_once_and_reports_coverage(tmp_path):
+    from dhf.generate.support import support_jobs
+
+    graph = ingest_fixtures()
+    manifest = generate_document(
+        "sstr",
+        graph,
+        {"release": "1.1"},
+        out=tmp_path / "docs",
+        llm=LLM(root=tmp_path / "generate"),
+    )["manifest"]
+
+    class BadRationale:
+        def complete(self, model, prompt, pack, limit, schema=None):
+            return {
+                "results": [
+                    {
+                        "claim_key": pack["facts"]["support_subject"]["claim_key"],
+                        "support": "unsupported",
+                        "rationale": {
+                            "text": "SRS-999 describes 1337 controls.",
+                            "kind": "suggested",
+                            "citations": ["SRS-999"],
+                            "confidence": 0.9,
+                        },
+                    }
+                ]
+            }
+
+    llm = LLM(root=tmp_path / "verify", adapter=BadRationale())
+    result = verify_document(graph, manifest, llm, sample=1)
+    assessment = result["claim_support"]
+    assert llm.calls == 2
+    assert assessment["counts"] == {"unsupported": 1}
+    assert assessment["coverage"] == {
+        "verified": 1,
+        "sampled_eligible": 1,
+        "document_eligible": len(support_jobs(graph, manifest, 0)),
+        "rate": 1.0,
+    }
+    assert assessment["rationale_unverified_count"] == 1
+    record = assessment["results"][0]
+    assert record["rationale_reason"] == "invalid_verification_rationale"
+    assert record["rationale_unverified"] and record["rationale_retry"]
+    assert "SRS-999" not in support_comments(result)[0]["note"]
+    assert "coverage" in metrics_markdown(evaluate(graph, graph, [result], {"sstr": ""})).lower()
+    missing = copy.deepcopy(manifest)
+    missing["sections"][
+        next(
+            i
+            for i, s in enumerate(missing["sections"])
+            if s["claims"] and s["claims"][0]["kind"] != "suggested"
+        )
+    ]["cited_revisions"] = {}
+    unavailable = verify_document(graph, missing, llm, sample=1)["claim_support"]
+    assert unavailable["results"][0]["reason"] == "cited_revision_unavailable"
+    assert unavailable["coverage"]["verified"] == 0

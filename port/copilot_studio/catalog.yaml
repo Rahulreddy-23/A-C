@@ -233,4 +233,9 @@ prompts:
   source: specs/prompts/verify.support.md
   sha256: e81f683c79f53ca674596c5970c7a78a391706092fc9f773628a0206c1bbcb4a
   tool: prompts/verify.support.md
+- id: verify.support.retry
+  version: 1
+  source: specs/prompts/verify.support.retry.md
+  sha256: 090f4b9f3c94fc0a8ac1881a7ac2730409cb9feec89447be902f8acf739e4ffb
+  tool: prompts/verify.support.retry.md
 tenant_status: pending

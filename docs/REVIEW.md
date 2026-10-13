@@ -60,10 +60,14 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
   6. **Sharing and demo channel.** Test pane plus a Teams channel after publishing. At most 5 named individuals, no groups. Re-publish after every change.
 - Keep the honesty rules: nothing claims tenant execution.
 
+Resolved in 6c1d7cd: Basic-tier GPT and thin-agent cloud-flow plan with 600-credit Monitor/400-credit guard estimates, mandatory Standard-agent description/path, synthetic-only and five-person sharing gates, and Tier C-prime reviewed JSON/CSV snapshot import with a working `dhf export-snapshot` command. Day-1 files include prompts, validator cards, CSV columns and flow click path; tenant checks remain pending.
+
 **R-051 [non-blocking, polish before the demo] M13 — Explorer details from the reviewer's second visual check (c6795b4)**
 - **Truncated labels.** Text like "UNIT-sensor_pr…" and "RES-3-021 · Fa…" is cut off. Widen lane boxes slightly or wrap to two lines, and add a `title` tooltip with the full ID and outcome.
 - **Stale inspector selection.** When a search or filter hides the selected node, the inspector keeps showing it (SRS-010 stayed selected after searching "occlusion"). Select the first match, or clear the inspector with a hint.
 - **Size for projection.** The focused trace chain is small inside a large canvas. Add a "fit / zoom" control, or scale the focused chain to fill the lane area, so it reads on a projector.
+
+Resolved in 6c1d7cd: node IDs/outcomes wrap to two lines with full SVG tooltips, filtering selects a matching inspector record, and Expand graph makes the lane board full width for projection. The refreshed offline fallback and DOM regressions pass; final projector/browser viewing is an owner check.
 
 **R-052 [DECIDED 2026-10-13: owner chose option B, the hybrid approved-model adapter; build it as M16, BRIEF §18.1] M14 — The official demo must use BD-approved AI only; the demo pack's AI paths don't meet that** (`docs/DEMO_SCRIPT.md`, `tools/demo.py`, port pack)
 - The problem statement says to *"leverage only BD approved AI tools"*. BD's sandbox rules say GPT models through Copilot Studio.

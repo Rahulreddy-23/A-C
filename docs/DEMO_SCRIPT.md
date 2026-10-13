@@ -97,7 +97,7 @@ Fallback: the same checked-in metrics, review log and port plan, plus an owner-c
 ## Optional personal-API development rehearsal — not the official AI path
 
 ```sh
-./scripts/demo.sh --live
+DHF_LIVE_PROVIDER=openai ./scripts/demo.sh --live
 # Optional secondary provider, with its configured key/models:
 DHF_LIVE_PROVIDER=anthropic ./scripts/demo.sh --live
 ```

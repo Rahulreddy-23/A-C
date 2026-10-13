@@ -54,8 +54,10 @@ def cumulative_spend(provider: str) -> float:
 
 
 def demo_configuration(root: Path, live: bool) -> dict:
-    provider = setting("DHF_LIVE_PROVIDER", "openai") if live else "mock"
+    provider = setting("DHF_LIVE_PROVIDER") if live else "mock"
     if live:
+        if not provider:
+            raise ValueError("Set DHF_LIVE_PROVIDER explicitly before a live demo")
         if provider not in ("openai", "anthropic", "copilotstudio"):
             raise ValueError("DHF_LIVE_PROVIDER must be openai, anthropic or copilotstudio")
         if provider == "copilotstudio":

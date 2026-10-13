@@ -38,6 +38,19 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 - **A genuine catch, worth showing in the demo:** `sdd/errors.UNIT-alarm_latch` claimed explicit invalid-input rejection, but the verifier found that "the provided code in UNIT-alarm_latch does not show handling of invalid input". The model had carried the requirement's wording into the code description.
 - R-046 helped: SAD generation rejections dropped from 6 to 2.
 
+**R-054 [non-blocking — fix before the first tenant run] M16 — Make the official path survive if "Run a prompt" doesn't expose token usage** (`src/dhf/llm/adapters/copilotstudio.py:139-141`, `src/dhf/llm/__init__.py:~438`, `day1/http_prompt_flow.md` step 4)
+- The adapter **rejects every response** without integer `input_tokens`/`output_tokens` (`invalid_usage`). It's not certain that the AI Builder "Run a prompt" action exposes token usage in its dynamic outputs; the docs only describe the text and JSON outputs. If it doesn't, the whole BD-approved path fails on day 1, even though generation works.
+- **Expected fix:**
+  - Add `DHF_COPILOT_USAGE=reported|estimated` (default `reported`).
+  - In `estimated` mode, missing usage is computed locally: input = the existing conservative bytes÷3 estimate of the request text inputs, output = the same estimate of `claims_json`. Ledger and manifest entries are marked `usage_source: estimated`, metrics show "estimated credits", and the tenant Monitor tab stays the authoritative billing figure.
+  - The flow spec says: return usage if the action exposes it, otherwise omit the fields and set `estimated` mode.
+  - Add tests for both modes.
+
+
+## Resolved
+
+### M16 (commit f8964e6) — verdict: **approved; R-054 before the first tenant run**
+
 **R-052 [DECIDED 2026-10-13: owner chose option B, the hybrid approved-model adapter; build it as M16, BRIEF §18.1] M14 — The official demo must use BD-approved AI only; the demo pack's AI paths don't meet that** (`docs/DEMO_SCRIPT.md`, `tools/demo.py`, port pack)
 - The problem statement says to *"leverage only BD approved AI tools"*. BD's sandbox rules say GPT models through Copilot Studio.
 - In the demo pack, the offline mode uses the **mock** provider, so every AI-written section in the fallback Word files is structural mock prose that judges will read. `--live` uses the owner's **personal OpenAI API key**, which is fine for development testing but is not a BD-approved tool for the official demo.
@@ -55,6 +68,14 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
   - (3) The demo script states which provider produced each AI section and never presents mock prose or personal-API output as the official path.
   - (4) A **Copilot Studio beat** in the 6:40 script (agent in the test pane or Teams: "Draft the release test report" → status → PR or SharePoint link), with a screenshot fallback.
 
+Resolved in f8964e6: M16 adds the `copilotstudio` Basic-GPT provider with signed-URL HTTP flow and one-document OneDrive folder exchange, common cache/credit ledger/claims validator/human-placeholder paths, a dry-run exact payload, stubbed offline tests, and tenant flow kit. The official script names the approved provider, orders HTTP → folder → native MVP, labels mock/personal-API prose as development output, and requires a real owner-captured tenant screenshot rather than inventing one. BD tenant operation remains pending and is not claimed.
+- *Implemented in M16 (f8964e6) and reviewer-verified:
+  - The `copilotstudio` adapter has an HTTP mode (HTTPS-only, signed URL never logged, exception text suppressed) and an atomic folder-exchange mode with timeout.
+  - It enforces request-ID echo and validates the model name and usage, with refusal/empty/malformed output mapped to distinct reasons.
+  - One generic tenant prompt takes versioned instructions as text; `dhf copilot-request` previews the payload.
+  - `DEMO_SCRIPT.md` labels the offline run "structural rehearsal, outside the official AI evidence path", states the official path (BD Basic GPT via the tenant prompt; HTTP first, then folder, then native A), adds the Copilot Studio agent beat with a real-tenant screenshot fallback, and forbids presenting personal-API output as official.
+  - 109 tests pass. Follow-up: R-054.*
+
 **R-053 [non-blocking — fix before the owner's first sandbox session] M15 — Day-1 validator cards: say where each formula runs; cloud flows can't run Power Fx** (`port/copilot_studio/day1/validator_powerfx.md`, `click_path_tier_b.md` step 5)
 - The cards present the citation-subset, kind and confidence checks as **Power Fx** "after Parse JSON and Select in flow 04". Flow 04 is a **Power Automate cloud flow**, and cloud flows use workflow expressions (WDL), not Power Fx. Pasting these into flow 04 will fail on day 1.
 - `native_validator.md` does say "a Power Fx extraction step in a topic or supported Dataverse low-code plug-in", but the day-1 card and the click path don't make the split clear.
@@ -69,8 +90,8 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
   - (c) Add "Are Dataverse low-code plug-ins available?" to `SANDBOX_QUESTIONS.md`.
   - (d) Keep the `numeric_unverified` compensation as the documented fallback.
 
-
-## Resolved
+Resolved in f8964e6: `validator_flow_wdl.md` provides cloud-flow WDL for citation, kind and confidence; the click path now sends only `MatchAll` extraction to a Dataverse instant plug-in or agent-topic handoff. `validator_powerfx.md` names those hosts, `SANDBOX_QUESTIONS.md` asks about plug-in availability, and the blocked `numeric_unverified` compensation remains documented. Native expressions still require tenant testing.
+- *Resolved in f8964e6: `day1/validator_flow_wdl.md` gives paste-ready WDL for citation, kind and confidence in cloud flow 04. Power Fx is limited to the `MatchAll` extraction, hosted in a Dataverse low-code plug-in through "Perform an unbound action", or in a topic.*
 
 ### M15 (tag `m15-done`, 5a88eb9; kit in 6c1d7cd) — verdict: **approved; R-053 before the first sandbox session**
 

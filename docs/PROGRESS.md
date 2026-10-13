@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current work: owner-requested explorer redesign (implemented; browser visual verification pending) · M0–M16 offline implementation complete · Last updated: 2026-10-14 IST
+Current work: owner-approved workspace layout; smaller-arrow follow-up complete (browser paint timing pending) · M0–M16 offline implementation complete · Last updated: 2026-10-14 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -22,8 +22,8 @@ Current work: owner-requested explorer redesign (implemented; browser visual ver
 | M15 | done | m15-done | 5a88eb9 | Day-1 kit and sandbox guardrails; tenant validation pending |
 | M16 | done offline | m16-done | a4963c4 | Copilot HTTP/folder transport and credit guard; tenant execution pending |
 ## Now / Next
-- Working on: six-view DHF workspace and corrected direct-arrow routing after owner rejection of the dark palette and crossed graph.
-- Next: owner visual check of the generated explorer; R-054 remains required before the first tenant run. Real tenant execution remains pending.
+- Working on: completed smaller-arrow follow-up; owner approved the replacement layout and colour direction.
+- Next: R-054 before the first tenant run. Real tenant execution and true browser paint timing remain pending.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -295,3 +295,7 @@ Current work: owner-requested explorer redesign (implemented; browser visual ver
 
 - Payload purity follow-up: moved YAML presentation loading into local orchestration; `explorer_payload` now receives JSON presentation metadata and performs no file reads. A regression blocks `Path.read_text` during payload construction and checks JSON round-trip. The initial sandboxed full-suite run could not bind loopback mock servers (95 passed, 2 failures and 14 setup errors, all socket permission failures); rerun uses the approved local-server test permission with external sockets still prohibited.
 - Final approved-loopback complete offline suite: `.venv/bin/pytest -q` → **`111 passed in 132.98s (0:02:12)`**. Ruff check → `All checks passed!`; format → `189 files already formatted`. No skips, paid calls or tenant calls.
+
+### Owner acceptance and smaller arrowheads — 2026-10-14
+- Owner feedback: “looking much better now”, “rest looks good”; requested reduced arrow size. Reduced both normal and selected SVG marker dimensions 8×8 → 6×6 (25%). Routes, line weights and workspace layout are unchanged. Re-rendered the populated preview and all three fallback snapshots, rebuilt audit HTML and refreshed checksums. Owner feedback accepts layout/colour direction; no under-two-second browser paint measurement is claimed.
+- Verification: `pytest -q tests/test_explorer.py` → `4 passed in 2.64s`; populated workspace contract → 502 graph contexts / six views / all direction, geometry and interaction checks pass (108.16 ms simulated DOM only); ruff check/format → `All checks passed!` / `189 files already formatted`; demo pack → 51 links / 19 hashed fallbacks / 33 verified audit files / tracked redline pass.

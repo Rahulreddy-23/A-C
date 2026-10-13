@@ -55,10 +55,13 @@ A 52px header, 184px workspace navigation rail, flexible main view, optional 292
 Structural panes are flat and separated by tonal surfaces. Nodes use flat borders; only the viewport controls have a slight shadow. Drawers cast a directional shadow on narrow views. Report rows use subtle boundaries without floating dashboard cards.
 
 ## Shapes
-Controls use 5px radii, graph nodes and small data groups 6px, and the release summary 8px. No pill-heavy scaffold. Arrows and curved/orthogonal routes are graph geometry, not decoration.
+Controls use 5px radii, graph nodes and small data groups 6px, and the release summary 8px. No pill-heavy scaffold. Arrows and curved/orthogonal routes are graph geometry, not decoration. Arrow markers use 6×6 units after the owner requested a 25% reduction from 8×8.
 
 ## Components
 Overview, Documents, Findings, Change impact, Traceability and Risk evidence are working snapshot views. Native inputs/selects filter records; tables and claim citation buttons open the source inspector. Graph click inspects, double-click focuses, and Back restores the previous focus. Pointer drag and keyboard arrows pan; zoom and actual-size/fit controls are labelled. Repeated selection and keyboard actions do not animate. Pointer-triggered fit uses a 180ms transform transition; reduced motion removes it. Document prose retains its recorded claim kind and source revision. Mock drafts remain labelled.
 
 ## Do's and Don'ts
 Use real deterministic outputs and safe DOM text. Keep full names accessible and unknown artifact types visible. Preserve recorded edge direction, source provenance and directly stale versus possibly affected states. Never add invented links, approval badges, decorative metric cards, AI-writing controls that do nothing, runtime CDN resources or source-system writes. Browser paint and projector legibility remain owner checks until actually observed.
+
+## Owner acceptance
+2026-10-14: the owner approved the replacement layout and colours, requesting smaller arrows only. True browser paint timing and responsive/projector checks remain unmeasured.

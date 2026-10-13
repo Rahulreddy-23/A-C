@@ -54,3 +54,7 @@ The UI/UX Pro search returned a relevant relationship-graph result and an essent
 ## Verification scope
 
 The browser tool rejects local file URLs and forbids alternate access routes. The supplied owner screenshots are the visual evidence for the rejected layouts. New automation checks graph geometry and interactions but is not a browser layout/paint benchmark. The first new graph-only canvas was rejected by the owner, so that rejection is not recorded as approval. The owner also rejected the broader workspace's dark palette and SRS-012 routing in the 11:52 PM screenshot. The current implementation corrects those defects; it is not recorded as visually approved. A fresh read-only reviewer inspected the supplied image and code/contracts, identified offscreen initial selection in large traces, and that camera issue was corrected with a sweep assertion. All artifact IDs are checked in direct/full scopes; automated geometry is not browser-rendered appearance.
+
+## Owner feedback — 2026-10-14
+
+The owner viewed the replacement and reported “looking much better now” and “rest looks good”, requesting only smaller arrows. That is owner acceptance of the wider layout and colour direction. Arrow markers are reduced from 8 to 6 units on each axis (25%); routes, line weights, content and layout remain unchanged. No true browser paint timing is inferred from that feedback.

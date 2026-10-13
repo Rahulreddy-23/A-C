@@ -1,0 +1,17 @@
+UNIT-infusion_bounds: DeliveryController.tick
+UNIT-infusion_volume: VolumeAccumulator.add
+UNIT-infusion_motor: MotorSchedule.pulses
+UNIT-sensor_pressure: PressureMonitor.evaluate
+UNIT-sensor_air: AirMonitor.evaluate
+UNIT-sensor_filter: PressureWindow.append
+UNIT-sensor_calibration: Calibration.apply
+UNIT-alarm_priority: PrioritySelector.select
+UNIT-alarm_latch: AlarmRegistry.acknowledge
+UNIT-alarm_audio: AlertScheduler.tick
+UNIT-drug_limits: DoseValidator.volume_for
+UNIT-drug_lookup: DrugLibrary.select
+UNIT-log_events: EventRecorder.record
+UNIT-log_digest: IntegrityRecord.verify
+UNIT-comms_frame: FrameBuffer.append
+UNIT-comms_timeout: Heartbeat.poll
+UNIT-diagnostics_trace: diagnostic_summary

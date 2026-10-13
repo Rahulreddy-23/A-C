@@ -1,6 +1,6 @@
 id: sfmea
-title: Software Failure Modes and Effects Analysis — Draft
-spec_version: 1
+title: "Software Failure Modes and Effects Analysis \u2014 Draft"
+spec_version: 2
 params:
   release:
     required: true
@@ -13,6 +13,33 @@ sections:
     id: Component
     name: Name
     responsibility: Function
+- id: function_trace
+  title: Safety-relevant function source trace
+  mode: deterministic
+  query: sfmea_functions
+  repeat: software_unit
+  repeat_class: C
+  columns:
+    unit: Unit
+    component: Component
+    function: Extracted function
+    hazards: Hazard / source severity
+    controls: Existing controls
+    requirements: Requirements
+    verification: Detection / verification
+    residual_risk: Residual risk
+- id: function_modes
+  title: "Function failure mode \u2014 proposed analysis"
+  mode: ai
+  query: sfmea_function_cells
+  repeat: software_unit
+  repeat_class: C
+  prompt: risk.function@1
+  allowed_kinds:
+  - suggested
+  max_claims: 5
+  synthesis: true
+  render_claims: table
 - id: risk_row
   title: Risk source and trace
   mode: deterministic
@@ -23,6 +50,7 @@ sections:
     severity: Source severity
     components: Components
     function: Function
+    analysis_rows: Function analysis rows (unit IDs)
   repeat: hazard
 - id: control_trace
   title: Controls and verification

@@ -28,7 +28,7 @@ def test_risk_source_only_severity_suggestions_and_gaps(tmp_path):
     }
     assert {r["hazard"]: r["severity"] for r in rows} == source
     claims = [c for s in result["manifest"]["sections"] for c in s["claims"]]
-    assert len(claims) == 40 and all(c["kind"] == "suggested" for c in claims)
+    assert len(claims) == 125 and all(c["kind"] == "suggested" for c in claims)
     assert not any(s["status"] == "ai_unavailable" for s in result["manifest"]["sections"])
     assert "**[Suggested — review required]**" in result["markdown"]
     assert "Residual-risk assessment and acceptance" in result["markdown"]
@@ -81,6 +81,7 @@ def test_drr_inputs_not_invented_and_proposals_are_separate(tmp_path):
     identification = result["manifest"]["sections"][0]
     assert {r["field"]: r["value"] for r in identification["facts"]["rows"]} == review
     assert result["manifest"]["sections"][1]["facts"]["rows"] == []
+    assert "No changes since sad-v1 (snapshot 1)" in result["markdown"]
     assert {s["id"] for s in result["manifest"]["sections"] if s["mode"] == "human"} == {
         "discussion",
         "decisions",
@@ -95,7 +96,7 @@ def test_drr_inputs_not_invented_and_proposals_are_separate(tmp_path):
     before = copy.deepcopy(graph)
     proposals = propose(graph, [], tmp_path / "proposals", llm)
     assert graph == before
-    assert len(proposals["sections"]) == 42
+    assert len(proposals["sections"]) == 40
     assert {s["id"].split(".")[0] for s in proposals["sections"]} == {"L01", "L02", "L03"}
     orphan = next(s for s in proposals["sections"] if s["id"].startswith("L02"))
     assert "The software shall produce a bounded diagnostic trace" in orphan["claims"][0]["text"]
@@ -142,3 +143,45 @@ def test_risk_trace_follows_hazard_function_instead_of_index():
 
     assert [f["artifact_id"] for f in gaps(graph) if f["rule"] == "G06"] == ["RC-12"]
     assert [f["artifact_id"] for f in gaps(graph) if f["rule"] == "G07"] == ["SRS-012"]
+
+
+def test_function_analysis_uses_real_callables_and_baseline_findings(tmp_path):
+    import ast
+
+    import yaml
+
+    from dhf.graph.queries import query
+    from dhf.trace.consistency import legacy_design
+
+    graph = ingest_fixtures()
+    nodes = {a["id"]: a for a in graph["artifacts"]}
+    functions = yaml.safe_load(Path("specs/risk/functions.yaml").read_text())
+    for unit, function in functions.items():
+        tree = ast.parse(nodes[unit]["body"])
+        callables = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
+        callables.update(
+            f"{n.name}.{f.name}"
+            for n in tree.body
+            if isinstance(n, ast.ClassDef)
+            for f in n.body
+            if isinstance(f, ast.FunctionDef)
+        )
+        assert function in callables
+    baseline = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    params = {"release": "1.1", "documents": [baseline]}
+    table = query(graph, "drr_findings_table", params)["facts"]["rows"]
+    rows = {r["rule"]: r for r in table}
+    assert rows["C01"]["artifacts"] == ["COMP-06"]
+    assert rows["C04"]["artifacts"] == ["COMP-03"]
+    assert rows["G05"]["artifacts"] == ["RES-1-021"]
+    assert rows["G06"]["artifacts"] == ["RC-12"]
+    assert rows["G07"]["artifacts"] == ["SRS-012"]
+    assert [f["rule"] for f in query(graph, "drr_findings", params)["facts"]["gap_findings"]][
+        :5
+    ] == ["C01", "C04", "G06", "G07", "G05"]
+    proposals = propose(graph, [], tmp_path / "proposals")
+    assert [f["artifact_id"] for f in proposals["deterministic_findings"]] == ["SRS-034", "SRS-035"]
+    assert [
+        s["id"] for s in proposals["sections"] if s["id"].startswith("L01") and s["claims"]
+    ] == ["L01.SRS-020"]
+    assert "L01.SRS-001" not in (tmp_path / "proposals/proposals.md").read_text()

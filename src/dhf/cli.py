@@ -183,7 +183,16 @@ def generate(
         params["documents"] = [
             json.loads(p.read_text()) for p in Path("out/documents").glob("*.manifest.json")
         ]
+        from dhf.ingest.ado import ADO
+        from dhf.review import DocsReview
+
+        ado = ADO()
+        try:
+            params["documents"] += DocsReview(ado).approved_documents()
+        finally:
+            ado.close()
         if since is not None:
+            params["baseline_snapshot"] = since
             prior = Store(Path(db))
             try:
                 params["previous_snapshot"] = prior.graph(since)

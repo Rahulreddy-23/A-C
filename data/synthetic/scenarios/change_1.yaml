@@ -336,6 +336,65 @@ expected_sections:
       artifacts:
       - SRS-021
       - UNIT-sensor_pressure
+    function_trace.UNIT-alarm_latch:
+      status: stale
+      artifacts:
+      - SRS-021
+    function_modes.UNIT-alarm_latch:
+      status: stale
+      artifacts:
+      - SRS-021
+    function_trace.UNIT-infusion_bounds:
+      status: possibly_affected
+      artifacts:
+      - SRS-021
+      - UNIT-sensor_pressure
+    function_trace.UNIT-infusion_volume:
+      status: possibly_affected
+      artifacts:
+      - SRS-021
+      - UNIT-sensor_pressure
+    function_trace.UNIT-log_digest:
+      status: possibly_affected
+      artifacts:
+      - SRS-021
+      - UNIT-sensor_pressure
+    function_trace.UNIT-log_events:
+      status: possibly_affected
+      artifacts:
+      - SRS-021
+      - UNIT-sensor_pressure
+    function_trace.UNIT-sensor_air:
+      status: possibly_affected
+      artifacts:
+      - SRS-021
+      - UNIT-sensor_pressure
+    function_trace.UNIT-sensor_calibration:
+      status: stale
+      artifacts:
+      - SRS-021
+    function_modes.UNIT-sensor_calibration:
+      status: stale
+      artifacts:
+      - SRS-021
+    function_trace.UNIT-sensor_filter:
+      status: stale
+      artifacts:
+      - SRS-021
+    function_modes.UNIT-sensor_filter:
+      status: stale
+      artifacts:
+      - SRS-021
+    function_trace.UNIT-sensor_pressure:
+      status: stale
+      artifacts:
+      - SRS-021
+      - UNIT-sensor_pressure
+    function_modes.UNIT-sensor_pressure:
+      status: stale
+      artifacts:
+      - SRS-021
+      - UNIT-sensor_pressure
     risk_row.HAZ-01:
       status: possibly_affected
       artifacts:

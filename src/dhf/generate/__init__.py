@@ -60,7 +60,13 @@ def expand_sections(spec: dict, graph: dict) -> list[dict]:
         while pending and pending[0].get("repeat") == first["repeat"]:
             group.append(pending.pop(0))
         for artifact in sorted(graph["artifacts"], key=lambda a: a["id"]):
-            if artifact["type"] == first["repeat"]:
+            if artifact["type"] == first["repeat"] and (
+                not first.get("repeat_class")
+                or next(
+                    a for a in graph["artifacts"] if a["id"] == artifact["attributes"]["component"]
+                )["attributes"]["safety_class"]
+                == first["repeat_class"]
+            ):
                 for group_index, section in enumerate(group):
                     sections.append(
                         {

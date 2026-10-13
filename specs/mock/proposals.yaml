@@ -1,2 +1,5 @@
-L01: Review whether {subject} acceptance criteria are implemented by the recorded code; confirm missing behavior with a test before proposing a change.
-L02: The software shall produce a bounded diagnostic trace summary from recorded events without modifying therapy configuration or delivery state.
+L01: DrugLibrary validates bounds and copies records but does not check a library
+  checksum before activation as required by {subject}. Review a tampered-library test
+  and an integrity guard.
+L02: The software shall produce a bounded diagnostic trace summary from recorded events
+  without modifying therapy configuration or delivery state.

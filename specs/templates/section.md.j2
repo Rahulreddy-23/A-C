@@ -3,7 +3,7 @@
 
 {% endif %}{{ "#" * section.get("heading_level", 2) }} {{ section.title }}
 
-{% if facts.rows is defined and facts.rows %}| {% for key, label in section.columns.items() %}{{ label }} | {% endfor %}
+{% if facts.rows is defined and facts.rows and section.columns is defined %}| {% for key, label in section.columns.items() %}{{ label }} | {% endfor %}
 | {% for key in section.columns %}--- | {% endfor %}
 {% for row in facts.rows %}| {% for key in section.columns %}{{ (row.get(key, '—') | revision if key == 'revision' else row.get(key, '—')) | cell }} | {% endfor %}
 {% endfor %}

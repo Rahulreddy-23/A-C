@@ -1,0 +1,8 @@
+Failure mode: '{function} fails to provide its required safe output'
+Cause: A boundary condition follows a path without the required validation
+Local effect: The returned output or retained state is inconsistent with the sampled
+  condition
+System effect: The linked hazardous condition may persist without the intended software
+  response
+Recommended action: Review boundary and fault-injection tests for {function} before
+  confirming this mode.

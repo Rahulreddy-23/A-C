@@ -31,16 +31,7 @@ def test_all_components_units_allocations_and_local_diagrams(tmp_path: Path) -> 
     assert diagram.startswith("flowchart LR") and "UNIT_sensor_pressure -->" in diagram
     assert all(id.replace("-", "_") in diagram for id in components | units)
     pressure = query(graph, "unit_allocation", {"entity": "UNIT-sensor_pressure"})
-    assert {r["requirement"] for r in pressure["facts"]["rows"]} == {
-        "SRS-003",
-        "SRS-009",
-        "SRS-015",
-        "SRS-021",
-        "SRS-022",
-        "SRS-023",
-        "SRS-027",
-        "SRS-033",
-    }
+    assert {r["requirement"] for r in pressure["facts"]["rows"]} == {"SRS-009", "SRS-021"}
     interfaces = query(graph, "unit_interfaces", {"entity": "UNIT-sensor_pressure"})
     assert any("evaluate" in r["signature"] for r in interfaces["facts"]["rows"])
     soup = query(graph, "soup_inventory", {})

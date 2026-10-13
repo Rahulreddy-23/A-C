@@ -57,6 +57,8 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - Update `expected_gaps.yaml` and the `change_1` impact expectations. After the fix, `change_1` should correctly make the **occlusion sFMEA block** stale, which strengthens the demo.
   - Re-run the validator, goldens and the change regression.
 
+Resolved in 212e688: controls, requirement/component/unit annotations and PR links follow actual functions; exact answer key and native watch/redline regression pass. Occlusion HAZ-04 is stale under change_1.
+
 **R-037 [non-blocking, strongly recommended before M10] M8 — The sFMEA runs top-down from hazards, one guessed failure mode per hazard; reviewers expect bottom-up rows** (`specs/documents/sfmea.yaml`, `src/dhf/graph/design.py`)
 - Today each hazard gets one `[Suggested]` "Failure mode: <hazard name>". That's a hazard analysis, not an FMEA. With the mock, "Local effect" also repeats "Cause".
 - A software FMEA is expected to work **per safety-relevant unit function**, using the extracted interfaces (e.g. `PressureMonitor.evaluate`):

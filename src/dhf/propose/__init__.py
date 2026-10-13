@@ -7,7 +7,7 @@ import yaml
 
 from dhf.generate import generate_section
 from dhf.llm import LLM
-from dhf.trace import confirmed_links
+from dhf.trace import confirmed_links, gaps
 
 
 def proposal_jobs(graph: dict, documents: list[dict]) -> list[dict]:
@@ -16,7 +16,17 @@ def proposal_jobs(graph: dict, documents: list[dict]) -> list[dict]:
     jobs = []
     for rule in yaml.safe_load(Path("specs/rules/proposals.yaml").read_text())["rules"]:
         if rule["op"] == "requirement_implementation":
-            subjects = [a for a in nodes.values() if a["type"] == "software_req"]
+            subjects = [
+                a
+                for a in nodes.values()
+                if a["type"] == "software_req"
+                and any(
+                    e["dst"] == a["id"]
+                    and e["type"] == "implements"
+                    and nodes[e["src"]]["type"] == "software_unit"
+                    for e in edges
+                )
+            ]
         elif rule["op"] == "orphan_requirement":
             subjects = [
                 a
@@ -88,6 +98,7 @@ def propose(
     result = {
         "status": "proposed — human review required",
         "sections": sections,
+        "deterministic_findings": [f for f in gaps(graph) if f["rule"] == "G02"],
         "cost_usd": llm.run_spend,
     }
     root.mkdir(parents=True, exist_ok=True)
@@ -96,6 +107,12 @@ def propose(
         "# Review proposals\n\nAll entries are suggestions. "
         "No source-system update or approval is implied.\n\n"
     )
-    text += "\n".join(s["markdown"] for s in sections)
+    text += "## No implementing change (deterministic)\n\n" + "".join(
+        f"- {f['artifact_id']}: no implementing change recorded. {f['action']}\n"
+        for f in result["deterministic_findings"]
+    )
+    text += "\n".join(
+        s["markdown"] for s in sections if s["claims"] or s["status"] == "ai_unavailable"
+    )
     (root / "proposals.md").write_text(text)
     return result

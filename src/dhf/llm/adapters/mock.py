@@ -34,7 +34,7 @@ class MockAdapter:
             import yaml
 
             rule = pack["facts"]["proposal_rule"]
-            if rule == "L03":
+            if rule in ("L01", "L03") and (rule == "L03" or pack["facts"]["subject"] != "SRS-020"):
                 return {"claims": []}
             text = yaml.safe_load(Path("specs/mock/proposals.yaml").read_text())[rule]
             return {
@@ -48,6 +48,27 @@ class MockAdapter:
                 ]
             }
         if pack.get("facts", {}).get("risk_authoring"):
+            if pack["facts"].get("unit_function"):
+                from pathlib import Path
+
+                import yaml
+
+                drafts = yaml.safe_load(Path("specs/mock/function_risk.yaml").read_text())
+                unit = pack["facts"]["unit"]
+                hazards = [a["id"] for a in evidence if a["id"].startswith("HAZ-")]
+                return {
+                    "claims": [
+                        {
+                            "text": label
+                            + ": "
+                            + drafts[label].format(function=pack["facts"]["unit_function"]),
+                            "kind": "suggested",
+                            "citations": [unit, *hazards],
+                            "confidence": 0.5,
+                        }
+                        for label in pack["facts"]["cell_labels"]
+                    ]
+                }
             hazard = next(a for a in evidence if a["id"] == pack["facts"]["hazard"])
             body = hazard["body"]
             cause = body.split("Cause sequence: ", 1)[1].split(". ", 1)[0]
@@ -55,7 +76,7 @@ class MockAdapter:
             drafts = [
                 hazard["title"],
                 cause,
-                cause,
+                "Unsafe output or retained state does not reflect the initiating condition",
                 harm,
                 "Review recorded controls and verification before accepting this analysis.",
             ]

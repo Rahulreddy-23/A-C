@@ -1,6 +1,6 @@
 id: drr
 title: Design Review Record
-spec_version: 1
+spec_version: 2
 params:
   review_input:
     required: true
@@ -27,6 +27,15 @@ sections:
     id: Action
     title: Description
     state: State
+- id: findings_table
+  title: Complete deterministic pre-review findings
+  mode: deterministic
+  query: drr_findings_table
+  columns:
+    rule: Rule
+    count: Count
+    artifacts: Evidence
+    action: Recommended action
 - id: findings
   title: Pre-review findings
   mode: ai

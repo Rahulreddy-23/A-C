@@ -45,6 +45,7 @@ def risk_rows(graph: dict, hazard: str | None = None) -> list[dict]:
                 "controls": [{"id": c, "title": nodes[c]["title"]} for c in sorted(controls)],
                 "requirements": sorted(reqs),
                 "verification": sorted(tests),
+                "analysis_rows": sorted(units),
                 "residual_risk": "Human assessment required — no acceptance recorded",
             }
         )
@@ -98,6 +99,59 @@ def risk_gaps(graph: dict, modes: list[dict] | None = None) -> list[dict]:
 
 def review_query(graph: dict, name: str, params: dict) -> dict:
     nodes = {a["id"]: a for a in graph["artifacts"]}
+    if name in ("sfmea_functions", "sfmea_function_cells"):
+        from pathlib import Path
+
+        import yaml
+
+        unit = nodes[params["entity"]]
+        primary = yaml.safe_load(Path("specs/risk/functions.yaml").read_text())[unit["id"]]
+        hazards = [r for r in risk_rows(graph) if unit["id"] in r["units"]]
+        ids = {unit["id"], unit["attributes"]["component"]}
+        ids.update(
+            id
+            for r in hazards
+            for id in [
+                r["hazard"],
+                *r["requirements"],
+                *r["verification"],
+                *(c["id"] for c in r["controls"]),
+            ]
+        )
+        evidence = [nodes[id] for id in sorted(ids)]
+        row = {
+            "unit": unit["id"],
+            "component": unit["attributes"]["component"],
+            "function": primary,
+            "hazards": [
+                {"id": r["hazard"], "name": r["hazard_name"], "source_severity": r["severity"]}
+                for r in hazards
+            ],
+            "controls": [c for r in hazards for c in r["controls"]],
+            "verification": sorted({t for r in hazards for t in r["verification"]}),
+            "requirements": sorted({id for r in hazards for id in r["requirements"]}),
+            "residual_risk": "Human assessment required — no acceptance recorded",
+        }
+        facts = {
+            "rows": [row],
+            "source_revisions": {a["id"]: a["source"]["revision"] for a in evidence},
+        }
+        if name == "sfmea_function_cells":
+            facts.update(
+                {
+                    "risk_authoring": True,
+                    "unit_function": primary,
+                    "unit": unit["id"],
+                    "cell_labels": [
+                        "Failure mode",
+                        "Cause",
+                        "Local effect",
+                        "System effect",
+                        "Recommended action",
+                    ],
+                }
+            )
+        return {"facts": facts, "evidence": evidence}
     if name.startswith("sfmea_"):
         rows = risk_rows(graph, params.get("entity"))
         ids = {
@@ -173,11 +227,17 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
         ids = set().union(*changed.values())
         return {
             "facts": {
+                "notice": ""
+                if ids
+                else (
+                    f"No changes since {review.get('baseline', 'the supplied baseline')} "
+                    f"(snapshot {params.get('baseline_snapshot', 1)})"
+                ),
                 "rows": [
                     {"artifact": id, "change": kind}
                     for kind in ("changed", "added", "removed")
                     for id in changed[kind]
-                ]
+                ],
             },
             "evidence": [nodes[id] for id in sorted(ids & nodes.keys())],
         }
@@ -196,7 +256,7 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
             },
             "evidence": actions,
         }
-    if name in ("drr_findings", "drr_checklist"):
+    if name in ("drr_findings", "drr_checklist", "drr_findings_table"):
         from collections import defaultdict
 
         from dhf.trace.consistency import consistency
@@ -209,14 +269,74 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
                 "document": doc,
                 "rule": rule,
                 "count": len(items),
-                "artifacts": sorted({f.get("artifact") for f in items if f.get("artifact")}),
+                "artifacts": sorted(
+                    {
+                        id
+                        for f in items
+                        for id in (
+                            [f["artifact"]]
+                            if f.get("artifact")
+                            else [*f.get("missing", []), *f.get("unexpected", [])]
+                        )
+                    }
+                ),
                 "sections": sorted({f.get("section") for f in items if f.get("section")}),
             }
             for (doc, rule), items in sorted(grouped.items())
         ]
+        priority = {"C01": 0, "C04": 0, "C02": 1, "G06": 2, "G07": 2, "G05": 3}
+        drafts = [
+            {
+                "rule": f["rule"],
+                "artifact_id": id,
+                "message": f"{f['document']} baseline consistency finding",
+                "action": (
+                    "Reconcile the baseline with current source before recording review decisions."
+                ),
+            }
+            for f in summaries
+            for id in f["artifacts"]
+        ] + gaps(graph)
+        drafts.sort(key=lambda f: (priority.get(f["rule"], 4), f["rule"], f["artifact_id"]))
+        if name == "drr_findings_table":
+            rule_ids = [
+                r["id"]
+                for file in ("gaps", "consistency", "risk")
+                for r in __import__("yaml").safe_load(
+                    __import__("pathlib").Path(f"specs/rules/{file}.yaml").read_text()
+                )["rules"]
+            ]
+            all_findings = drafts + [
+                {"rule": f["rule"], "artifact_id": f["artifact"], "action": f["action"]}
+                for f in risk_gaps(graph)
+            ]
+            return {
+                "facts": {
+                    "rows": [
+                        {
+                            "rule": rule,
+                            "count": sum(f["rule"] == rule for f in all_findings),
+                            "artifacts": sorted(
+                                {f["artifact_id"] for f in all_findings if f["rule"] == rule}
+                            ),
+                            "action": next(
+                                (f["action"] for f in all_findings if f["rule"] == rule),
+                                "No finding recorded.",
+                            ),
+                        }
+                        for rule in rule_ids
+                    ]
+                },
+                "evidence": [
+                    nodes[id]
+                    for id in sorted(
+                        {f["artifact_id"] for f in all_findings if f["artifact_id"] in nodes}
+                    )
+                ],
+            }
         facts = {
             "review_drafting": "checklist" if name == "drr_checklist" else "findings",
-            "gap_findings": gaps(graph),
+            "gap_findings": drafts,
             "consistency_findings": summaries,
             "impact": [
                 {
@@ -232,7 +352,9 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
         return {
             "facts": facts,
             "evidence": [
-                nodes[id] for id in sorted({f["artifact_id"] for f in facts["gap_findings"]})
+                nodes[id]
+                for id in sorted({f["artifact_id"] for f in facts["gap_findings"]})
+                if id in nodes
             ],
         }
     raise ValueError("Unknown review query")

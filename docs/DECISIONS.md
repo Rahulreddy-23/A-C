@@ -162,3 +162,16 @@ The later owner instruction supersedes ADR-027's uniform $2.50 limit: Anthropic 
 2026-10-13 · Accepted (M11)
 
 Seed sources only from separate tools/ authority and credentials, after an exact organization confirmation. A topological work-item order includes relations at creation, retaining the fixture's first revision. Native run/results and Git push/PR APIs carry the fixture without product mock endpoints. Stable tags/names/seed markers and exact file comparisons make reruns idempotent; duplicate identities fail. Discovery is a JSON-only inventory/candidate-mapping step with read-only orchestration. It preserves the active mapping and marks renamed/unknown fields and link semantics for human confirmation. Real ADO process/readonly-date/PR-completion behavior remains a live contract check, not inferred from mock tests.
+
+## ADR-030 — Advisory support schema and explicit effort assumptions
+2026-10-13 · Accepted (M12)
+
+The existing provider/cache/ledger layer accepts one additional typed output schema, support.v1. Each verdict references an exact claim key and has a suggested, cited rationale checked by the same numeric/ID validator. Default-model sample checks inspect only the claim's cited evidence at its recorded revision, retain every original claim and flag unavailable or partial/unsupported assessments. Word comments and manifests carry advice; readiness does not use model support as a gate. Per-type manual authoring hours are YAML assumptions; generation time is measured, human review is excluded, and estimated savings are labelled rather than claimed as measured labor.
+
+R-046 collaborator closure is limited to component-design/runtime narratives and compact provider context. Quantity parsing accepts explicit unit suffixes (3s, 256bytes) without treating sha256 or artifact IDs as quantities; unsourced 256 remains rejected. Conclusion prompt v3 explicitly requires suggested kinds throughout, avoiding contradictory generic sourced guidance.
+
+
+## ADR-031 — Safe native chronology and nonempty inventory
+2026-10-13 · Accepted (R-047)
+
+Default seeding uses native work-item timestamps and ordered run/result completion times, then plants the post-pass SRS-030 revision. Historical readonly dates are opt-in with --bypass-rules and the corresponding permission; the mock rejects them otherwise. Inventory refusal covers foreign items, repos and runs before writes; an explicit --allow-nonempty override requires a reviewed sandbox. This supersedes ADR-029's historical-date caveat, not its separate tooling authority. Real tenant execution remains pending.

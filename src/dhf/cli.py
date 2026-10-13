@@ -615,3 +615,52 @@ def discover_command(output: str = "out/discovery/ado_mapping.yaml") -> None:
     target.write_text(yaml.safe_dump(report["mapping"], sort_keys=False))
     target.with_suffix(".discovery.json").write_text(json.dumps(report, indent=2))
     typer.echo(f"Mapping draft → {target}; {len(report['unknowns'])} unknowns require confirmation")
+
+
+@app.command("verify-support")
+def verify_support_command(
+    doc: str | None = None,
+    sample: int = 5,
+    provider: str = "mock",
+    db: str = "out/evidence.sqlite",
+    documents: str = "out/documents",
+) -> None:
+    """Assess sourced/inferred claims; flags and Word comments are advisory only."""
+    import hashlib
+    import json
+    from pathlib import Path
+
+    from dhf.generate.support import support_comments, verify_document
+    from dhf.graph import Store
+    from dhf.llm import LLM
+    from dhf.render import render_docx
+
+    store = Store(Path(db))
+    try:
+        graph = store.graph()
+    finally:
+        store.close()
+    root = Path(documents)
+    paths = sorted(root.glob("*.manifest.json"))
+    if doc:
+        paths = [p for p in paths if p.name == doc + ".manifest.json"]
+    if not paths:
+        raise typer.BadParameter("No matching documents")
+    llm = LLM(provider)
+    for path in paths:
+        manifest = verify_document(graph, json.loads(path.read_text()), llm, sample)
+        id = manifest["doc_id"]
+        word = root / (id + ".docx")
+        manifest["docx"] = render_docx(
+            (root / (id + ".md")).read_text(),
+            word,
+            timestamp=manifest["generated_at"],
+            support_findings=support_comments(manifest),
+        )
+        manifest["docx"]["sha256"] = hashlib.sha256(word.read_bytes()).hexdigest()
+        path.write_text(json.dumps(manifest, indent=2))
+        report = manifest["claim_support"]
+        typer.echo(
+            f"{id}: {report['counts']}; support rate={report['support_rate']}; advisory only"
+        )
+    report_budget(llm)

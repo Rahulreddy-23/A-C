@@ -56,6 +56,14 @@ def seed_route(
     if match and method in ("POST", "PATCH"):
         if h.headers.get("Content-Type", "").split(";", 1)[0] != "application/json-patch+json":
             return send({"message": "JSON Patch required"}, 415)
+        if (
+            any(
+                op.get("path") in ("/fields/System.ChangedDate", "/fields/System.CreatedDate")
+                for op in data
+            )
+            and query.get("bypassRules", ["false"])[0].lower() != "true"
+        ):
+            return send({"message": "System dates require bypassRules permission"}, 400)
         create = match[1].startswith("$")
         if create != (method == "POST"):
             return send({"message": "Invalid operation"}, 400)
@@ -75,6 +83,7 @@ def seed_route(
             if create
             else copy.deepcopy(state["items"][str(native)]["current"])
         )
+        value["fields"]["System.ChangedDate"] = datetime.now(UTC).isoformat()
         for operation in data:
             op, pointer = operation["op"], operation["path"]
             if op == "test" and pointer == "/rev":
@@ -147,6 +156,10 @@ def seed_route(
         git(["config", "user.name", "Synthetic Seeder"], work)
         git(["config", "user.email", "synthetic@example.invalid"], work)
         git(["remote", "add", "origin", str(bare)], work)
+        if name == "kestrel-device-sw":
+            hook = bare / "hooks/pre-receive"
+            hook.write_text('#!/bin/sh\nif [ "$DHF_GIT_ROLE" != "seed" ]; then exit 1; fi\n')
+            hook.chmod(0o755)
         repo = {
             "id": name,
             "name": name,

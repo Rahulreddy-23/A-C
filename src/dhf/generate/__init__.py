@@ -42,7 +42,11 @@ def load_prompt(reference: str) -> dict:
     raw = Path("specs/prompts/" + id + ".md").read_text()
     _, head, body = raw.split("---", 2)
     meta = yaml.safe_load(head)
-    if meta["id"] != id or str(meta["version"]) != version or meta["output_schema"] != "claims.v1":
+    if (
+        meta["id"] != id
+        or str(meta["version"]) != version
+        or meta["output_schema"] not in ("claims.v1", "support.v1")
+    ):
         raise ValueError("Prompt contract mismatch")
     return {**meta, "body": body.strip(), "sha256": sha(raw)}
 

@@ -40,8 +40,32 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 - **(b)** The SSTR conclusion had 5 kind coercions, where the model labelled claims `sourced` in a suggested-only section. State "every claim in this section is `suggested`" in the prompt to cut audit noise.
 - **(c)** One numeric rejection each for "3" and "256" in narrative. Check that unit-bearing values quoted from evidence ("3 s") reach `source_numbers`.
 
+**R-047 [blocking before any real-ADO seeding — fix within Phase 2, before M15] M11 — The seeder will probably fail on a real ADO org, and it doesn't refuse non-empty projects** (`tools/seed_ado/__init__.py:175-211, 330-346`)
+- **(a) Read-only system dates.** The seeder writes `System.ChangedDate` (the mapped `changed_at` field) on create and on the SRS-030 revision update. On real Azure DevOps, `System.ChangedDate`/`CreatedDate` are read-only unless the request uses `bypassRules=true` **and** the identity has "Bypass rules on work item updates". So the first create will most likely return HTTP 400, and the seeder aborts on any error.
+  - Even if dates are dropped, G11 depends on chronology. Work items created "now" would postdate the fixture's October test results, so **every** passed test would look outdated and the answer key would break.
+  - **Expected fix:**
+    - Default real-org mode that never writes system dates.
+    - **Preserve relative order instead.** Create work items first, then post runs/results with `completedDate` set to seeding time plus an increasing offset in fixture order, then apply the planted revision-2 updates (SRS-030) **after** their tests' passes, so G11 still flags exactly TC-030.
+    - An opt-in `--bypass-rules` flag for orgs that grant the permission, with `bypassRules=true` and the original historical dates.
+    - Make the mock reject `System.ChangedDate` writes unless `bypassRules=true` is sent, so the tests reflect real behaviour.
+- **(b) No non-empty-project guard.** The docs say "never seed an existing production project", but the code doesn't enforce it.
+  - **Expected fix:** refuse to seed if the project contains any work items without `DHF:` identity tags, or any repos or runs not created by the seeder, unless `--allow-nonempty` is passed explicitly. Print what was found.
+
 
 ## Resolved
+
+### M11 (tag `m11-done`, 279debf) — verdict: **approved; R-047 must be fixed before seeding a real org**
+
+Verified independently in a clean worktree:
+- 77 tests pass; ruff is clean.
+- **Seeder guards:**
+  - `--confirm-org` must match the org parsed from `ADO_BASE_URL` (dev.azure.com and visualstudio.com forms).
+  - It refuses to run if the seed token equals the app token.
+  - `--dry-run` writes nothing.
+  - Idempotency comes from `DHF:` tags, and duplicate identities abort.
+- **Mock write routes** are seed-token-only; the app token gets 403, and the product's write allowlist is unchanged.
+- **`dhf discover`** is read-only, drafts into `out/` without overwriting the active mapping, and flags renamed fields as unknowns needing confirmation.
+- **`docs/REAL_DATA_ONBOARDING.md`** walks through discover → review → ingest → validate → generate, and is honest that tenant verification is pending.
 
 ### M10 (tag `m10-done`, ecac18b; implementation e707d9a) — verdict: **approved — core build complete (M0–M10)**
 

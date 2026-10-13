@@ -121,8 +121,14 @@ class DocsReview:
 
     def commit(self, branch: str, doc: str, markdown: str, manifest: dict, previous: str) -> None:
         (self.root / (doc + ".md")).write_text(markdown)
+        from dhf.generate.support import support_comments
+
         counts = render_docx(
-            markdown, self.root / (doc + ".docx"), previous, manifest["generated_at"]
+            markdown,
+            self.root / (doc + ".docx"),
+            previous,
+            manifest["generated_at"],
+            support_findings=support_comments(manifest),
         )
         manifest["docx"] = {
             "sha256": hashlib.sha256((self.root / (doc + ".docx")).read_bytes()).hexdigest(),

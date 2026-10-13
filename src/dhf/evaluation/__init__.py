@@ -130,6 +130,7 @@ def evaluate(
 ) -> dict:
     nodes = {a["id"] for a in graph["artifacts"]}
     mixes = []
+    effort_config = yaml.safe_load(Path("specs/metrics/manual_effort.yaml").read_text())
     unknown = set()
     schema_errors = []
     for doc in documents:
@@ -150,6 +151,10 @@ def evaluate(
         except ValueError:
             schema_errors.append(doc["doc_id"])
         total = sum(counts.values())
+        section_types = Counter(s["mode"] for s in doc["sections"])
+        baseline_hours = sum(
+            section_types[k] * hours for k, hours in effort_config["hours_per_section"].items()
+        )
         telemetry = doc.get("telemetry", {})
         calls = telemetry.get("calls", 0)
         hits = telemetry.get("cache_hits", 0)
@@ -167,6 +172,18 @@ def evaluate(
                 "calls": calls,
                 "cache_hits": hits,
                 "cache_hit_rate": round(hits / (hits + calls), 4) if hits + calls else None,
+                "claim_support": doc.get(
+                    "claim_support",
+                    {"support_rate": None, "counts": {}, "status": "pending — not sampled"},
+                ),
+                "effort": {
+                    "section_counts": dict(section_types),
+                    "baseline_hours": round(baseline_hours, 2),
+                    "estimated_hours_saved": round(
+                        max(0, baseline_hours - telemetry.get("seconds", 0) / 3600), 2
+                    ),
+                    "assumptions": effort_config,
+                },
                 "ai_unavailable": [
                     s["id"] for s in doc["sections"] if s["status"] == "ai_unavailable"
                 ],
@@ -281,6 +298,37 @@ def metrics_markdown(result: dict) -> str:
         text += (
             f" | {d['validation']['rejected']} / {d['validation']['downgraded']} | "
             f"{d['cost_usd']:.6f} | {d['seconds']:.3f} | {hit} |\n"
+        )
+    text += (
+        "\n| Document | AI / deterministic / human sections | Assumed authoring hours | "
+        "Estimated hours saved | Support rate | Supported / partial / unsupported | "
+        "Verifier USD / seconds |\n|---|---|---:|---:|---|---|---|\n"
+    )
+    for d in result["documents"]:
+        effort, support = d["effort"], d["claim_support"]
+        section_counts = " / ".join(
+            str(effort["section_counts"].get(k, 0)) for k in ("ai", "deterministic", "human")
+        )
+        rate = (
+            f"{support['support_rate']:.1%}"
+            if support.get("support_rate") is not None
+            else "pending"
+        )
+        counts = " / ".join(
+            str(support.get("counts", {}).get(k, 0))
+            for k in ("supported", "partial", "unsupported")
+        )
+        text += (
+            f"| {d['document']} | {section_counts} | {effort['baseline_hours']} | "
+            f"{effort['estimated_hours_saved']} | {rate} | {counts} | "
+            f"{support.get('cost_usd', 0):.6f} / {support.get('seconds', 0):.3f} |\n"
+        )
+    if result["documents"]:
+        text += "\n" + result["documents"][0]["effort"]["assumptions"]["notice"] + "\n"
+        text += (
+            "Hours per section type: `"
+            + json.dumps(result["documents"][0]["effort"]["assumptions"]["hours_per_section"])
+            + "`. Support assessments are advisory; mock rates are lexical fixture checks.\n"
         )
     text += "\nCoverage: `" + json.dumps(result["coverage"], sort_keys=True) + "`.\n\n"
     text += "Deterministic baseline goldens: `"

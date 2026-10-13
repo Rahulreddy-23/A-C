@@ -1,0 +1,93 @@
+{
+  "$defs": {
+    "Claim": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "sourced",
+            "inferred",
+            "suggested"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "citations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Citations",
+          "type": "array"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        }
+      },
+      "required": [
+        "text",
+        "kind",
+        "citations"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "SupportVerdict": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_key": {
+          "title": "Claim Key",
+          "type": "string"
+        },
+        "support": {
+          "enum": [
+            "supported",
+            "partial",
+            "unsupported"
+          ],
+          "title": "Support",
+          "type": "string"
+        },
+        "rationale": {
+          "$ref": "#/$defs/Claim"
+        }
+      },
+      "required": [
+        "claim_key",
+        "support",
+        "rationale"
+      ],
+      "title": "SupportVerdict",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "results": {
+      "items": {
+        "$ref": "#/$defs/SupportVerdict"
+      },
+      "title": "Results",
+      "type": "array"
+    }
+  },
+  "required": [
+    "results"
+  ],
+  "title": "SupportChecks",
+  "type": "object"
+}

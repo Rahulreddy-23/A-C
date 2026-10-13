@@ -22,18 +22,40 @@ class Claims(BaseModel):
     claims: list[Claim]
 
 
+class SupportVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    claim_key: str
+    support: Literal["supported", "partial", "unsupported"]
+    rationale: Claim
+
+
+class SupportChecks(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    results: list[SupportVerdict]
+
+
+def output_model(schema_id: str) -> type[BaseModel]:
+    return {"claims.v1": Claims, "support.v1": SupportChecks}[schema_id]
+
+
 def strict_claims_schema() -> dict:
+    return strict_output_schema("claims.v1")
+
+
+def strict_output_schema(schema_id: str) -> dict:
     """Strict provider schema; confidence is required but may be null for sourced claims."""
     import json
     from pathlib import Path
 
-    schema = json.loads(Path("specs/schemas/claims.v1.json").read_text())
-    claim = schema["$defs"]["Claim"]
-    claim["required"] = list(claim["properties"])
-    claim["properties"]["confidence"].pop("default", None)
+    output_model(schema_id)  # Reject unknown/path-traversal schema names.
+    schema = json.loads(Path(f"specs/schemas/{schema_id}.json").read_text())
 
     def strip_bounds(value: object) -> None:
         if isinstance(value, dict):
+            if "properties" in value:
+                value["required"] = list(value["properties"])
+                for prop in value["properties"].values():
+                    prop.pop("default", None)
             for key in ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"):
                 value.pop(key, None)
             for child in value.values():

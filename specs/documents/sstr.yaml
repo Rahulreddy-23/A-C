@@ -124,7 +124,7 @@ sections:
   title: Conclusion and release readiness
   mode: ai
   query: release_readiness_facts
-  prompt: sstr.conclusion@2
+  prompt: sstr.conclusion@3
   output_schema: claims.v1
   allowed_kinds:
   - suggested

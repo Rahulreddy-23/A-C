@@ -10,7 +10,7 @@ from typing import Protocol
 import yaml
 
 from dhf.config import setting
-from dhf.models import Claims, strict_claims_schema
+from dhf.models import output_model, strict_output_schema
 
 
 def canonical(value: object) -> str:
@@ -18,7 +18,9 @@ def canonical(value: object) -> str:
 
 
 class Adapter(Protocol):
-    def complete(self, model: str, prompt: str, pack: dict, limit: int) -> dict: ...
+    def complete(
+        self, model: str, prompt: str, pack: dict, limit: int, schema: dict | None = None
+    ) -> dict: ...
 
 
 class BudgetExceeded(ValueError):
@@ -158,6 +160,7 @@ class LLM:
         max_output_tokens: int = 4000,
         *,
         model_tier: str = "default",
+        output_schema: str = "claims.v1",
     ) -> dict:
         if self.provider != "mock" and (
             any(
@@ -166,6 +169,8 @@ class LLM:
             )
         ):
             raise ValueError("External APIs require exclusively synthetic evidence")
+        schema = strict_output_schema(output_schema)
+        response_model = output_model(output_schema)
         model = self.model_for(model_tier)
         completion_limit = self.completion_limit(model, max_output_tokens)
         key = hashlib.sha256(
@@ -181,6 +186,8 @@ class LLM:
                     if self.provider == "openai" and model.startswith("gpt-5")
                     else None,
                     "completion_limit": completion_limit,
+                    "output_schema": output_schema,
+                    "schema": schema,
                     "pack": pack,
                 }
             ).encode()
@@ -191,11 +198,11 @@ class LLM:
             fcntl.flock(handle, fcntl.LOCK_EX)
             if cached.exists():
                 self.hits += 1
-                return Claims.model_validate_json(cached.read_text()).model_dump(mode="json")
+                return response_model.model_validate_json(cached.read_text()).model_dump(
+                    mode="json"
+                )
             # UTF-8 bytes bound input tokens conservatively; reserve all output tokens.
-            input_tokens = (
-                len((prompt + canonical(pack) + canonical(strict_claims_schema())).encode()) + 512
-            )
+            input_tokens = len((prompt + canonical(pack) + canonical(schema)).encode()) + 512
             if self.provider != "mock" and input_tokens > 100_000:
                 raise ValueError("Input exceeds configured small-prompt pricing tier")
             in_price, out_price = self.prices(model)
@@ -226,13 +233,17 @@ class LLM:
             temp.replace(ledger_path)
             self.calls += 1
             # Failed calls retain the reservation: fail safe rather than overspend.
-            raw = self.adapter.complete(model, prompt, pack, completion_limit)
+            raw = (
+                self.adapter.complete(model, prompt, pack, completion_limit)
+                if output_schema == "claims.v1"
+                else self.adapter.complete(model, prompt, pack, completion_limit, schema=schema)
+            )
             if not isinstance(raw, dict):
                 from dhf.llm.errors import DraftingUnavailable
 
                 raise DraftingUnavailable("invalid_schema", self.provider)
             usage = raw.pop("_usage", None)
-            result = Claims.model_validate(raw)
+            result = response_model.model_validate(raw)
             if usage is not None:
                 if any(
                     not isinstance(usage.get(k), int) or usage[k] < 0

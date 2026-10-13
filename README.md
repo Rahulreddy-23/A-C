@@ -191,3 +191,14 @@ The [sandbox build plan](port/copilot_studio/BUILD_PLAN.md) has three capability
 Sections select `model_tier: default|analytical` as YAML data. OpenAI defaults to GPT-4.1 mini, with GPT-5.4 mini for risk modes, SSTR conclusion, DRR suggestions and L01–L03. Set `DHF_MODEL_OPENAI_ANALYTICAL` to change that tier. Per-model prices live in `specs/llm/prices.yaml` and accept model-specific overrides (e.g. `DHF_OPENAI_GPT_5_4_MINI_OUTPUT_PER_MILLION`); unknown models require explicit prices. GPT-5 calls omit temperature, use `DHF_OPENAI_REASONING_EFFORT=low` and reserve the visible cap plus `DHF_OPENAI_REASONING_TOKENS=4000` inclusive completion allowance. Each section records model ID and tier; cache identity includes model/tier/reasoning settings. Paid command output shows cumulative headroom. No nano models are enabled. [Official GPT-5.4 mini pricing](https://developers.openai.com/api/docs/models/gpt-5.4-mini), [reasoning token billing](https://developers.openai.com/api/docs/guides/reasoning).
 
 For Phase 2 onboarding, run `uv run dhf discover` to inspect native fields/types/tags/links and create a mapping draft, then follow [REAL_DATA_ONBOARDING.md](docs/REAL_DATA_ONBOARDING.md). `uv run seed-ado --confirm-org kestrel-org --dry-run` previews the synthetic seeder. Only the separate seed identity can create source work items, test evidence and source Git history; `dhf` remains read-only outside the docs repo.
+
+Claim-support review is a second, advisory pass:
+
+```sh
+uv run dhf verify-support --doc sstr --sample 5
+uv run dhf eval
+# Only for synthetic evidence, when live verification is needed:
+uv run dhf verify-support --doc sstr --sample 5 --provider openai
+```
+
+`--sample 0` checks every sourced/inferred claim in the selected document; suggestions are not asserted source facts and are excluded. Supported/partial/unsupported findings stay in the manifest and produce advisory Word comments; no original claim is removed and readiness is unchanged. Mock support uses lexical comparison, not semantic proof. `specs/metrics/manual_effort.yaml` supplies explicit draft-authoring assumptions, with human review excluded from estimated savings. Metrics show section counts, generation/verifier time and cost, support rate and assumption-based hours saved.

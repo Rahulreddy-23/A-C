@@ -1,5 +1,6 @@
 import copy
 import threading
+from pathlib import Path
 
 import httpx
 import pytest
@@ -27,7 +28,7 @@ def test_seed_empty_project_idempotence_native_parity_and_discovery(tmp_path):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     base = f"http://127.0.0.1:{server.server_port}/kestrel-org"
-    seed = Seeder(base, "Kestrel", "mock-seed-token", "kestrel-org")
+    seed = Seeder(base, "Kestrel", "mock-seed-token", "kestrel-org", bypass_rules=True)
     ado = ADO(base, "Kestrel", "mock-app-token")
     try:
         before = read_state(server.root)
@@ -117,3 +118,69 @@ def test_renamed_acceptance_field_requires_human_confirmation(ado_server):
         )
     finally:
         ado.close()
+
+
+def test_default_seed_native_chronology_and_system_date_guard(tmp_path):
+    import yaml
+
+    from dhf.trace import gaps, score_findings
+
+    server = Server(tmp_path / "empty", port=0, empty=True)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base = f"http://127.0.0.1:{server.server_port}/kestrel-org"
+    seed = Seeder(base, "Kestrel", "mock-seed-token", "kestrel-org")
+    ado = ADO(base, "Kestrel", "mock-app-token")
+    try:
+        operations = [
+            {"op": "add", "path": "/fields/System.ChangedDate", "value": "2026-10-01T00:00:00Z"}
+        ]
+        rejected = seed.client.post(
+            "/_apis/wit/workitems/$Requirement",
+            json=operations,
+            headers={"Content-Type": "application/json-patch+json"},
+        )
+        assert rejected.status_code == 400 and not read_state(server.root)["items"]
+        result = seed.seed()
+        graph = ado.ingest(tmp_path / "clones")
+        expected = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text())
+        assert score_findings(gaps(graph), expected)["precision"] == 1.0
+        assert score_findings(gaps(graph), expected)["recall"] == 1.0
+        assert [(f["rule"], f["artifact_id"]) for f in gaps(graph) if f["rule"] == "G11"] == [
+            ("G11", "TC-030")
+        ]
+        assert len(graph["artifacts"]) == 248 and len(graph["links"]) == 413
+        assert all(v == 0 for k, v in seed.seed().items() if k != "dry_run")
+        print("default seed", result, "graph 248/413, exact gaps; G11 TC-030 only; rerun zero")
+    finally:
+        seed.close()
+        ado.close()
+        server.shutdown()
+        server.server_close()
+        thread.join()
+
+
+def test_nonempty_inventory_refused_without_writes(ado_server):
+    from mock_ado.state import write_state
+
+    state = read_state(ado_server.root)
+    state["items"]["1"]["current"]["fields"]["System.Tags"] = "Foreign"
+    write_state(ado_server.root, state)
+    seed = Seeder(
+        f"http://127.0.0.1:{ado_server.server_port}/kestrel-org",
+        "Kestrel",
+        "mock-seed-token",
+        "kestrel-org",
+    )
+    try:
+        before = read_state(ado_server.root)
+        with pytest.raises(ValueError, match="allow-nonempty") as error:
+            seed.seed()
+        assert '"work_items": [1]' in str(error.value)
+        assert "kestrel-device-sw" in str(error.value) and '"test_runs": [1, 2]' in str(error.value)
+        assert read_state(ado_server.root) == before
+        seed.allow_nonempty = True
+        assert seed.seed(dry_run=True)["work_items_to_create"] == 1
+        assert read_state(ado_server.root) == before
+    finally:
+        seed.close()

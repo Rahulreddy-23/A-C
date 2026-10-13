@@ -86,7 +86,7 @@ def init(root: Path = ROOT, empty: bool = False) -> dict:
     repo_root = root / "git"
     repo_root.mkdir(exist_ok=True)
     repos = []
-    for name in ("kestrel-device-sw", "kestrel-dhf-docs"):
+    for name in () if empty else ("kestrel-device-sw", "kestrel-dhf-docs"):
         bare = (repo_root / f"{name}.git").resolve()
         git(["init", "--bare", "--initial-branch=main", str(bare)], root)
         work = root / ("seed-" + name)

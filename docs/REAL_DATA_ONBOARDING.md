@@ -10,7 +10,7 @@ The product uses APP_ADO_PAT only for source reads and docs-repo writes. Keep co
 
 ## Seed the synthetic sandbox
 
-Use a dedicated empty project and an inherited process containing Requirement, Risk, Bug, Test Case, Review and Task, with the field names in specs/ado_mapping.yaml. Configure a separate seed identity with work-item/test/Git create and PR completion permissions. No policy bypass is requested. Historical ChangedDate values in the synthetic fixture are supplied on creation; a real service may reject/readjust system timestamps or process states. Record such differences and revise the real-contract expectations explicitly; never erase service provenance or claim a tenant test that was not run.
+Use a dedicated empty project and an inherited process containing Requirement, Risk, Bug, Test Case, Review and Task, with the field names in specs/ado_mapping.yaml. Configure a separate seed identity with work-item/test/Git create and PR completion permissions. No policy bypass is requested. Default seeding never writes read-only System.ChangedDate/CreatedDate. Work items precede runs/results, whose completion times use the native seed epoch plus increasing offsets. The planted SRS-030 revision is applied after those passes, retaining exactly the TC-030 outdated-verification gap. Native timestamps are preserved. Use --bypass-rules only with the explicit work-item bypass permission to reproduce original historical dates; it sends bypassRules=true. This is not PR policy bypass. Process states and PR completion still require a tenant contract check; never claim one from a mock test.
 
 ```sh
 uv run mock-ado init --empty --root out/seed-sandbox
@@ -22,6 +22,8 @@ uv run seed-ado --confirm-org kestrel-org  # creates zero new items/runs/results
 uv run dhf discover
 uv run dhf ingest --source ado
 ```
+
+Before writes, the seeder inventories the entire project. Work items without DHF identity tags, repositories without the exact .kestrel-seed.json marker, or runs without a SEED-RUN marker cause refusal with IDs/names. --allow-nonempty is an explicit exception for a reviewed dedicated sandbox, never a production default. An empty mock now has no repositories.
 
 The seeder creates linked work items in dependency order, so links are present in the first revision. Stable DHF tags identify existing seeded work items; duplicate identities are an error. Existing matching seed identities are preserved, not overwritten. Runs match their synthetic names and results match test-case references. Interrupted incomplete PRs can be resumed; completed seed PRs are reused. Source files are compared exactly before native Git pushes. Repositories must be dedicated to this fixture; IDs assigned by a nonempty real project will differ from fixture IDs, so perform semantic trace checks rather than assuming RUN/PR numbers.
 

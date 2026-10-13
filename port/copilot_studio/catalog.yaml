@@ -214,9 +214,9 @@ prompts:
   sha256: 46b3455adb44add86655b951c359154d267089f0807e2f928170fc22e896dc96
   tool: prompts/sstr.anomaly_assessment.md
 - id: sstr.conclusion
-  version: 2
+  version: 3
   source: specs/prompts/sstr.conclusion.md
-  sha256: 0f4478c582b03bd0c1b37de8d354742c2122ce805287a480a3dad8520c2e8ec6
+  sha256: 9c53590f72acab6bd583ac33eba2c91ce9bb592741eed0a408d819a307d326fb
   tool: prompts/sstr.conclusion.md
 - id: sstr.purpose
   version: 2
@@ -228,4 +228,9 @@ prompts:
   source: specs/prompts/sstr.residual.md
   sha256: c4b5317c676acb9f8df96b3ad1ef2c5f017f5436216cc5ec90e1f1684b14341e
   tool: prompts/sstr.residual.md
+- id: verify.support
+  version: 1
+  source: specs/prompts/verify.support.md
+  sha256: e81f683c79f53ca674596c5970c7a78a391706092fc9f773628a0206c1bbcb4a
+  tool: prompts/verify.support.md
 tenant_status: pending

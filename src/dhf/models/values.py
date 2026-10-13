@@ -7,12 +7,20 @@ ID_PATTERN = re.compile(
     r"\b(?:(?:UN|SYS|SRS|HAZ|RC|COMP|TC|BUG|PR|RUN|RES|ACT|REV|ADR|SOUP)-"
     r"\d[\w.-]*|UNIT-[a-z_]+)\b"
 )
-NUMBER_PATTERN = re.compile(r"(?<![A-Za-z0-9_])[-+]?\d+(?:\.\d+)?(?![A-Za-z0-9_])")
+NUMBER_PATTERN = re.compile(r"(?<![A-Za-z0-9_.])[-+]?\d+(?:\.\d+)?(?![A-Za-z0-9_]|\.\d)")
+
+UNIT_NUMBER_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_.])[-+]?\d+(?:\.\d+)?"
+    r"(?=(?:ms|s|min|h|kPa|Pa|mL|L|kg|mg|g|bytes?|KB|MB|Hz)\b)"
+)
 
 
 def numbers(text: str) -> set[str]:
     text = ID_PATTERN.sub("", text)
-    return {format(Decimal(n).normalize(), "f") for n in NUMBER_PATTERN.findall(text)}
+    return {
+        format(Decimal(n).normalize(), "f")
+        for n in [*NUMBER_PATTERN.findall(text), *UNIT_NUMBER_PATTERN.findall(text)]
+    }
 
 
 def fact_numbers(value: object) -> set[str]:

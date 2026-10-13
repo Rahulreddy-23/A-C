@@ -1,6 +1,8 @@
 """Explicitly authorized synthetic source writes; never imported by the product."""
 
 import json
+import time
+from datetime import UTC, datetime, timedelta
 from graphlib import TopologicalSorter
 from pathlib import Path
 from urllib.parse import quote, urlsplit
@@ -12,7 +14,10 @@ import yaml
 from dhf.config import setting
 from dhf.ingest.native import fixture_item
 
-app = typer.Typer(help="Seed synthetic Kestrel evidence into a dedicated ADO project.")
+app = typer.Typer(
+    help="Seed synthetic Kestrel evidence into a dedicated ADO project.",
+    pretty_exceptions_show_locals=False,
+)
 
 
 def work_plan(dataset: dict, mapping: dict) -> list[dict]:
@@ -30,7 +35,15 @@ def work_plan(dataset: dict, mapping: dict) -> list[dict]:
 
 
 class Seeder:
-    def __init__(self, base: str, project: str, token: str, confirm_org: str) -> None:
+    def __init__(
+        self,
+        base: str,
+        project: str,
+        token: str,
+        confirm_org: str,
+        bypass_rules: bool = False,
+        allow_nonempty: bool = False,
+    ) -> None:
         self.base = base.rstrip("/")
         parsed = urlsplit(self.base)
         org = (
@@ -42,6 +55,8 @@ class Seeder:
             raise ValueError("--confirm-org must match the configured organization")
         if not token or token == setting("APP_ADO_PAT", "mock-app-token"):
             raise ValueError("A separate SEED_ADO_PAT is required")
+        self.bypass_rules = bypass_rules
+        self.allow_nonempty = allow_nonempty
         self.project = project
         self.url = self.base + "/" + quote(project, safe="")
         self.client = httpx.Client(base_url=self.url, auth=("", token), timeout=30)
@@ -54,7 +69,10 @@ class Seeder:
     ) -> dict:
         result = self.client.request(
             method,
-            path + ("&" if "?" in path else "?") + "api-version=7.1",
+            path
+            + ("&" if "?" in path else "?")
+            + "api-version=7.1"
+            + ("&bypassRules=true" if patch and self.bypass_rules else ""),
             json=data,
             headers={"Content-Type": "application/json-patch+json"} if patch else {},
         )
@@ -147,6 +165,43 @@ class Seeder:
                     if canonical in native:
                         raise ValueError("Duplicate seed identity; review project before writing")
                     native[canonical] = item["id"]
+        repos = self.collection("/_apis/git/repositories")
+        runs_before = self.collection("/_apis/test/runs")
+        foreign_repos = []
+        for repo_record in repos:
+            marker = self.client.get(
+                f"/_apis/git/repositories/{repo_record['id']}/items",
+                params={
+                    "path": "/.kestrel-seed.json",
+                    "includeContent": "true",
+                    "api-version": "7.1",
+                },
+            )
+            if (
+                marker.status_code != 200
+                or marker.json().get("content") != '{"synthetic": "Kestrel", "schema_version": 1}\n'
+            ):
+                foreign_repos.append(repo_record["name"])
+        foreign_items = [
+            i["id"]
+            for i in existing
+            if not any(
+                t.strip().startswith(mapping["id_tag_prefix"])
+                for t in i["fields"].get(mapping["fields"]["tags"], "").split(";")
+            )
+        ]
+        foreign_runs = [r["id"] for r in runs_before if "SEED-RUN:" not in r.get("comment", "")]
+        if (foreign_items or foreign_repos or foreign_runs) and not self.allow_nonempty:
+            raise ValueError(
+                "Refusing non-empty project; --allow-nonempty required: "
+                + json.dumps(
+                    {
+                        "work_items": foreign_items,
+                        "repositories": foreign_repos,
+                        "test_runs": foreign_runs,
+                    }
+                )
+            )
         result = {
             "dry_run": dry_run,
             "work_items_created": 0,
@@ -173,8 +228,10 @@ class Seeder:
                 if k not in ("System.Id", "System.WorkItemType")
             }
             history = artifact["attributes"].get("requirement_history", [])
-            if history:
+            if history and self.bypass_rules:
                 fields[mapping["fields"]["changed_at"]] = history[0]["changed_at"]
+            if not self.bypass_rules:
+                fields.pop(mapping["fields"]["changed_at"], None)
             operations = [
                 {"op": "add", "path": "/fields/" + k, "value": v} for k, v in fields.items()
             ]
@@ -200,7 +257,8 @@ class Seeder:
                 patch=True,
             )
             native[artifact["id"]] = created["id"]
-            for revision in history[1:]:
+            existing.append(created)
+            for revision in history[1:] if self.bypass_rules else []:
                 self.request(
                     "PATCH",
                     f"/_apis/wit/workitems/{created['id']}",
@@ -230,6 +288,7 @@ class Seeder:
             and p.suffix in (".py", ".yaml", ".txt")
             and str(p.relative_to(data_root / "code")) not in module_paths
         }
+        bootstrap[".kestrel-seed.json"] = '{"synthetic": "Kestrel", "schema_version": 1}\n'
         bootstrap["architecture.yaml"] = yaml.safe_dump(
             [a for a in dataset["artifacts"] if a["type"] in ("component", "adr")], sort_keys=False
         )
@@ -279,7 +338,10 @@ class Seeder:
             )
         if self.push(
             repo_names["kestrel-dhf-docs"],
-            {"sad.md": (data_root / "sad_v1.md").read_text()},
+            {
+                "sad.md": (data_root / "sad_v1.md").read_text(),
+                ".kestrel-seed.json": '{"synthetic": "Kestrel", "schema_version": 1}\n',
+            },
             "main",
             "Synthetic SAD baseline",
         ):
@@ -293,8 +355,21 @@ class Seeder:
                 docs_endpoint + "/refs",
                 [{"name": "refs/tags/sad-v1", "oldObjectId": "0" * 40, "newObjectId": head}],
             )
+        seed_epoch = max(
+            datetime.fromisoformat(
+                i["fields"][mapping["fields"]["changed_at"]].replace("Z", "+00:00")
+            )
+            for i in existing
+        )
         runs = self.collection("/_apis/test/runs")
-        for run in (a for a in dataset["artifacts"] if a["type"] == "test_run"):
+        for order, run in enumerate(
+            (a for a in dataset["artifacts"] if a["type"] == "test_run"), 1
+        ):
+            completed = (
+                run["attributes"]["completed_at"]
+                if self.bypass_rules
+                else (seed_epoch + timedelta(seconds=order)).isoformat()
+            )
             name = run["title"] + (" retest" if run["attributes"]["is_retest"] else "")
             current = next((r for r in runs if r["name"] == name), None)
             if current is None:
@@ -306,7 +381,9 @@ class Seeder:
                         "state": "InProgress",
                         "isAutomated": False,
                         "buildConfiguration": {"platform": run["attributes"]["environment"]},
-                        "comment": run["body"] + '\nDHF-META:{"synthetic": true}',
+                        "comment": run["body"]
+                        + '\nDHF-META:{"synthetic": true}\nSEED-RUN:'
+                        + run["id"],
                     },
                 )
                 result["runs_created"] += 1
@@ -327,7 +404,9 @@ class Seeder:
                         "testCaseTitle": r["title"],
                         "outcome": r["attributes"]["outcome"],
                         "state": "Completed",
-                        "completedDate": r["attributes"]["completed_at"],
+                        "completedDate": r["attributes"]["completed_at"]
+                        if self.bypass_rules
+                        else completed,
                         "comment": r["body"],
                         "associatedBugs": [
                             {"id": native[e["dst"]]}
@@ -343,20 +422,57 @@ class Seeder:
                 self.request(
                     "PATCH",
                     endpoint,
-                    {"state": "Completed", "completedDate": run["attributes"]["completed_at"]},
+                    {"state": "Completed", "completedDate": completed},
+                )
+        if not self.bypass_rules:
+            for artifact in planned:
+                if len(artifact["attributes"].get("requirement_history", [])) <= 1:
+                    continue
+                current = self.request("GET", f"/_apis/wit/workitems/{native[artifact['id']]}")
+                if current["rev"] >= len(artifact["attributes"]["requirement_history"]):
+                    continue
+                until = seed_epoch + timedelta(seconds=3)
+                delay = max(0, (until - datetime.now(UTC)).total_seconds())
+                if delay > 5:
+                    raise ValueError(
+                        "Native clock ahead; retry planted revision after the run timestamps"
+                    )
+                if delay:
+                    time.sleep(delay)
+                self.request(
+                    "PATCH",
+                    f"/_apis/wit/workitems/{current['id']}",
+                    [
+                        {
+                            "op": "add",
+                            "path": "/fields/System.History",
+                            "value": "Synthetic planted post-verification requirement revision",
+                        }
+                    ],
+                    patch=True,
                 )
         return result
 
 
 @app.command()
-def seed(confirm_org: str = typer.Option(..., "--confirm-org"), dry_run: bool = False) -> None:
+def seed(
+    confirm_org: str = typer.Option(..., "--confirm-org"),
+    dry_run: bool = False,
+    bypass_rules: bool = False,
+    allow_nonempty: bool = False,
+) -> None:
     seeder = Seeder(
         setting("ADO_BASE_URL", "http://localhost:8089/kestrel-org"),
         setting("ADO_PROJECT", "Kestrel"),
         setting("SEED_ADO_PAT", "mock-seed-token"),
         confirm_org,
+        bypass_rules=bypass_rules,
+        allow_nonempty=allow_nonempty,
     )
     try:
         typer.echo(json.dumps(seeder.seed(dry_run), indent=2))
+    except ValueError as error:
+        typer.echo(str(error))
+        raise typer.Exit(1) from None
     finally:
         seeder.close()

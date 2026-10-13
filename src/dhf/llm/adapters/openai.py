@@ -8,7 +8,9 @@ from dhf.models import strict_claims_schema
 
 
 class OpenAIAdapter:
-    def complete(self, model: str, prompt: str, pack: dict, limit: int) -> dict:
+    def complete(
+        self, model: str, prompt: str, pack: dict, limit: int, schema: dict | None = None
+    ) -> dict:
         api_key = setting("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("Missing OPENAI_API_KEY; configure it in .env")
@@ -27,7 +29,7 @@ class OpenAIAdapter:
                     "json_schema": {
                         "name": "claims_v1",
                         "strict": True,
-                        "schema": strict_claims_schema(),
+                        "schema": schema or strict_claims_schema(),
                     },
                 },
                 messages=[

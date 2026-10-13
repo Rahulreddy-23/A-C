@@ -115,7 +115,13 @@ def table_diff(previous: list[list[str]], current: list[list[str]]) -> list[dict
     return rows
 
 
-def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str = "") -> dict:
+def render_docx(
+    markdown: str,
+    target: Path,
+    baseline: str = "",
+    timestamp: str = "",
+    support_findings: list[dict] | None = None,
+) -> dict:
     doc = Document()
     doc.core_properties.author = AUTHOR
     doc.core_properties.title = next(
@@ -232,7 +238,11 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
             p._p.append(hyperlink)
             cursor = match.end()
         add_text(clean[cursor:])
-        if (inferred or suggested or manual) and change != "delete":
+        assessment_notes = [
+            r["note"] for r in (support_findings or []) if visible(r["text"]) in visible(text)
+        ]
+        note.extend(assessment_notes)
+        if (inferred or suggested or manual or assessment_notes) and change != "delete":
             doc.add_comment(anchor, "\n".join(note), author=AUTHOR, initials="AI")
             counts["comments"] += 1
         revision(p, change)

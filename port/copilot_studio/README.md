@@ -28,3 +28,5 @@ Start with [BUILD_PLAN.md](BUILD_PLAN.md): a 20–33 hour MVP vertical slice, da
 Start the sandbox with [BUILD_PLAN.md](BUILD_PLAN.md) (tiers, ordered MVP, estimates, cut line and day-1 gates). Core governance uses the [native validator](native_validator.md); prompt tools take JSON strings as text inputs. Actual tenant size limits and parity remain pending.
 
 Begin with [BUILD_PLAN.md](BUILD_PLAN.md), choose a capability tier using the sandbox questions, and follow [native_validator.md](native_validator.md). Prompt inputs are text JSON. [model_tiers.md](model_tiers.md) maps analytical/default sections to tenant Prompt model choices. Actual size limits, deployment and parity remain pending.
+
+Begin with [BUILD_PLAN.md](BUILD_PLAN.md), [native_validator.md](native_validator.md) and [model_tiers.md](model_tiers.md). Text JSON prompt inputs and actual tenant limits remain day-1 gates. Claim-support assessment uses support.v1: advisory statuses and suggested/cited rationale, never a readiness gate. Metrics manual-effort baselines are assumptions.

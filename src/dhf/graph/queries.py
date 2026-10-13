@@ -181,6 +181,7 @@ def query(graph: dict, name: str, params: dict) -> dict:
         design = design_query(graph, name, params)
         facts, evidence = design["facts"], design["evidence"]
     selected = {a["id"]: a for a in evidence}
+    primary_ids = set(selected)
     # Structured relationships are evidence dependencies, just as body citations are.
     for id in ID_PATTERN.findall(canonical(facts)):
         id = id.rstrip(".")
@@ -190,7 +191,10 @@ def query(graph: dict, name: str, params: dict) -> dict:
     pending = list(selected.values())
     while pending:
         a = pending.pop()
-        for id in ID_PATTERN.findall(a["body"]):
+        context = a["body"]
+        if name in ("component_design", "runtime_view"):
+            context += canonical(a["attributes"].get("collaborators", []))
+        for id in ID_PATTERN.findall(context):
             id = id.rstrip(".")
             if id in nodes and id not in selected:
                 selected[id] = nodes[id]
@@ -200,7 +204,13 @@ def query(graph: dict, name: str, params: dict) -> dict:
     facts["source_numbers"] = sorted(
         fact_numbers([{"body": a["body"], "attributes": a["attributes"]} for a in evidence])
     )
-    return {"facts": facts, "evidence": evidence}
+    return {
+        "facts": facts,
+        "evidence": evidence,
+        "compact_context_ids": [
+            a["id"] for a in evidence if a["id"] not in primary_ids and a["type"] == "component"
+        ],
+    }
 
 
 def stable_pack(pack: dict) -> dict:
@@ -253,7 +263,7 @@ def prompt_pack(pack: dict) -> dict:
             {
                 "id": a["id"],
                 "title": a["title"],
-                "body": a["body"],
+                "body": "" if a["id"] in pack.get("compact_context_ids", []) else a["body"],
                 "revision": a["source"]["revision"],
                 "attributes": {"synthetic": attrs.get("synthetic", False)},
                 "properties": properties,

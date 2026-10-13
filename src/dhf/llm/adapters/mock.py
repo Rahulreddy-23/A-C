@@ -4,7 +4,34 @@ from typing import Any
 class MockAdapter:
     """Deterministic fixture prose: not a substitute for a live quality check."""
 
-    def complete(self, model: str, prompt: str, pack: dict[str, Any], limit: int) -> dict:
+    def complete(
+        self, model: str, prompt: str, pack: dict[str, Any], limit: int, schema: dict | None = None
+    ) -> dict:
+        if pack.get("facts", {}).get("support_subject"):
+            import re
+
+            subject = pack["facts"]["support_subject"]
+            text = subject["text"].lower()
+            source = " ".join(a["body"] for a in pack["evidence"]).lower()
+            words = set(re.findall(r"[a-z]+", text))
+            overlap = len(words & set(re.findall(r"[a-z]+", source))) / max(1, len(words))
+            support = (
+                "supported" if text in source else "partial" if overlap >= 0.7 else "unsupported"
+            )
+            return {
+                "results": [
+                    {
+                        "claim_key": subject["claim_key"],
+                        "support": support,
+                        "rationale": {
+                            "text": "Mock lexical comparison; semantic support needs human review.",
+                            "kind": "suggested",
+                            "citations": [a["id"] for a in pack["evidence"]],
+                            "confidence": 0.5,
+                        },
+                    }
+                ]
+            }
         evidence = pack.get("evidence", [])
         kind = pack.get("preferred_kind", "sourced")
         if pack.get("facts", {}).get("review_drafting"):
@@ -124,7 +151,6 @@ class MockAdapter:
                     "citations": [item["id"]],
                     "confidence": 1.0,
                 }
-                for item in evidence[:3]
-                if item.get("body")
+                for item in [a for a in evidence if a.get("body")][:3]
             ]
         }

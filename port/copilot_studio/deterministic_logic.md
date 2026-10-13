@@ -35,7 +35,7 @@ For missing_link the collection prototype is `Filter(Subjects As s, IsEmpty(Filt
 |---|---|---|
 | AST extraction | Git paths/blob revisions and architecture.yaml → JSON units, callable signatures/class fields/import calls/component allocation and pinned SOUP; no external calls | Human supplies and reviews the same canonical inventory with source URLs and hashes; mark AST parity pending |
 | Canonical hashes | Sorted-key compact UTF-8 JSON; SHA256(body + canonical attributes) for Artifact content; SHA256(prompt identity/version/model/body hash/pack) for cache; SHA256 exact UTF-8 section Markdown | Verified local reference produces hashes; do not claim native Power Fx hash parity |
-| Validator | Native flow membership/kind/confidence checks plus Power Fx MatchAll numeric extraction; native_validator.md → accepted claims and audit events | Numeric claims become Suggested and blocked as numeric_unverified when extraction is unavailable; no silent bypass |
+| Validator | Native citation/kind/confidence and MatchAll numeric checks, per native_validator.md | Numeric-unverified prose is Suggested and blocked pending human review |
 | Local diagrams/DOCX | Markdown + approved baseline → locally rendered PNG, OOXML ins/del and review comments + SHA256 | Keep Mermaid source, use Word Compare manually and Git PR diff, record DOCX parity pending |
 | Audit ZIP | Exact approved input files and SHA256SUMS → ZIP with safe relative paths | Download files plus checksums, ZIP locally and verify; tenant automated export pending |
 

@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M11 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current milestone: M12 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -15,10 +15,10 @@ Current milestone: M11 (done) · Development resumed by owner · Last updated: 2
 | M8 | done | m8-done | b82108b | DRR, sFMEA, proposals and readability fixes |
 | M9 | done | m9-done | e972cb5 | Complete port blueprint; tenant deployment pending |
 | M10 | done | m10-done | ecac18b | Evaluation, clause appendix, YAML extensions, audit export and offline demo |
-| M11 | done | m11-done | checkpoint tag | Native synthetic seeder, read-only discovery and onboarding |
+| M11 | done | m11-done | 279debf | Native synthetic seeder, read-only discovery and onboarding |
 ## Now / Next
-- Working on: Phase 2 M11 native seeder/discovery/onboarding. Core M0–M10 remains complete.
-- Next: M12 R-046, claim-support verification and effort telemetry, then M13–M15 in order. Real tenant execution remains optional/pending credentials.
+- Working on: M12 governance/telemetry and R-047 seeder safeguards complete.
+- Next: M13 explorer, then M14 demo pack and M15 day-1 kit in order. Real tenant execution remains optional/pending credentials.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -208,3 +208,13 @@ Current milestone: M11 (done) · Development resumed by owner · Last updated: 2
 - Seed-only HTTP writes tested for work-item JSON Patch/create/update, native runs/results, source pushes and PR completion. App token gets 403; dhf source-write allowlist is unchanged. Renamed acceptance-criteria field is proposed as Custom.Acceptance and explicitly flagged for confirmation. Discovery drafts to out/, retaining the active mapping.
 - `uv run pytest -q` → `77 passed in 101.72s`; ruff check → `All checks passed!`; format → `152 files already formatted`. `seed-ado --help` shows required --confirm-org and --dry-run. No paid calls.
 - Native REST behavior was checked against Microsoft API contracts. Real tenant inherited-process/system-date/PR-completion permissions still need owner-provided sandbox verification; the test result is the empty local native mock, not a real organization.
+
+
+### M12 — Advisory claim support and effort telemetry
+- `dhf generate sstr --source fixtures` equivalent local fixture-store generation produced 12 sections and zero validation events in `out/m12-docs`. `dhf verify-support --doc sstr --sample 0` → `{'supported': 3, 'unsupported': 1}; support rate=0.75; advisory only` (mock lexical check).
+- Live acceptance: `DHF_MODEL_OPENAI=gpt-4.1-mini uv run dhf verify-support --doc sstr --sample 0 --provider openai --db out/m12.sqlite --documents out/m12-docs` → `sstr: {'supported': 4}; support rate=1.0; advisory only`. Shared dhf ledger cost $0.0015514, 9.640 seconds. OpenAI cumulative actual $0.4752382 plus reserved $0.0021046, hard cap $4.00; Anthropic unchanged. This is a sampled model opinion, not correctness proof or human approval.
+- `dhf eval --db out/m12.sqlite --documents out/m12-docs` → metrics show SSTR AI/deterministic/human = 4/7/1, assumed authoring hours 1.9, estimated hours saved 1.9, support 100%, verifier USD/seconds 0.001551/9.640. YAML assumptions AI .30h, deterministic .10h, human 0; measured generation time/cost separate; human review excluded.
+- Tests preserve unsupported claim text, add Word comments and manifest flags, and show readiness unchanged. Typed support schema/cache/numeric validation, compact collaborator packs, source quantities 3s/256bytes and suggested-only conclusion v3 covered.
+- R-047: `pytest tests/test_onboarding.py -q -s` → `5 passed in 21.31s`; historical opt-in remains exact fixture parity; default native chronology → graph 248/413, all 21 gaps exact, G11 TC-030 only; rerun zero. Mock rejects readonly dates without bypassRules=true. Foreign work items/repos/runs are listed and refused before mutation; explicit --allow-nonempty dry run remains read-only. No real ADO seeding.
+- `python tools/check_port.py` → 7 flows, 22 rules, 47 queries, 22 prompt tools, reference_contracts pass, tenant_parity pending.
+- Final complete offline suite: `uv run pytest -q` → `82 passed in 105.36s`; ruff check → `All checks passed!`, format → `156 files already formatted`.

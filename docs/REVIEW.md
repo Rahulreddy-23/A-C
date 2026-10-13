@@ -51,8 +51,56 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
   - (c) The CLI and `out/metrics.md` report **coverage**, `verified / eligible`, next to the support rate, with the denominator stated explicitly.
   - (d) Add one retry for the rationale with the allowed IDs listed, inside the ledger cap.
 
+Resolved in 8233c49: exact unavailable reasons, one ledger-protected rationale repair, retained flagged verdicts and explicit support/coverage denominators. Invalid rationale is stored as unverified audit data but never reaches Word; safe warning comments remain. Offline regression covers repeated invalid rationale and missing revisions.
+
+**R-049 [non-blocking, before the M14 demo pack — demo impact] M13 — Explorer usability in a real browser (reviewer visual check at 1440×900 in the built-in browser)**
+- **What works:**
+  - The page renders cleanly, with lanes for need → system → SRS → component/unit → change → test → …
+  - The legend shows gap finding, stale-section cause and latest result.
+  - The inspector shows type, revision, source, gap rules and stale cause, plus clickable recorded links.
+  - Search works ("occlusion" gives 7 chips: SRS-021, HAZ-04, RC-04, TC-021, PR-8, RUN-3, BUG-02).
+  - The stale filter gives the 5 causes.
+  - It works fully offline.
+- **(a) Filtered views don't compact.** After a search or filter, matching nodes keep their full-layout positions. The panel looks empty (PR-8 floating mid-panel, other matches off-screen) and a judge will read it as broken. Re-lay out the lanes to show only matches and their direct neighbours, starting at the top.
+- **(b) There's no "trace chain" focus.** This is the key traceability moment in the demo: click SRS-021 and see *only* its connected chain, compacted lane by lane: need → SYS-007 → SRS-021 → COMP-03/UNIT-sensor_pressure → PR-3/PR-8 → TC-021 → RES-3-021 (Failed) → RC-04 → HAZ-04. Make that the default when a node is selected, with "show all" to go back.
+- **(c) Source links die after the demo.** "Open source · revision 2" points at the demo's ephemeral mock port (`http://127.0.0.1:58602/…`), which stops when the demo exits. Either take a stable base URL for presentations (e.g. `--source-base http://127.0.0.1:8089`, with the demo keeping the mock up), or show the source record (title, body excerpt, revision, retrieved time) inline in the inspector so the walk-through doesn't depend on a live server.
+- **(d) The full view is a dense tangle of edges.** Dim all edges by default and draw them strongly only for the selected node's chain.
+- **(e) Minor:**
+  - The gap-rule dropdown omits the baseline findings C01/C04, which are central to the stale-documentation story; add them as a "baseline" filter.
+  - "Reset filters" may not clear the search text; please check.
+- The reviewer's copy for the owner: `out/review-samples/explorer-stale-m13.html`.
+
+**R-050 [non-blocking — include in M15; required before the sandbox build] PM — Adapt BUILD_PLAN and the day-1 kit to BD's sandbox guardrails** (`port/copilot_studio/BUILD_PLAN.md`, `day1/`, `agent.md`, `governance.md`)
+- The owner supplied BD's Citizen Developer guardrails. They're summarised at the top of `docs/SANDBOX_QUESTIONS.md`. Fold them in:
+  1. **Credit-aware architecture.** There's a hard limit of **600 Copilot credits per agent per month**.
+     - Run ingest, gaps, assembly, PR and impact as **Power Automate cloud flows**. These are billed by Power Automate licensing, not Copilot credits. Avoid agent flows for loops: 13 credits per 100 actions means looping over 126 work items alone could cost 100+ credits.
+     - Keep the agent thin: one topic, one action to start a request (≈5 credits) and one to check status. Avoid unnecessary generative answers and knowledge grounding.
+     - Use **Basic-tier** prompt models only, at 0.1 credits per 1K tokens: a 4K-token section costs about 0.4 credits. **No reasoning/Premium models in the sandbox** (10 per 1K, about 40 credits per section). At most Standard (1.5 per 1K) for one showcase section.
+     - Map our tiers: `default` → Basic, `analytical` → Standard only if budgeted, otherwise Basic.
+     - Add a **credit budget table** to BUILD_PLAN: per MVP run, per rehearsal, and for a total of about 20 rehearsals plus the demo, with headroom kept under 600 per month. Add a "check the Monitor tab" step.
+  2. **Agent creation path.** Use the original experience → Agent (or New experience → Other ways to build → Agent, Standard). **Never** the GitHub Copilot agent/workflow options. Put the mandatory **agent description** text in `day1/` (business problem, audience, value, data sources), using the DHF problem statement and synthetic data sources.
+  3. **Models.** GPT only. Remove Claude from every Copilot Studio instruction. Anthropic stays a reference-implementation-only provider.
+  4. **Connectors.** The sandbox is "base access, some restricted connectors". Add a **Tier C′ "no ADO connector"**:
+     - the reference implementation exports a canonical snapshot (JSON/CSV) from ADO or the mock
+     - it's uploaded to SharePoint or imported into Dataverse
+     - cloud flows read it; documents go to a SharePoint library with version history as the review/change record
+     - the impact demo works by uploading the post-`change_1` snapshot
+     - ADO integration is demonstrated live by the reference implementation, and the agent shows generation, governance and impact
+
+     Mention the Digital Innovation Request route to a Prototype environment with premium connectors as the path, not a demo dependency.
+  5. **Data.** Synthetic only. Load the real hackathon dataset into the sandbox only if the owner confirms it's cleared.
+  6. **Sharing and demo channel.** Test pane plus a Teams channel after publishing. At most 5 named individuals, no groups. Re-publish after every change.
+- Keep the honesty rules: nothing claims tenant execution.
+
 
 ## Resolved
+
+### M13 (tag `m13-done`, 2ae290c) — verdict: **approved; usability fixes R-049 before the demo pack**
+
+Verified independently:
+- 84 tests pass; ruff is clean.
+- The demo produces `explorer.html` and `explorer-stale.html` (231 KB, 251 artifacts, 416 links), with no external URL literals.
+- The reviewer completed the visual check Codex couldn't run, in the built-in browser via a local static server: it renders, search, filters and the inspector work, and it's offline.
 
 ### M12 (tag `m12-done`, 58c2c19; code cbf0a85) — verdict: **approved**
 

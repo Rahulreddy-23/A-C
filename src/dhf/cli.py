@@ -677,6 +677,7 @@ def explore_command(
     documents: str = "out/documents",
     output: str = "out/explorer.html",
     impact_file: str | None = None,
+    baseline_file: str | None = None,
 ) -> None:
     """Write one offline HTML explorer with provenance, G/C/F gaps and stale sections."""
     import json
@@ -694,7 +695,10 @@ def explore_command(
         raise typer.BadParameter("Ingest evidence before exploring")
     manifests = [json.loads(p.read_text()) for p in sorted(Path(documents).glob("*.manifest.json"))]
     reports = json.loads(Path(impact_file).read_text()) if impact_file else None
+    from dhf.trace.consistency import legacy_design
+
+    baselines = [legacy_design(Path(baseline_file).read_text())] if baseline_file else []
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(create_explorer(graph, manifests, reports))
+    target.write_text(create_explorer(graph, manifests, reports, baselines))
     typer.echo(f"Explorer: {len(graph['artifacts'])} artifacts → {target}; offline HTML")

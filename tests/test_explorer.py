@@ -8,7 +8,7 @@ from dhf.generate import generate_document
 from dhf.graph.reviews import risk_gaps
 from dhf.ingest.fixtures import ingest_fixtures
 from dhf.llm import LLM
-from dhf.render.explorer import create_explorer, explorer_payload, render_explorer
+from dhf.render.explorer import create_explorer, explorer_payload, render_explorer, trace_chain
 from dhf.review.audit import audit_pack
 from dhf.trace import gaps
 from dhf.trace.consistency import consistency, legacy_design
@@ -29,6 +29,20 @@ def test_all_nodes_provenance_gap_families_and_inert_offline_html():
     assert all(n["source"]["url"] and n["source"]["revision"] for n in payload["nodes"])
     assert {r[0] for n in payload["nodes"] for r in n["rules"]} == {"G", "C", "F"}
     assert sum(n["latest"] for n in payload["nodes"]) == 40
+    assert set(trace_chain(graph, "SRS-021")) == {
+        "UN-001",
+        "SYS-007",
+        "SRS-021",
+        "COMP-03",
+        "UNIT-sensor_pressure",
+        "PR-3",
+        "TC-021",
+        "RES-2-021",
+        "RC-04",
+        "HAZ-04",
+    }
+    assert payload["chains"]["SRS-021"] == trace_chain(graph, "SRS-021")
+    assert next(n for n in payload["nodes"] if n["id"] == "SRS-021")["body_excerpt"]
     assert not re.search(
         r"https?://|<(?:script|link)[^>]+(?:src|href)=|fetch\(|XMLHttpRequest|WebSocket", html
     )
@@ -37,6 +51,14 @@ def test_all_nodes_provenance_gap_families_and_inert_offline_html():
     html = create_explorer(graph, [])
     assert "example.invalid" not in html and "</script><img" not in html
     assert decode(html)["nodes"][0]["title"].startswith("</script>")
+
+
+def test_baseline_consistency_is_filterable_in_explorer():
+    graph = ingest_fixtures()
+    historical = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    payload = decode(create_explorer(graph, [], baselines=[historical]))
+    baseline = [f for f in payload["findings"] if f.get("scope") == "baseline"]
+    assert {f["rule"] for f in baseline} == {"C01", "C04"}
 
 
 def test_saved_change_impact_stale_sections_and_audit_explorer(tmp_path):

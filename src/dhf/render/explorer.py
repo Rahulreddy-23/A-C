@@ -8,6 +8,81 @@ from dhf.models.evidence import validate_graph
 from dhf.trace import confirmed_links, gaps, latest_results
 
 
+def trace_chain(graph: dict, selected: str) -> list[str]:
+    """Follow the selected requirement's actual upstream/downstream typed traces."""
+    nodes = {a["id"]: a for a in graph["artifacts"]}
+    edges = confirmed_links(graph)
+    latest = {a["id"] for a in latest_results(graph)}
+    if selected not in nodes:
+        return []
+    reqs = {selected} if nodes[selected]["type"] == "software_req" else set()
+    frontier, visited = {selected}, set()
+    # Find requirements from a selected test/unit/change/risk/need without walking
+    # sideways from one requirement into its siblings.
+    while frontier:
+        current = frontier.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        if nodes[current]["type"] == "software_req":
+            reqs.add(current)
+            continue
+        for edge in edges:
+            peer = (
+                edge["dst"]
+                if edge["src"] == current
+                else edge["src"]
+                if edge["dst"] == current
+                else None
+            )
+            if (
+                peer
+                and peer not in visited
+                and (
+                    nodes[peer]["type"] == "software_req"
+                    or nodes[current]["type"]
+                    in ("user_need", "system_req", "risk_control", "hazard", "test_result")
+                    and nodes[peer]["type"] in ("system_req", "risk_control", "test_case")
+                )
+            ):
+                frontier.add(peer)
+    result = {selected} | reqs
+    for req in reqs:
+        for edge in edges:
+            if edge["src"] == req and edge["type"] in (
+                "derives_from",
+                "allocated_to",
+                "implements",
+            ):
+                result.add(edge["dst"])
+            elif edge["dst"] == req and edge["type"] in ("verifies", "implements"):
+                result.add(edge["src"])
+    for id in list(result):
+        if nodes[id]["type"] == "test_case":
+            result.update(
+                e["src"]
+                for e in edges
+                if e["dst"] == id and e["type"] == "executes" and e["src"] in latest
+            )
+        elif nodes[id]["type"] == "software_unit":
+            component = nodes[id]["attributes"].get("component")
+            if component in nodes:
+                result.add(component)
+    for id in list(result):
+        result.update(
+            e["dst"]
+            for e in edges
+            if e["src"] == id
+            and (
+                nodes[id]["type"] == "risk_control"
+                and e["type"] == "mitigates"
+                or nodes[id]["type"] == "system_req"
+                and e["type"] == "derives_from"
+            )
+        )
+    return sorted(result)
+
+
 def explorer_payload(graph: dict, findings: list[dict], reports: list[dict]) -> dict:
     graph = validate_graph(graph)
     ids = {a["id"] for a in graph["artifacts"]}
@@ -32,6 +107,8 @@ def explorer_payload(graph: dict, findings: list[dict], reports: list[dict]) -> 
                 "type": a["type"],
                 "title": a["title"],
                 "source": a["source"],
+                "body_excerpt": a["body"][:1600],
+                "content_hash": a["content_hash"],
                 "rules": sorted(set(flags.get(a["id"], []))),
                 "stale": a["id"] in affected,
                 "latest": a["id"] in latest,
@@ -39,6 +116,7 @@ def explorer_payload(graph: dict, findings: list[dict], reports: list[dict]) -> 
             }
             for a in graph["artifacts"]
         ],
+        "chains": {a["id"]: trace_chain(graph, a["id"]) for a in graph["artifacts"]},
         "links": confirmed_links(graph),
         "findings": findings,
         "stale_sections": stale,
@@ -52,12 +130,18 @@ def render_explorer(payload: dict, template: str) -> str:
     return template.replace("__EVIDENCE_BASE64__", data)
 
 
-def create_explorer(graph: dict, documents: list[dict], reports: list[dict] | None = None) -> str:
+def create_explorer(
+    graph: dict,
+    documents: list[dict],
+    reports: list[dict] | None = None,
+    baselines: list[dict] | None = None,
+) -> str:
     from dhf.graph.reviews import risk_gaps
     from dhf.impact import impact
     from dhf.trace.consistency import consistency
 
     findings = gaps(graph) + consistency(graph, documents) + risk_gaps(graph)
+    findings += [{**f, "scope": "baseline"} for f in consistency(graph, baselines or [])]
     reports = reports if reports is not None else [impact(graph, d) for d in documents]
     return render_explorer(
         explorer_payload(graph, findings, reports), Path("specs/render/explorer.html").read_text()

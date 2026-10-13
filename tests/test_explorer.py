@@ -5,13 +5,11 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from dhf.generate import generate_document
-from dhf.graph.reviews import risk_gaps
 from dhf.ingest.fixtures import ingest_fixtures
 from dhf.llm import LLM
 from dhf.render.explorer import create_explorer, explorer_payload, render_explorer, trace_chain
 from dhf.review.audit import audit_pack
-from dhf.trace import gaps
-from dhf.trace.consistency import consistency, legacy_design
+from dhf.trace.consistency import legacy_design
 
 
 def decode(html: str) -> dict:
@@ -22,8 +20,7 @@ def decode(html: str) -> dict:
 def test_all_nodes_provenance_gap_families_and_inert_offline_html():
     graph = ingest_fixtures()
     historical = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
-    findings = gaps(graph) + consistency(graph, [historical]) + risk_gaps(graph)
-    payload = explorer_payload(graph, findings, [])
+    payload = decode(create_explorer(graph, [], baselines=[historical]))
     html = render_explorer(payload, Path("specs/render/explorer.html").read_text())
     assert len(payload["nodes"]) == 248 and len(payload["links"]) == 413
     assert all(n["source"]["url"] and n["source"]["revision"] for n in payload["nodes"])
@@ -42,6 +39,14 @@ def test_all_nodes_provenance_gap_families_and_inert_offline_html():
         "HAZ-04",
     }
     assert payload["chains"]["SRS-021"] == trace_chain(graph, "SRS-021")
+    assert payload["coverage"]["srs_to_test"] == {
+        "covered": 31,
+        "total": 35,
+        "percent": 88.57,
+    }
+    assert payload["verification"] == {"Passed": 39, "Failed": 1}
+    assert len(payload["risk"]) == 8
+    assert {r["id"] for r in payload["rules"]} >= {"G06", "G07", "C01", "F03"}
     assert next(n for n in payload["nodes"] if n["id"] == "SRS-021")["body_excerpt"]
     assert not re.search(
         r"https?://|<(?:script|link)[^>]+(?:src|href)=|fetch\(|XMLHttpRequest|WebSocket", html
@@ -80,8 +85,31 @@ def test_saved_change_impact_stale_sections_and_audit_explorer(tmp_path):
     ]
     html = create_explorer(graph, [result["manifest"]], report)
     payload = decode(html)
+    document = payload["documents"][0]
+    assert document["id"] == "sstr" and document["title"] == "Software System Test Report"
+    assert len(document["sections"]) == 12
+    assert document["sections"][0]["claims"] == result["manifest"]["sections"][0]["claims"]
+    assert (
+        document["sections"][0]["cited_revisions"]
+        == result["manifest"]["sections"][0]["cited_revisions"]
+    )
+    assert document["model"]["provider"] == "mock"
+    assert payload["impact_reports"] == report
     assert payload["stale_sections"][0]["document"] == "sstr"
     assert next(n for n in payload["nodes"] if n["id"] == "SRS-021")["stale"]
     audit_pack([graph], tmp_path / "docs", tmp_path / "audit.zip", "1.1")
     with ZipFile(tmp_path / "audit.zip") as archive:
         assert len(decode(archive.read("trace/explorer.html").decode())["nodes"]) == 248
+
+
+def test_payload_uses_injected_presentation_without_file_reads(monkeypatch):
+    graph = ingest_fixtures()
+
+    def no_file_reads(*args, **kwargs):
+        raise AssertionError("Pure payload step must not read files")
+
+    monkeypatch.setattr(Path, "read_text", no_file_reads)
+    presentation = {"rules": [{"id": "G06", "title": "Missing trace", "action": "Review"}]}
+    payload = explorer_payload(graph, [], [], presentation=presentation)
+    assert payload["rules"] == presentation["rules"]
+    assert json.loads(json.dumps(payload)) == payload

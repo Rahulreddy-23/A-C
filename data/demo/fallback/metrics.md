@@ -10,13 +10,13 @@ Historical sad-v1 consistency: {"precision": 1.0, "recall": 1.0, "true_positive"
 
 | Document | Claims | Sourced % | Inferred % | Suggested % | Reject / downgrade | USD | Seconds | Cache hit rate |
 |---|---:|---:|---:|---:|---|---:|---:|---:|
-| drr | 7 | 0.0 | 0.0 | 100.0 | 0 / 0 | 0.000000 | 0.126 | 0.0 |
-| rtm | 0 | 0.0 | 0.0 | 0.0 | 0 / 0 | 0.000000 | 0.041 | — |
-| sad | 36 | 100.0 | 0.0 | 0.0 | 0 / 0 | 0.000000 | 0.127 | 0.0 |
-| sdd | 180 | 100.0 | 0.0 | 0.0 | 0 / 0 | 0.000000 | 0.111 | 0.0 |
-| sfmea | 125 | 0.0 | 0.0 | 100.0 | 0 / 0 | 0.000000 | 0.136 | 0.0 |
-| sstr | 11 | 45.45 | 0.0 | 54.55 | 0 / 0 | 0.000000 | 0.221 | 0.0 |
-| sutr | 0 | 0.0 | 0.0 | 0.0 | 0 / 0 | 0.000000 | 0.039 | — |
+| drr | 7 | 0.0 | 0.0 | 100.0 | 0 / 0 | 0.000000 | 0.124 | 0.0 |
+| rtm | 0 | 0.0 | 0.0 | 0.0 | 0 / 0 | 0.000000 | 0.040 | — |
+| sad | 36 | 100.0 | 0.0 | 0.0 | 0 / 0 | 0.000000 | 0.118 | 0.0 |
+| sdd | 180 | 100.0 | 0.0 | 0.0 | 0 / 0 | 0.000000 | 0.102 | 0.0 |
+| sfmea | 125 | 0.0 | 0.0 | 100.0 | 0 / 0 | 0.000000 | 0.125 | 0.0 |
+| sstr | 11 | 45.45 | 0.0 | 54.55 | 0 / 0 | 0.000000 | 0.223 | 0.0 |
+| sutr | 0 | 0.0 | 0.0 | 0.0 | 0 / 0 | 0.000000 | 0.043 | — |
 
 | Document | AI / deterministic / human sections | Assumed authoring hours | Estimated hours saved | Support rate | Supported / partial / unsupported | Coverage verified / sampled eligible (document eligible); unverified rationale | Verifier USD / seconds |
 |---|---|---:|---:|---|---|---|---|

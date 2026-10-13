@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from dhf.models.evidence import validate_graph
-from dhf.trace import confirmed_links, gaps, latest_results
+from dhf.trace import confirmed_links, coverage, gaps, latest_results
 
 
 def trace_chain(graph: dict, selected: str) -> list[str]:
@@ -83,7 +83,18 @@ def trace_chain(graph: dict, selected: str) -> list[str]:
     return sorted(result)
 
 
-def explorer_payload(graph: dict, findings: list[dict], reports: list[dict]) -> dict:
+def explorer_payload(
+    graph: dict,
+    findings: list[dict],
+    reports: list[dict],
+    documents: list[dict] | None = None,
+    presentation: dict | None = None,
+) -> dict:
+    """Pure JSON payload step; file-backed presentation metadata is an input."""
+    from collections import Counter
+
+    from dhf.graph.reviews import risk_rows
+
     graph = validate_graph(graph)
     ids = {a["id"] for a in graph["artifacts"]}
     flags: dict[str, list[str]] = {}
@@ -100,7 +111,54 @@ def explorer_payload(graph: dict, findings: list[dict], reports: list[dict]) -> 
                 stale.append({"document": report["document"], **section})
     affected = {c["artifact"] for s in stale for c in s["causes"] if c.get("artifact")}
     latest = {a["id"] for a in latest_results(graph)}
+    documents = documents or []
+    release = next(
+        (str(d["params"]["release"]) for d in documents if d.get("params", {}).get("release")),
+        "1.1",
+    )
+    presentation = presentation or {}
+    rules = presentation.get("rules", [])
+    titles = presentation.get("document_titles", {})
+    document_rows = []
+    for document in documents:
+        title = titles.get(document["doc_id"])
+        document_rows.append(
+            {
+                "id": document["doc_id"],
+                "title": title or document["doc_id"].upper(),
+                "version": document.get("doc_version"),
+                "generated_at": document.get("generated_at"),
+                "model": document.get("model", {}),
+                "validation": document.get("validation", {}),
+                "sections": [
+                    {
+                        key: section.get(key)
+                        for key in (
+                            "id",
+                            "title",
+                            "mode",
+                            "status",
+                            "claims",
+                            "cited_revisions",
+                            "markdown",
+                        )
+                    }
+                    for section in document["sections"]
+                ],
+            }
+        )
     return {
+        "release": release,
+        "coverage": coverage(graph, release),
+        "verification": dict(
+            Counter(
+                a["attributes"].get("outcome", "Unknown") for a in latest_results(graph, release)
+            )
+        ),
+        "rules": [{k: r.get(k, "") for k in ("id", "title", "action")} for r in rules],
+        "documents": document_rows,
+        "impact_reports": reports,
+        "risk": risk_rows(graph),
         "nodes": [
             {
                 "id": a["id"],
@@ -120,7 +178,7 @@ def explorer_payload(graph: dict, findings: list[dict], reports: list[dict]) -> 
         "links": confirmed_links(graph),
         "findings": findings,
         "stale_sections": stale,
-        "notice": "Evidence index; missing links and stale drafts require human review.",
+        "notice": "Read-only evidence snapshot; human review required.",
     }
 
 
@@ -136,6 +194,8 @@ def create_explorer(
     reports: list[dict] | None = None,
     baselines: list[dict] | None = None,
 ) -> str:
+    import yaml
+
     from dhf.graph.reviews import risk_gaps
     from dhf.impact import impact
     from dhf.trace.consistency import consistency
@@ -143,6 +203,18 @@ def create_explorer(
     findings = gaps(graph) + consistency(graph, documents) + risk_gaps(graph)
     findings += [{**f, "scope": "baseline"} for f in consistency(graph, baselines or [])]
     reports = reports if reports is not None else [impact(graph, d) for d in documents]
+    presentation = {
+        "rules": [
+            rule
+            for path in sorted(Path("specs/rules").glob("*.yaml"))
+            for rule in yaml.safe_load(path.read_text()).get("rules", [])
+        ],
+        "document_titles": {
+            path.stem: yaml.safe_load(path.read_text()).get("title")
+            for path in sorted(Path("specs/documents").glob("*.yaml"))
+        },
+    }
     return render_explorer(
-        explorer_payload(graph, findings, reports), Path("specs/render/explorer.html").read_text()
+        explorer_payload(graph, findings, reports, documents, presentation),
+        Path("specs/render/explorer.html").read_text(),
     )

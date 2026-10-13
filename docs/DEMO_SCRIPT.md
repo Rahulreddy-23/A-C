@@ -32,7 +32,7 @@ Capture a **real tenant** screenshot of the Copilot Studio agent test pane showi
 
 Say: “Every line starts in recorded evidence. This fixture has 248 artifacts and 413 confirmed links. Requirements, units, code changes and tests have stable IDs and revisions; missing links stay visible.”
 
-Show `explorer-baseline.html` in the active run folder. Search SRS-021, select its recorded test/component/control neighbors in the relationship map or grouped trace context, and open a source revision. Use All evidence to browse the complete artifact index. Filter G06 to show RC-12's deliberately missing realization; G07 to show SRS-012's missing verification. These are gaps, not AI-made trace links. Show the RTM revision and unit columns.
+Show `explorer-baseline.html` in the active run folder. Start on Overview for actual coverage and verification counts. Open Findings and filter G06 to show RC-12's deliberately missing realization; G07 shows SRS-012's missing verification. In Traceability, use Find artifact to search SRS-021, inspect its direct arrows and relationship types, then select Full trace for the wider context. Click selects source details; double-click or Focus trace recenters the context. Evidence opens the complete artifact index. These are gaps, not AI-made trace links. Show the RTM revision and unit columns.
 
 Exact commands if using the completed rehearsal:
 
@@ -60,7 +60,7 @@ Say: “Watch what a source update does. The planted change raises the occlusion
 
 Press Enter in the paused demo. Expected source delta: SRS-021 and UNIT-sensor_pressure changed; PR-8, RUN-3, RES-3-021 added. The pre-regeneration explorer highlights 40 directly stale sections and the five exact causes. The saved report also distinguishes possibly affected neighbors; the 75 total status/cause records match the reviewed expectation.
 
-Show `explorer-stale.html`, then `redline-sstr.docx` with All Markup. In the results table, TC-021 goes from RES-2-021 to RES-3-021. The redline preserves unaffected rows. Show `dhf check` blocking the new unresolved suggestions. Unknown citations/unsupported numbers are rejected; refusals become visible human placeholders.
+Show Change impact in `explorer-stale.html` for directly stale versus possibly affected sections and their exact causes. Documents exposes generated sections and typed claims with citation revisions; Risk evidence shows recorded control paths without accepting residual risk. Then open `redline-sstr.docx` with All Markup. In the results table, TC-021 goes from RES-2-021 to RES-3-021. The redline preserves unaffected rows. Show `dhf check` blocking the new unresolved suggestions. Unknown citations/unsupported numbers are rejected; refusals become visible human placeholders.
 
 Fallback: [stale explorer](../data/demo/fallback/explorer-stale.html), [saved impact](../data/demo/fallback/impact.json), [actual tracked Word changes](../data/demo/fallback/redline-sstr.docx), [transcript](../data/demo/fallback/transcript.txt). Say “This is the recorded offline rehearsal; its AI prose is structural mock output” if using these.
 

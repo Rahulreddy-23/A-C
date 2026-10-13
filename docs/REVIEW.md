@@ -21,11 +21,67 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - That's acceptable for the SSTR tables. The demo will open a few cases, though, so give 5–6 safety-critical cases specific stimuli and values: TC-021 occlusion, the air-in-line case, the over-infusion bound, the alarm latch/acknowledge case and the drug-limit case.
 - Keep IDs and links unchanged.
 
+**R-030 [non-blocking, by M10 — demo impact] M6 — The architecture diagram is Mermaid source only, so the Word SAD shows a code listing, not a diagram** (`out/documents/sad.architecture.mmd`, SAD `architecture` section)
+- No local Mermaid or Graphviz renderer exists, so the DOCX gets a monospace block of `flowchart LR …`. A rendered architecture figure is one of the most visible parts of a SAD for reviewers and judges.
+- **Expected fix:**
+  - Render a PNG locally and deterministically: components as columns or boxes, their units listed inside or below, external interfaces at the edge. Pillow is enough for a grid layout; record the dependency in an ADR.
+  - Embed the PNG in the DOCX with a caption and a figure number.
+  - Keep the Mermaid source in the Markdown (ADO's markdown preview can render it) and the checksum in the manifest.
+  - Never use an online renderer.
+
+**R-031 [non-blocking, by M10] M6 — SAD and SDD readability** (`specs/documents/sad.yaml`, `sdd.yaml`, `specs/templates/section.md.j2`)
+- **Headings.** The SDD has 162 flat H2 headings ("Purpose — UNIT-x", "Behavior — UNIT-x"…). Use one H2 per unit with H3 subsections, so the Word navigation pane and table of contents stay usable. Do the same for SAD component sections.
+- **Data-structure table.** Each cell is a key-sorted blob ("bases: StrEnum; fields: …; name: PressureState"). Use columns: Name | Kind/bases | Fields.
+- **IDs without names.** The risk-control and SOUP tables show bare IDs (`HAZ-01`, `RC-01`). Add title columns (hazard name, control name) so a reviewer can read them without clicking through.
+- **Missing SOUP requirements.** Every SOUP row says "Recorded requirements: —". Make that a finding rather than a silent dash: add a gap rule, e.g. **G12 "SOUP item has no recorded functional/performance requirements or anomaly-list evaluation"** (IEC 62304 §5.3.3–5.3.4, §7.1.3), and render it in "Open design and verification gaps".
+
+**R-032 [non-blocking — required in M7] M6 — The consistency check can't find the planted stale-SAD issues** (`src/dhf/trace/consistency.py`)
+- `dhf consistency` reports 0 findings because `component_consistency` only compares the graph with **freshly generated** documents, which are consistent by construction.
+- The planted stale-documentation issues sit in the **approved baseline**: C01, where COMP-06 is missing from SAD v1.0, and C04, where SAD v1.0 calls COMP-03 "Pressure Monitoring". These are in `expected_gaps.yaml` but are never detected.
+- **Expected fix (M7):**
+  - Run C01–C04 against the latest approved baseline of each document in the docs repo (tag `sad-v1`, later `<doc>-vN`), as well as the generated drafts.
+  - Score them against the C entries in `expected_gaps.yaml`, alongside G01–G11.
+  - This is the "stale documentation" problem from the brief, so it needs to show up in the demo.
+
+### Live sample of M6 (OpenAI `gpt-4.1-mini`, run by the reviewer with owner approval; 7 sections, $0.0065, merged into `out/ledger.json`)
+
+- **SDD unit sections are excellent.** All three sections for `UNIT-sensor_pressure` passed validation with no issues and are accurate and code-grounded: threshold plus dwell latch, `PressureDecision` states, the exact fault reasons ("Decreasing sample timestamp"…), and the acknowledge/recovery path. This is the best output so far.
+- **SAD context is decent.** It properly marks the missing interface protocols as `suggested`.
+
+**R-033 [non-blocking, before M8] M6 — SAD synthesis sections just restate component boilerplate** (`data/synthetic/evidence.yaml` components, `src/dhf/graph/design.py`, `specs/prompts/design.*.md`)
+- `architecture_overview`, `component_responsibility.*` and `runtime` mostly repeat one sentence per component: "owns X, exposes explicit inputs and outputs, reports faults to the control path, must retain validated state…".
+- The cause is the data and the evidence pack, not the model:
+  - (a) All six component bodies in the dataset are the same templated three sentences.
+  - (b) The architecture packs carry no structural facts: which units belong to which component, which component calls which, the interfaces, and the ADRs and hazards per component.
+- **Expected fix:**
+  - Give each component a distinct responsibility, collaborators, safety mechanisms and interfaces, in both the dataset and `architecture.yaml`.
+  - **Extract inter-component dependencies from the code deterministically**, via AST imports and calls, e.g. `COMP-03 → COMP-04: sensor_pressure requests alarm_latch.latch()`. Feed them into the overview and runtime packs, and draw them in the R-030 diagram.
+  - Make the SDD purpose, behavior and errors prompts distinct (why/what · algorithm · invalid input/recovery). In the live sample, all three repeated the dwell-latch explanation.
+
+**R-034 [non-blocking] M6 — `dhf generate-section` can't target expanded sections** (`src/dhf/cli.py:220-245`)
+- `dhf generate-section sdd purpose.UNIT-sensor_pressure` and `sad component_responsibility.COMP-03` fail with "Unknown section", because the lookup uses `spec["sections"]` instead of `expand_sections(spec, graph)`.
+- That breaks the owner-facing cross-provider check for every per-component and per-unit section. Look the section up after expansion.
+
+
+## Resolved
+
+### M6 (tag `m6-done` → c98915a; code at 6922f61) — verdict: **approved**
+
+Verified independently in a clean worktree:
+- 53 tests pass; ruff check and format are clean.
+- `dhf generate sad` produced 28 sections and `dhf generate sdd` 162 sections, both with 0 validation events.
+- The SAD follows BRIEF §10.2: context, safety classes from source, allocation diagram, per-component design plus allocated requirements, extracted interfaces, SOUP inventory with parsed pinned versions, risk-control measures with source severities, requirements-to-architecture matrix, ADRs and open gaps.
+- The SDD extracts signatures and data structures deterministically through AST, for example the `PressureMonitor` interfaces and the `PressureState`/`PressureSample`/`PressureDecision` structures. Per-unit allocations are deterministic. The absence of unit-level tests is stated honestly.
+- All 6 components and 20 units appear.
+- The AI narrative sections were checked structurally only. With the mock, Purpose, Behavior and Error handling repeat the same text, so prose quality still needs a live sample.
+- Follow-ups: R-030, R-031, R-032.
+
 **R-018 [non-blocking, by M10] M4 — The dataset text gives away the answer key** (`data/synthetic/evidence.yaml:1976`, `data/synthetic/code/kestrel/diagnostics_orphan.py`)
 - BUG-03's body says "residual-anomaly listing is intentionally missing", and a unit is named `diagnostics_orphan`. Both appear in generated documents the judges will read.
 - Rewrite them as natural engineering text and rename the module (e.g. `diagnostics_trace.py`). Update the answer key and IDs consistently, and re-run the validator.
 
 Resolved in 6922f61: natural BUG-03 wording and diagnostics_trace naming retain exact graph/answer-key parity.
+- *Reviewer verified at 6922f61.*
 
 **R-029 [non-blocking, before M10 demo script] M5 — The anomaly section's completeness depends on the model; offline, the demo's new failure is missing** (`specs/documents/sstr.yaml` anomaly_assessment, `src/dhf/llm/adapters/mock.py`)
 - After `change_1`, release 1.1 has two failures: `RES-2-008` and `RES-3-021` (the occlusion test, with no linked defect). The query facts list both correctly.
@@ -35,8 +91,7 @@ Resolved in 6922f61: natural BUG-03 wording and diagnostics_trace naming retain 
   - Also make the mock produce one claim per `facts.failed_results` entry, so the offline narrative is representative.
 
 Resolved in 6922f61: all failed/blocked results render in a deterministic table even on AI failure; mock claims cover both change_1 failures and the regression verifies them.
-
-## Resolved
+- *Reviewer verified at 6922f61.*
 
 ### M5 re-review (tag `m5-done` → 0b01407; fixes in 18ee5e8) — verdict: **approved**
 

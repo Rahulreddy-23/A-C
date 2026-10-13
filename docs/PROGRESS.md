@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M6 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current milestone: M7 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -128,3 +128,13 @@ Current milestone: M6 (done) · Development resumed by owner · Last updated: 20
 - Local LibreOffice renders inspected: SAD 11 pages; final compact SDD 28 pages. PDF text extraction confirms full unit labels and source claims. Desktop Word visual verification remains pending.
 - R-029 regression: change_1 anomaly table contains RES-2-008 and RES-3-021, with the missing defect explicitly shown as `none — see G05`; offline narrative cites both. The complete deterministic table precedes any AI failure placeholder.
 - Mock model version is mock-v2 to invalidate obsolete cached narratives; mock prose is a structural demonstration and still requires human review. No paid calls made.
+
+### M7
+- `uv run pytest -q` → `55 passed in 62.97s`; ruff → `All checks passed!`, `90 files already formatted`.
+- Live-loopback watch regression applies change_1 during a two-cycle watcher: two changed artifacts, three added. The frozen expected fixture distinguishes direct staleness from one-hop possible impact and records changed artifact causes (R-012).
+- `dhf impact` → SAD 6 stale / 3 possibly affected; SDD 12 stale / 21 possibly affected; SSTR 9 stale / 0 possibly affected. Deterministic query-fact changes include added results/run membership, not just old citations.
+- `dhf regenerate --stale --open-pr` → SAD 6 sections, PR 9; SDD 12 sections, PR 10; SSTR 9 sections, PR 11. Isolated CLI server port 64147; URLs are historical evidence. No paid calls.
+- Regression simulates owner review/merge/tag before changing source. Unchanged section Markdown is byte-identical to the approved baseline, including a human edit. PR metadata names only stale sections. Source writes remain forbidden.
+- `dhf consistency` → `2 consistency findings`: approved `sad-v1` misses COMP-06 (C01) and names COMP-03 Pressure Monitoring (C04). Fresh documents pass all four rules. Separate stale/unknown citation and summary mismatch tests exercise C02/C03.
+- Expanded `generate-section` now accepts per-unit/per-component IDs (R-034). The impact command persists stale evidence status and readiness blocks it.
+- Before M8 document work: address R-033 synthesis evidence; R-030/R-031 remain scheduled before M10.

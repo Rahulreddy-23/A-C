@@ -291,7 +291,11 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
         query(
             graph,
             section["query"],
-            {**params, **({"entity": section["entity"]} if "entity" in section else {})},
+            {
+                **params,
+                **section.get("query_params", {}),
+                **({"entity": section["entity"]} if "entity" in section else {}),
+            },
         )
         if section["mode"] != "human"
         else {"facts": {}, "evidence": []}
@@ -395,6 +399,11 @@ def assemble(spec: dict, graph: dict, params: dict, sections: list[dict], contex
                 and any(a["id"] in s["cited_revisions"] for s in sections)
             }
         ),
+        "component_names": {
+            a["id"]: a["title"]
+            for a in graph["artifacts"]
+            if a["type"] == "component" and any(a["id"] in s["cited_revisions"] for s in sections)
+        },
         "validation": validation,
         "document_sha256": sha(text),
         "review": {"pr_url": None, "reviewers": [], "status": "draft"},

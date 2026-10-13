@@ -230,14 +230,11 @@ def generate_section_command(
     import json
     from pathlib import Path
 
-    from dhf.generate import generate_section, load_spec
+    from dhf.generate import expand_sections, generate_section, load_spec
     from dhf.graph import Store
     from dhf.llm import LLM
 
     spec = load_spec(doc)
-    selected = next((s for s in spec["sections"] if s["id"] == section), None)
-    if selected is None:
-        raise typer.BadParameter("Unknown section")
     store = Store(Path(db))
     try:
         graph = store.graph()
@@ -245,6 +242,9 @@ def generate_section_command(
         store.close()
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence first")
+    selected = next((s for s in expand_sections(spec, graph) if s["id"] == section), None)
+    if selected is None:
+        raise typer.BadParameter("Unknown section")
     llm = LLM(provider)
     result = generate_section(selected, graph, {"release": release}, llm)
     report_drafting_failures([result], debug)
@@ -294,24 +294,172 @@ def baseline_command(doc: str, pr_id: int = typer.Option(...)) -> None:
 
 
 @app.command("consistency")
-def consistency_command(db: str = "out/evidence.sqlite", documents: str = "out/documents") -> None:
+def consistency_command(
+    db: str = "out/evidence.sqlite", documents: str = "out/documents", baselines: bool = True
+) -> None:
     """Check source and document component sets; emit reviewable findings."""
     import json
     from pathlib import Path
 
     from dhf.graph import Store
-    from dhf.trace.consistency import component_consistency
+    from dhf.trace.consistency import consistency
 
     store = Store(Path(db))
     try:
         graph = store.graph()
     finally:
         store.close()
-    manifests = [
-        json.loads(p.read_text())
-        for p in sorted(Path(documents).glob("*.manifest.json"))
-        if p.stem.split(".")[0] in ("sad", "sdd", "sfmea")
-    ]
-    findings = component_consistency(graph, manifests)
+    manifests = [json.loads(p.read_text()) for p in sorted(Path(documents).glob("*.manifest.json"))]
+    if baselines:
+        from dhf.ingest.ado import ADO
+        from dhf.review import DocsReview
+
+        ado = ADO()
+        try:
+            manifests += DocsReview(ado).approved_documents()
+        finally:
+            ado.close()
+    findings = consistency(graph, manifests)
     Path("out/consistency.json").write_text(json.dumps(findings, indent=2))
     typer.echo(f"{len(findings)} consistency findings → out/consistency.json")
+
+
+def document_impacts(db: str, documents: str, since: str = "baseline") -> tuple[dict, list[dict]]:
+    import json
+    from pathlib import Path
+
+    from dhf.graph import Store
+    from dhf.impact import impact, write_report
+
+    store = Store(Path(db))
+    try:
+        graph = store.graph()
+        previous = None
+        if since != "baseline":
+            if since.isdigit():
+                previous = store.graph(int(since))
+            else:
+                row = store.db.execute(
+                    "SELECT id FROM snapshots WHERE at<=? ORDER BY id DESC LIMIT 1", (since,)
+                ).fetchone()
+                if not row:
+                    raise typer.BadParameter("No snapshot at or before timestamp")
+                previous = store.graph(row[0])
+            if not previous["artifacts"]:
+                raise typer.BadParameter("Unknown snapshot")
+        reports = []
+        for path in sorted(Path(documents).glob("*.manifest.json")):
+            manifest = json.loads(path.read_text())
+            report = impact(graph, manifest, previous)
+            statuses = {s["id"]: s["status"] for s in report["sections"]}
+            for section in manifest["sections"]:
+                section["evidence_status"] = statuses.get(section["id"], "current")
+            manifest["impact"] = report
+            path.write_text(json.dumps(manifest, indent=2))
+            reports.append(report)
+        write_report(reports)
+        return graph, reports
+    finally:
+        store.close()
+
+
+@app.command("impact")
+def impact_command(
+    since: str = "baseline", db: str = "out/evidence.sqlite", documents: str = "out/documents"
+) -> None:
+    """Compare current evidence with document source baselines or an ingest timestamp."""
+    _, reports = document_impacts(db, documents, since)
+    for report in reports:
+        for status in ("stale", "possibly_affected"):
+            typer.echo(
+                f"{report['document']}: "
+                f"{sum(s['status'] == status for s in report['sections'])} {status}"
+            )
+    typer.echo("Impact → out/impact.md + out/impact.json")
+
+
+@app.command("regenerate")
+def regenerate_command(
+    stale: bool = typer.Option(False, "--stale"),
+    db: str = "out/evidence.sqlite",
+    documents: str = "out/documents",
+    open_pr: bool = False,
+) -> None:
+    """Regenerate directly stale sections, preserving all other edited section bytes."""
+    import json
+    from pathlib import Path
+
+    from dhf.impact import regenerate
+    from dhf.ingest.ado import ADO
+    from dhf.review import DocsReview
+    from dhf.trace import gaps
+
+    if not stale:
+        raise typer.BadParameter("Specify --stale")
+    graph, reports = document_impacts(db, documents)
+    root = Path(documents)
+    for report in reports:
+        changed = [s["id"] for s in report["sections"] if s["status"] == "stale"]
+        if not changed:
+            continue
+        doc = report["document"]
+        manifest = json.loads((root / (doc + ".manifest.json")).read_text())
+        result = regenerate(graph, manifest, (root / (doc + ".md")).read_text(), report, root)
+        typer.echo(f"{doc}: regenerated {len(changed)} sections")
+        if open_pr:
+            ado = ADO()
+            try:
+                published = DocsReview(ado).publish(
+                    result, changed_sections=changed, gap_count=len(gaps(graph))
+                )
+                (root / (doc + ".manifest.json")).write_text(
+                    json.dumps(result["manifest"], indent=2)
+                )
+                typer.echo(f"PR {published['pr_id']}: {published['pr_url']}")
+            finally:
+                ado.close()
+
+
+@app.command("watch")
+def watch_command(
+    interval: float = 60,
+    cycles: int | None = None,
+    db: str = "out/evidence.sqlite",
+    documents: str = "out/documents",
+    regenerate_stale: bool = False,
+    open_pr: bool = False,
+) -> None:
+    """Poll native ADO evidence; optional finite cycles support demonstrations."""
+    import time
+    from pathlib import Path
+
+    from dhf.graph import Store
+    from dhf.ingest.ado import ADO
+
+    if interval < 0 or (cycles is not None and cycles < 1):
+        raise typer.BadParameter("interval must be nonnegative; cycles must be positive")
+    count = 0
+    try:
+        while cycles is None or count < cycles:
+            ado = ADO()
+            store = Store(Path(db))
+            try:
+                delta = store.ingest(ado.ingest())
+            finally:
+                ado.close()
+                store.close()
+            count += 1
+            if delta["changed"] or delta["added"] or delta["removed"]:
+                typer.echo(
+                    f"Changed evidence: {len(delta['changed'])} changed, "
+                    f"{len(delta['added'])} added, {len(delta['removed'])} removed"
+                )
+                impact_command(db=db, documents=documents)
+                if regenerate_stale:
+                    regenerate_command(stale=True, db=db, documents=documents, open_pr=open_pr)
+            else:
+                typer.echo("Evidence unchanged")
+            if cycles is None or count < cycles:
+                time.sleep(interval)
+    except KeyboardInterrupt:
+        typer.echo("Watch stopped")

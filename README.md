@@ -140,3 +140,15 @@ interfaces, structures and explicit allocations per unit. Missing recorded unit
 tests are shown as gaps in the source evidence. Offline mock prose verifies the
 pipeline structure; use a configured provider for human-reviewed prose tuning.
 The SSTR always lists every failed or blocked result before its AI assessment.
+
+Change impact and selective regeneration:
+
+```sh
+uv run dhf watch --interval 60
+uv run mock-ado apply-scenario change_1
+uv run dhf impact --since baseline
+uv run dhf regenerate --stale --open-pr
+uv run dhf consistency
+```
+
+The local document manifest records its source baseline. `--since` also accepts an ingest snapshot number or UTC timestamp. Direct revision changes and changed query facts are stale; confirmed one-hop neighbors are labelled possibly affected and require review. Regeneration preserves every untouched section's edited Markdown bytes. To get a PR containing only these changes, start from a human-reviewed, merged document baseline. Draft and latest approved baseline consistency are both checked; `--no-baselines` checks local drafts without contacting ADO. Historical SAD v1 deliberately has C01/C04 findings. `watch --cycles 2` gives a finite demonstration run; Ctrl+C stops continuous polling.

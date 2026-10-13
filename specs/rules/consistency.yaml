@@ -1,0 +1,13 @@
+rules:
+- id: C01
+  op: component_set
+  title: Component inventory differs from current code
+- id: C02
+  op: citation_revision
+  title: Citation is absent or stale
+- id: C03
+  op: result_summary
+  title: SSTR summary differs from current RTM results
+- id: C04
+  op: component_name
+  title: Component name differs from current evidence

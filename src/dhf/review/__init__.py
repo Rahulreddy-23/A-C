@@ -68,7 +68,7 @@ def readiness(markdown: str, manifest: dict) -> dict:
                     "reviewer": authored[1].strip(),
                     "rationale": authored[2].strip(),
                 }
-        if section["status"] == "stale":
+        if section["status"] == "stale" or section.get("evidence_status") == "stale":
             blockers.append({"section": id, "reason": "stale"})
         if section["mode"] == "human":
             visible = re.sub(r"<!--.*?-->|^#+[^\n]*", "", text, flags=re.S | re.M).strip()
@@ -157,6 +157,30 @@ class DocsReview:
                 "context": {"name": "DHF review readiness", "genre": "dhf"},
             },
         )
+
+    def approved_documents(self) -> list[dict]:
+        """Read the latest approved tag per document, including legacy Markdown baselines."""
+        from dhf.trace.consistency import legacy_design
+
+        tags = git_command(["tag", "--list"], self.root).splitlines()
+        latest = {}
+        for tag in tags:
+            match = re.fullmatch(r"([a-z_]+)-v(\d+)", tag)
+            if match and int(match[2]) > latest.get(match[1], (0, ""))[0]:
+                latest[match[1]] = (int(match[2]), tag)
+        documents = []
+        for doc, (_, tag) in sorted(latest.items()):
+            files = git_command(["ls-tree", "-r", "--name-only", tag], self.root).splitlines()
+            if doc + ".manifest.json" in files:
+                document = json.loads(
+                    git_command(["show", tag + ":" + doc + ".manifest.json"], self.root)
+                )
+            elif doc == "sad" and doc + ".md" in files:
+                document = legacy_design(git_command(["show", tag + ":" + doc + ".md"], self.root))
+            else:
+                continue
+            documents.append({**document, "baseline_tag": tag})
+        return documents
 
     def publish(
         self, result: dict, changed_sections: list[str] | None = None, gap_count: int = 0

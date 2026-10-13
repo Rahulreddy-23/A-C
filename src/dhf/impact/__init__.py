@@ -174,10 +174,36 @@ def write_report(reports: list[dict], root: Path = Path("out")) -> None:
     root.mkdir(parents=True, exist_ok=True)
     (root / "impact.json").write_text(json.dumps(reports, indent=2))
     text = (
-        "# Change impact\n\n| Document | Section | Status | Evidence cause |\n|---|---|---|---|\n"
+        "# Change impact\n\n| Document | Stale | Possibly affected sections | "
+        "Optional unit groups |\n|---|---:|---:|---:|\n"
     )
     for report in reports:
+        possible = [s for s in report["sections"] if s["status"] == "possibly_affected"]
+        groups = {s["id"].split(".UNIT-", 1)[1] for s in possible if ".UNIT-" in s["id"]}
+        count = sum(s["status"] == "stale" for s in report["sections"])
+        text += f"| {report['document']} | {count} | {len(possible)} | {len(groups)} |\n"
+    text += (
+        "\nPossibly affected units are optional review groups; "
+        "they do not block readiness.\n\n"
+        "| Document | Section or unit group | Status | Evidence cause |\n|---|---|---|---|\n"
+    )
+    for report in reports:
+        grouped = {}
+        for item in report["sections"]:
+            if item["status"] == "possibly_affected" and ".UNIT-" in item["id"]:
+                grouped.setdefault("UNIT-" + item["id"].split(".UNIT-", 1)[1], []).append(item)
+        for unit, items in sorted(grouped.items()):
+            text += (
+                f"| {report['document']} | {unit} ({len(items)} subsections) | "
+                "possibly affected — optional | "
+                + ", ".join(
+                    sorted({c["artifact"] for s in items for c in s["causes"] if c["artifact"]})
+                )
+                + " |\n"
+            )
         for section in report["sections"]:
+            if section["status"] == "possibly_affected" and ".UNIT-" in section["id"]:
+                continue
             causes = "; ".join(
                 f"{c['artifact'] or 'query facts'}: {c['reason']}"
                 + (f" via {c['via']}" if "via" in c else "")

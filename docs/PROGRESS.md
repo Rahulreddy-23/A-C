@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M7 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current milestone: M8 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -10,6 +10,9 @@ Current milestone: M7 (done) · Development resumed by owner · Last updated: 20
 | M3 | done | m3-done | eb0f00c | 16 exact gaps; RTM golden verified |
 | M4 | done | m4-done | bfae4d5 | 12-section SSTR and exact deterministic golden |
 | M5 | done (refreshed) | m5-done | 18ee5e8 implementation | Localized change_1 redlines; token budgets; review fixes |
+| M6 | done | m6-done | c98915a | SAD/SDD, allocations and local diagram source |
+| M7 | done | m7-done | 3bde3d8 | Native watch, exact impact, selective PRs and C01–C04 |
+| M8 | done | m8-done | implementation below | DRR, sFMEA, proposals and readability fixes |
 ## Now / Next
 - Working on: M6 complete; starting M7 impact and selective regeneration.
 - Next: M7 impact and selective regeneration, then M8–M10. The restored stash remains as a backup.
@@ -144,3 +147,15 @@ Current milestone: M7 (done) · Development resumed by owner · Last updated: 20
 - AST detects exactly `UNIT-sensor_pressure → UNIT-alarm_latch: kestrel.alarm_latch.latched`, represented as COMP-03 → COMP-04 in the Mermaid source. All twenty units/signatures and traced hazard/control context are supplied to synthesis.
 - Six component descriptions now differ in responsibility, collaborators and safety mechanisms. The source architecture.yaml is built from these same records. Separate v2 unit prompts cover why/what, algorithm, and invalid-input/recovery behavior.
 - Source enrichment legitimately changes component/unit revisions in the RTM golden. Structural signatures contain the pressure default, so change_1 also stales overview/runtime/component responsibility and SDD conventions; frozen expectations record that cause. No IDs or trace links changed; dataset validator remains 248 artifacts / 473 links / exact answer key.
+
+### M8
+- `uv run pytest -q` → `59 passed in 67.83s`; ruff → `All checks passed!`, `99 files already formatted`. No paid calls.
+- `dhf generate drr --input-file data/synthetic/review_input.json --since 1 --db out/m8.sqlite` → `drr: 9 sections`; zero validation events and no AI-unavailable sections after bounded grouping of consistency facts. Identity exactly matches the input JSON. Discussion, decisions, new actions and approvals remain human placeholders.
+- `dhf generate sfmea --db out/m8.sqlite` → `sfmea: 27 sections`; zero validation events, 40 suggested cells, source-only severity for all eight hazards, source controls/requirements/unit/test traces, human residual risk. Risk-rating text in AI cells is rejected by a regression.
+- Risk gaps include F02/RC-12 and eight F03 entries pending reviewer-confirmed failure modes. An independent removed-control example proves F01. Proposed modes do not imply approval.
+- `dhf propose --db out/m8.sqlite` → `42 proposal checks → out/proposals/proposals.md + JSON`; L01 covers 35 requirements, L02 drafts a requirement for diagnostics_trace, L03 checks six components and returns no invented contradiction. The graph is unchanged.
+- `python -m mock_ado.validate` → `{'artifacts': 248, 'links': 473, 'answer_key': 'exact', 'rules': 12}`; `dhf gaps --db out/m8.sqlite` → `21 deterministic gaps`. G12 adds the five missing SOUP requirements/anomaly-evaluation records, shown in SAD design gaps.
+- R-013: six cases now contain explicit stimuli (80 kPa/3 s dwell, air 0.11 vs 0.1 limit, clamped 1 mL target, unsafe acknowledgement, 120.01 rate and 10.01 drug-dose boundaries); IDs/links unchanged.
+- R-031: grouped H2 navigation and H3 subsections, name/bases/fields structure table, hazard/control names, and G12 regression all pass. R-035: impact Markdown starts with per-document counts and groups the 21 possible sibling subsections into three optional unit rows.
+- Local LibreOffice rendered and inspected every page: sFMEA nine landscape pages; final DRR two pages. Suggested cells are visibly highlighted and source tables remain separate. Desktop Word UI remains pending.
+- The exact native watch/approved-baseline/regeneration regression now covers SAD, SDD, SSTR and sFMEA. All untouched section bytes and owner edits survive. Frozen expected causes include the new risk document.

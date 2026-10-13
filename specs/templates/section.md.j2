@@ -1,5 +1,7 @@
 <!-- section:{{ section.id }} -->
-## {{ section.title }}
+{% if section.get("group_title") %}## {{ section.group_title }}
+
+{% endif %}{{ "#" * section.get("heading_level", 2) }} {{ section.title }}
 
 {% if facts.rows is defined and facts.rows %}| {% for key, label in section.columns.items() %}{{ label }} | {% endfor %}
 | {% for key in section.columns %}--- | {% endfor %}
@@ -13,9 +15,13 @@
 {{ facts.diagram }}
 ```
 
-{% endif %}{% for claim in claims %}<!-- dhf-claim:{{ claim | claim_key }} -->
+{% endif %}{% if section.render_claims is defined and section.render_claims == 'table' and claims %}| Proposed analysis cell | Draft — human review required |
+|---|---|
+{% for claim in claims %}| {{ claim.text.split(':', 1)[0] }} | <!-- dhf-claim:{{ claim | claim_key }} -->**[Suggested — review required]** {{ claim.text | cell }}{% for id in claim.citations %} [{{ id }}@r{{ evidence[id].source.revision | revision }}]({{ evidence[id].source.url }}){% endfor %} (confidence {{ claim.confidence }}) |
+{% endfor %}
+{% else %}{% for claim in claims %}<!-- dhf-claim:{{ claim | claim_key }} -->
 {% if claim.kind == 'inferred' %}**[Inferred]** {% elif claim.kind == 'suggested' %}**[Suggested — review required]** {% endif %}{{ claim.text }}{% for id in claim.citations %} [{{ id }}@r{{ evidence[id].source.revision | revision }}]({{ evidence[id].source.url }}){% endfor %}{% if claim.kind == 'inferred' %}[^{{ section.id }}-{{ loop.index }}]{% endif %}
 
-{% endfor %}{% for claim in claims %}{% if claim.kind == 'inferred' %}[^{{ section.id }}-{{ loop.index }}]: Basis: {{ claim.citations | join(', ') }}; confidence {{ claim.confidence }}.
+{% endfor %}{% endif %}{% for claim in claims %}{% if claim.kind == 'inferred' %}[^{{ section.id }}-{{ loop.index }}]: Basis: {{ claim.citations | join(', ') }}; confidence {{ claim.confidence }}.
 {% endif %}{% endfor %}{% endif %}
 <!-- endsection:{{ section.id }} -->

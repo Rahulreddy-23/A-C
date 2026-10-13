@@ -1,0 +1,59 @@
+id: drr
+title: Design Review Record
+spec_version: 1
+params:
+  review_input:
+    required: true
+sections:
+- id: identification
+  title: Review identification
+  mode: deterministic
+  query: drr_identification
+  columns:
+    field: Field
+    value: Provided value
+- id: scope
+  title: Changed evidence since baseline
+  mode: deterministic
+  query: drr_scope
+  columns:
+    artifact: Artifact
+    change: Change
+- id: actions
+  title: Previous action items
+  mode: deterministic
+  query: drr_actions
+  columns:
+    id: Action
+    title: Description
+    state: State
+- id: findings
+  title: Pre-review findings
+  mode: ai
+  query: drr_findings
+  prompt: review.findings@1
+  allowed_kinds:
+  - suggested
+  max_claims: 5
+  synthesis: true
+- id: checklist
+  title: Suggested checklist questions
+  mode: ai
+  query: drr_checklist
+  prompt: review.checklist@1
+  allowed_kinds:
+  - suggested
+  max_claims: 5
+  synthesis: true
+- id: discussion
+  title: Discussion and minutes
+  mode: human
+- id: decisions
+  title: Decisions
+  mode: human
+- id: new_actions
+  title: New action items
+  mode: human
+- id: approvals
+  title: Approvals
+  mode: human

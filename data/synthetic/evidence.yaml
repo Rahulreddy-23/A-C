@@ -1374,35 +1374,43 @@ artifacts:
     component: COMP-06
 - id: TC-001
   type: test_case
-  title: Verify flow bounds — case 001
-  body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
-    event recorder enabled. Steps: (1) exercise flow bounds with nominal input; (2)
-    challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
-    result and alarms. Expected result: Rates 0.01 and 120 mL/h are accepted under
-    a 120 mL/h maximum; zero, negative, non-finite and 120.01 mL/h are rejected without
-    configuration change.'
+  title: Verify flow bounds
+  body: 'Preconditions: Reset synthetic bench; valid configuration; event recorder
+    enabled. Steps: 1. Configure maximum 120 mL/h and target 1 mL while STOPPED.;
+    2. Apply 0.01 and 120 mL/h; verify acceptance at both boundaries.; 3. Propose
+    0, -1, 120.01 and NaN rates.; 4. Verify each rejected proposal retains the last
+    valid configuration and output remains inhibited. Expected result: Rates 0.01
+    and 120 mL/h are accepted under a 120 mL/h maximum; zero, negative, non-finite
+    and 120.01 mL/h are rejected without configuration change.'
   attributes:
     synthetic: true
     level: system
     preconditions: Reset synthetic bench; valid configuration; event recorder enabled
-    steps: Nominal, boundary and invalid input for flow bounds
+    steps: 1. Configure maximum 120 mL/h and target 1 mL while STOPPED.; 2. Apply
+      0.01 and 120 mL/h; verify acceptance at both boundaries.; 3. Propose 0, -1,
+      120.01 and NaN rates.; 4. Verify each rejected proposal retains the last valid
+      configuration and output remains inhibited.
     expected_result: Rates 0.01 and 120 mL/h are accepted under a 120 mL/h maximum;
       zero, negative, non-finite and 120.01 mL/h are rejected without configuration
       change.
 - id: TC-002
   type: test_case
-  title: Verify volume limit — case 002
-  body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
-    event recorder enabled. Steps: (1) exercise volume limit with nominal input; (2)
-    challenge its boundary; (3) repeat with invalid input; (4) record controller mode,
-    result and alarms. Expected result: A target of 1 mL stops delivery at exactly
-    1 mL; a time step requesting more than the remaining volume is clamped to that
-    remaining volume.'
+  title: Verify volume limit
+  body: 'Preconditions: Reset synthetic bench; valid configuration; event recorder
+    enabled. Steps: 1. Configure rate 120 mL/h, target 1 mL and valid safe inputs.;
+    2. Start delivery and request a 60 s time step, exceeding remaining target volume.;
+    3. Verify only 1 mL is delivered and mode becomes STOPPED.; 4. Apply another 60
+    s tick and verify zero further delivery. Expected result: A target of 1 mL stops
+    delivery at exactly 1 mL; a time step requesting more than the remaining volume
+    is clamped to that remaining volume.'
   attributes:
     synthetic: true
     level: system
     preconditions: Reset synthetic bench; valid configuration; event recorder enabled
-    steps: Nominal, boundary and invalid input for volume limit
+    steps: 1. Configure rate 120 mL/h, target 1 mL and valid safe inputs.; 2. Start
+      delivery and request a 60 s time step, exceeding remaining target volume.; 3.
+      Verify only 1 mL is delivered and mode becomes STOPPED.; 4. Apply another 60
+      s tick and verify zero further delivery.
     expected_result: A target of 1 mL stops delivery at exactly 1 mL; a time step
       requesting more than the remaining volume is clamped to that remaining volume.
 - id: TC-003
@@ -1483,18 +1491,24 @@ artifacts:
       volume is 0.5 mL; zero concentration is rejected.
 - id: TC-008
   type: test_case
-  title: Verify air detection — case 008
-  body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
-    event recorder enabled. Steps: (1) exercise air detection with nominal input;
-    (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
-    mode, result and alarms. Expected result: An air reading above the configured
-    limit stops output and latches an alarm; a missing or disconnected sample has
-    the same inhibited outcome.'
+  title: Verify air detection
+  body: 'Preconditions: Reset synthetic bench; valid configuration; event recorder
+    enabled. Steps: 1. Configure air limit 0.1 and clear the latch on a safe sample.;
+    2. Apply 0.1; verify no threshold alarm.; 3. Apply 0.11; verify output inhibited
+    and alarm latched.; 4. Acknowledge at 0.11; verify acknowledgement rejected.;
+    5. Disconnect the sensor or supply None; verify inhibited output.; 6. Reconnect
+    at 0.05 and acknowledge; verify latch clears. Expected result: An air reading
+    above the configured limit stops output and latches an alarm; a missing or disconnected
+    sample has the same inhibited outcome.'
   attributes:
     synthetic: true
     level: system
     preconditions: Reset synthetic bench; valid configuration; event recorder enabled
-    steps: Nominal, boundary and invalid input for air detection
+    steps: 1. Configure air limit 0.1 and clear the latch on a safe sample.; 2. Apply
+      0.1; verify no threshold alarm.; 3. Apply 0.11; verify output inhibited and
+      alarm latched.; 4. Acknowledge at 0.11; verify acknowledgement rejected.; 5.
+      Disconnect the sensor or supply None; verify inhibited output.; 6. Reconnect
+      at 0.05 and acknowledge; verify latch clears.
     expected_result: An air reading above the configured limit stops output and latches
       an alarm; a missing or disconnected sample has the same inhibited outcome.
 - id: TC-009
@@ -1562,17 +1576,22 @@ artifacts:
       event has critical priority; ties use stable code order.
 - id: TC-013
   type: test_case
-  title: Verify alarm acknowledgement — case 013
-  body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
-    event recorder enabled. Steps: (1) exercise alarm acknowledgement with nominal
-    input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
-    mode, result and alarms. Expected result: Every acknowledgement appends an event
-    containing the code and active state; acknowledging an unknown code raises KeyError.'
+  title: Verify alarm acknowledgement
+  body: 'Preconditions: Reset synthetic bench; valid configuration; event recorder
+    enabled. Steps: 1. Create an occlusion alarm with CRITICAL priority and unsafe=True.;
+    2. Acknowledge while unsafe; verify active latch persists and event records acknowledgement.;
+    3. Update unsafe=False, then acknowledge; verify latch clears.; 4. Acknowledge
+    unknown code; verify KeyError and no fabricated alarm record. Expected result:
+    Every acknowledgement appends an event containing the code and active state; acknowledging
+    an unknown code raises KeyError.'
   attributes:
     synthetic: true
     level: system
     preconditions: Reset synthetic bench; valid configuration; event recorder enabled
-    steps: Nominal, boundary and invalid input for alarm acknowledgement
+    steps: 1. Create an occlusion alarm with CRITICAL priority and unsafe=True.; 2.
+      Acknowledge while unsafe; verify active latch persists and event records acknowledgement.;
+      3. Update unsafe=False, then acknowledge; verify latch clears.; 4. Acknowledge
+      unknown code; verify KeyError and no fabricated alarm record.
     expected_result: Every acknowledgement appends an event containing the code and
       active state; acknowledging an unknown code raises KeyError.
 - id: TC-014
@@ -1641,18 +1660,22 @@ artifacts:
       settings byte-for-byte; accepting returns a copy of the proposed validated settings.
 - id: TC-018
   type: test_case
-  title: Verify drug limit validation — case 018
-  body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
-    event recorder enabled. Steps: (1) exercise drug limit validation with nominal
-    input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
-    mode, result and alarms. Expected result: Doses exactly at configured minimum
-    and maximum are accepted; values below minimum or above maximum are rejected before
-    volume calculation.'
+  title: Verify drug limit validation
+  body: 'Preconditions: Reset synthetic bench; valid configuration; event recorder
+    enabled. Steps: 1. Load drug key KESTREL-DEMO with minimum dose 1, maximum dose
+    10 and concentration 2.; 2. Request doses 1 and 10; verify volumes 0.5 and 5.;
+    3. Request 0.99, 10.01 and NaN; verify rejection before volume calculation.; 4.
+    Request a mismatched drug key; verify rejection without replacing validated settings.
+    Expected result: Doses exactly at configured minimum and maximum are accepted;
+    values below minimum or above maximum are rejected before volume calculation.'
   attributes:
     synthetic: true
     level: system
     preconditions: Reset synthetic bench; valid configuration; event recorder enabled
-    steps: Nominal, boundary and invalid input for drug limit validation
+    steps: 1. Load drug key KESTREL-DEMO with minimum dose 1, maximum dose 10 and
+      concentration 2.; 2. Request doses 1 and 10; verify volumes 0.5 and 5.; 3. Request
+      0.99, 10.01 and NaN; verify rejection before volume calculation.; 4. Request
+      a mismatched drug key; verify rejection without replacing validated settings.
     expected_result: Doses exactly at configured minimum and maximum are accepted;
       values below minimum or above maximum are rejected before volume calculation.
 - id: TC-019
@@ -1687,18 +1710,26 @@ artifacts:
       a mismatched checksum prevents library activation.
 - id: TC-021
   type: test_case
-  title: Verify occlusion threshold — case 021
-  body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
-    event recorder enabled. Steps: (1) exercise occlusion threshold with nominal input;
-    (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
-    mode, result and alarms. Expected result: With downstream pressure held above
-    80 kPa for 3 s, output is stopped and a critical alarm is latched at the 3 s boundary.
+  title: Verify occlusion threshold
+  body: 'Preconditions: Reset synthetic bench; valid configuration; event recorder
+    enabled. Steps: 1. Configure pressure threshold 80 kPa and dwell 3 s; start from
+    an unlatched monitor.; 2. Apply 80 kPa; verify no occlusion.; 3. Apply 80.1 kPa
+    at t=0 and t=2.99 s; verify dwell has not latched.; 4. Apply 80.1 kPa at t=3 s;
+    verify stop request and critical alarm latch.; 5. Acknowledge at 80.1 kPa; verify
+    latch remains active.; 6. Supply a missing or decreasing-time sample; verify fault
+    and inhibited output. Expected result: With downstream pressure held above 80
+    kPa for 3 s, output is stopped and a critical alarm is latched at the 3 s boundary.
     Exactly 80 kPa does not trigger; invalid samples inhibit output.'
   attributes:
     synthetic: true
     level: system
     preconditions: Reset synthetic bench; valid configuration; event recorder enabled
-    steps: Nominal, boundary and invalid input for occlusion threshold
+    steps: 1. Configure pressure threshold 80 kPa and dwell 3 s; start from an unlatched
+      monitor.; 2. Apply 80 kPa; verify no occlusion.; 3. Apply 80.1 kPa at t=0 and
+      t=2.99 s; verify dwell has not latched.; 4. Apply 80.1 kPa at t=3 s; verify
+      stop request and critical alarm latch.; 5. Acknowledge at 80.1 kPa; verify latch
+      remains active.; 6. Supply a missing or decreasing-time sample; verify fault
+      and inhibited output.
     expected_result: With downstream pressure held above 80 kPa for 3 s, output is
       stopped and a critical alarm is latched at the 3 s boundary. Exactly 80 kPa
       does not trigger; invalid samples inhibit output.

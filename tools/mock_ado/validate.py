@@ -41,6 +41,12 @@ def validate_dataset() -> dict:
             and not nodes[id]["attributes"]["residual_listed"]
         },
         "G11": set(),
+        "G12": {
+            id
+            for id in typed("soup")
+            if id not in incoming("depends_on") | outgoing("depends_on")
+            or not nodes[id]["attributes"].get("known_anomaly_evaluation")
+        },
     }
     for e in edges:
         if e["type"] != "verifies":

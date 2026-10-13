@@ -32,7 +32,10 @@ def blocks(markdown: str) -> list[dict]:
         if line.startswith("|"):
             rows = []
             while True:
-                cells = [c.strip().replace("\\|", "|") for c in re.split(r"(?<!\\)\|", line)[1:-1]]
+                cells = [
+                    re.sub(r"<!--.*?-->", "", c).strip().replace("\\|", "|")
+                    for c in re.split(r"(?<!\\)\|", line)[1:-1]
+                ]
                 if not all(re.fullmatch(r":?-+:?", c) for c in cells):
                     rows.append(cells)
                 if i >= len(lines) or not lines[i].strip().startswith("|"):

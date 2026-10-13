@@ -1,11 +1,11 @@
 ---
 id: design.conventions
-version: 1
+version: 2
 inputs:
 - facts
 - evidence
 output_schema: claims.v1
-max_input_tokens: 6000
+max_input_tokens: 12000
 max_output_tokens: 4000
 ---
 Explain code conventions supported by the source. Missing naming, concurrency or language policy belongs in suggested review questions.

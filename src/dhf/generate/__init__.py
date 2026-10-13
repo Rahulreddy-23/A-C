@@ -61,15 +61,16 @@ def expand_sections(spec: dict, graph: dict) -> list[dict]:
             group.append(pending.pop(0))
         for artifact in sorted(graph["artifacts"], key=lambda a: a["id"]):
             if artifact["type"] == first["repeat"]:
-                for section in group:
+                for group_index, section in enumerate(group):
                     sections.append(
                         {
                             **section,
                             "id": section["id"] + "." + artifact["id"],
-                            "title": section["title"]
-                            + " — "
-                            + artifact["id"]
-                            + (": " + artifact["title"] if artifact["type"] == "component" else ""),
+                            "title": section["title"],
+                            "heading_level": 3,
+                            "group_title": artifact["id"] + ": " + artifact["title"]
+                            if group_index == 0
+                            else None,
                             "entity": artifact["id"],
                         }
                     )
@@ -448,6 +449,12 @@ def generate_document(
         },
     }
     result = assemble(spec, graph, params, sections, context)
+    if doc == "sfmea":
+        from dhf.graph.reviews import risk_gaps
+
+        result["manifest"]["risk_gaps"] = risk_gaps(
+            graph, [c for s in sections for c in s["claims"]]
+        )
     out.mkdir(parents=True, exist_ok=True)
     diagrams = []
     for section in sections:

@@ -20,6 +20,12 @@ def test_all_components_units_allocations_and_local_diagrams(tmp_path: Path) -> 
         assert components <= set(result["manifest"]["component_set"])
         assert not [s for s in result["manifest"]["sections"] if s["status"] == "ai_unavailable"]
     assert all(id in sdd["markdown"] for id in units)
+    assert (
+        "### Purpose" in sdd["markdown"]
+        and "## UNIT-sensor_pressure: sensor_pressure" in sdd["markdown"]
+    )
+    assert "| Name | Kind / bases | Fields |" in sdd["markdown"]
+    assert "G12" in sad["markdown"] and "SOUP-01" in sad["markdown"]
     assert len(expand_sections(load_spec("sdd"), graph)) == 162
     diagram = (tmp_path / "sad.architecture.mmd").read_text()
     assert diagram.startswith("flowchart LR") and "UNIT_sensor_pressure -->" in diagram

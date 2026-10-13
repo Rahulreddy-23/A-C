@@ -152,3 +152,13 @@ uv run dhf consistency
 ```
 
 The local document manifest records its source baseline. `--since` also accepts an ingest snapshot number or UTC timestamp. Direct revision changes and changed query facts are stale; confirmed one-hop neighbors are labelled possibly affected and require review. Regeneration preserves every untouched section's edited Markdown bytes. To get a PR containing only these changes, start from a human-reviewed, merged document baseline. Draft and latest approved baseline consistency are both checked; `--no-baselines` checks local drafts without contacting ADO. Historical SAD v1 deliberately has C01/C04 findings. `watch --cycles 2` gives a finite demonstration run; Ctrl+C stops continuous polling.
+
+Risk analysis and design review drafts:
+
+```sh
+uv run dhf generate drr --input-file data/synthetic/review_input.json --since 1
+uv run dhf generate sfmea --release 1.1
+uv run dhf propose
+```
+
+DRR identity comes from your JSON input (`type`, `date`, `baseline`, `participants`); `--since` selects the previous ingested snapshot for its deterministic scope diff. Discussion, decisions, new actions and approvals remain human fields. sFMEA keeps source severity/controls/verification separate from the suggested analysis cells and human residual-risk assessment. Proposed failure modes do not close F03 until confirmed by a reviewer. L01–L03 proposal files are local suggestions with citations/confidence; they never update ADO. SAD/SDD use grouped navigation headings, readable structure columns and named hazards/controls. G12 identifies missing SOUP requirements or known-anomaly evaluation; the synthetic baseline now has 21 deterministic gaps.

@@ -1,4 +1,4 @@
-spec_version: 1
+spec_version: 2
 params:
   release:
     type: string
@@ -10,7 +10,7 @@ sections:
   title: Design conventions
   mode: ai
   query: runtime_view
-  prompt: design.conventions@1
+  prompt: design.conventions@2
   allowed_kinds:
   - sourced
   - inferred
@@ -18,6 +18,7 @@ sections:
   max_claims: 4
   standard_refs:
   - IEC 62304 5.4
+  synthesis: true
 - id: unit_trace
   title: Software unit traceability
   mode: deterministic
@@ -81,7 +82,9 @@ sections:
   mode: deterministic
   query: unit_structures
   columns:
-    structure: Data structure
+    name: Name
+    bases: Kind / bases
+    fields: Fields
   repeat: software_unit
   standard_refs:
   - IEC 62304 5.4

@@ -20,7 +20,7 @@ def query(graph: dict, name: str, params: dict) -> dict:
         }
         return [nodes[id] for id in sorted(ids | neighbors)]
 
-    results = latest_results(graph, release)
+    results = latest_results(graph, release, params.get("test_level"))
     facts = {}
     if name == "purpose_scope":
         evidence = types("user_need")
@@ -54,9 +54,15 @@ def query(graph: dict, name: str, params: dict) -> dict:
     elif name == "test_results_summary":
         evidence = results
         facts = {
-            "rows": [results_summary(graph, release)],
-            "summary": results_summary(graph, release),
+            "rows": [results_summary(graph, release, params.get("test_level"))],
+            "summary": results_summary(graph, release, params.get("test_level")),
         }
+        if params.get("test_level") and not results:
+            facts["notice"] = (
+                "No explicitly recorded "
+                + params["test_level"]
+                + "-level results exist for this release."
+            )
     elif name == "results_by_requirement":
         rows = rtm(graph, release)
         ids = {r["requirement"] for r in rows} | {v["result"] for r in rows for v in r["results"]}
@@ -69,7 +75,7 @@ def query(graph: dict, name: str, params: dict) -> dict:
         adverse = [a for a in results if a["attributes"]["outcome"] in ("Failed", "Blocked")]
         evidence = linked(adverse)
         facts = {
-            "summary": results_summary(graph, release),
+            "summary": results_summary(graph, release, params.get("test_level")),
             "failed_results": [a["id"] for a in adverse],
             "rows": [
                 {
@@ -115,8 +121,12 @@ def query(graph: dict, name: str, params: dict) -> dict:
             "open_count": len(evidence),
             "residual_ids": [a["id"] for a in evidence if a["attributes"]["residual_listed"]],
         }
-    elif name == "verification_gaps":
-        ids = {f["artifact_id"] for f in gaps(graph) if f["rule"] in ("G01", "G04", "G07", "G11")}
+    elif name in ("verification_gaps", "design_gaps"):
+        ids = {
+            f["artifact_id"]
+            for f in gaps(graph)
+            if name == "design_gaps" or f["rule"] in ("G01", "G04", "G07", "G11")
+        }
         evidence = [nodes[id] for id in sorted(ids)]
         facts = {
             "rows": [f for f in gaps(graph) if f["artifact_id"] in ids],
@@ -128,7 +138,7 @@ def query(graph: dict, name: str, params: dict) -> dict:
         )
         evidence += [a for a in types("defect") if a["attributes"]["state"] != "Closed"]
         facts = {
-            "summary": results_summary(graph, release),
+            "summary": results_summary(graph, release, params.get("test_level")),
             "coverage": coverage(graph, release),
             "gap_count": len(gaps(graph)),
             "gap_findings": [
@@ -152,6 +162,19 @@ def query(graph: dict, name: str, params: dict) -> dict:
     elif name == "rtm":
         evidence = types("software_req", "code_change", "test_case", "test_result")
         facts = {"rows": rtm(graph, release), "coverage": coverage(graph, release)}
+    elif name == "proposal_pack":
+        ids = {params["subject"], *params["unit_ids"]}
+        evidence = [nodes[id] for id in sorted(ids)]
+        facts = {
+            k: v
+            for k, v in params.items()
+            if k in ("subject", "proposal_rule", "unit_ids", "design_context")
+        }
+    elif name.startswith(("drr_", "sfmea_")):
+        from dhf.graph.reviews import review_query
+
+        result = review_query(graph, name, params)
+        facts, evidence = result["facts"], result["evidence"]
     else:
         from dhf.graph.design import design_query
 

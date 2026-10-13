@@ -111,3 +111,10 @@ rules:
   - test_case
   op: outdated_verification
   action: Rerun verification against the current requirement revision.
+- id: G12
+  title: SOUP requirements or known-anomaly evaluation not recorded
+  types:
+  - soup
+  op: soup_requirements
+  action: Record SOUP functional/performance requirements and evaluate its known anomaly
+    list.

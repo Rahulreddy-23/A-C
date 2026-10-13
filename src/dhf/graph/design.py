@@ -197,8 +197,12 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
                 "rows": [
                     {
                         "hazard": a["id"],
+                        "hazard_name": a["title"],
                         "severity": a["attributes"]["severity"],
-                        "controls": [r["id"] for r in relation({a["id"]}, "mitigates", "in")],
+                        "controls": [
+                            {"id": r["id"], "title": r["title"]}
+                            for r in relation({a["id"]}, "mitigates", "in")
+                        ],
                     }
                     for a in of_type("hazard")
                 ]
@@ -238,7 +242,12 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
         elif name == "unit_interfaces":
             facts["rows"] = [{"signature": s} for s in unit["attributes"]["signatures"]]
         elif name == "unit_structures":
-            facts["rows"] = [{"structure": s} for s in unit["attributes"]["data_structures"]]
+            facts["rows"] = [
+                {"name": s["name"], "bases": s["bases"], "fields": s["fields"]}
+                if isinstance(s, dict)
+                else {"name": s.split("=", 1)[0].strip(), "bases": "Module value", "fields": s}
+                for s in unit["attributes"]["data_structures"]
+            ]
         elif name == "unit_allocation":
             items += [*requirements, *controls]
             facts["rows"] = [

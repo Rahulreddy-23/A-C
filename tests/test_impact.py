@@ -26,7 +26,7 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
         store.ingest(before)
         baseline = {
             doc: generate_document(doc, before, {"release": "1.1"}, out=root, llm=llm)
-            for doc in ("sad", "sdd", "sstr")
+            for doc in ("sad", "sdd", "sstr", "sfmea")
         }
         sstr = baseline["sstr"]
         sstr["markdown"] = sstr["markdown"].replace(

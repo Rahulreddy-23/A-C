@@ -18,6 +18,17 @@ def validate_claims(
         if url:
             urls.setdefault(url, set()).add(artifact["id"])
     for index, claim in enumerate(claims):
+        if pack["facts"].get("risk_authoring"):
+            import re
+
+            label = claim["text"].split(":", 1)[0]
+            if label not in pack["facts"]["cell_labels"] or re.search(
+                r"\b(severity|probability|RPN|residual risk)\b", claim["text"], re.I
+            ):
+                events["rejected"].append(
+                    {"claim_index": index, "reason": "risk_authoring_contract"}
+                )
+                continue
         for position, citation in enumerate(claim["citations"]):
             matches = urls.get(citation, set())
             if len(matches) == 1:

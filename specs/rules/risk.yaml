@@ -1,0 +1,10 @@
+rules:
+- id: F01
+  op: missing_control
+  action: Record and trace a risk control for the failure mode.
+- id: F02
+  op: missing_verification
+  action: Record a requirement and verifying test for this control.
+- id: F03
+  op: missing_confirmed_mode
+  action: Review proposed failure modes and record a confirmed analysis for this hazard.

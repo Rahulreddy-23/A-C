@@ -12,7 +12,7 @@ def test_all_gap_rules_exact_answer_key() -> None:
     assert score_findings(gaps(data), expected) == {
         "precision": 1.0,
         "recall": 1.0,
-        "true_positive": 16,
+        "true_positive": 21,
         "false_positive": 0,
         "false_negative": 0,
     }

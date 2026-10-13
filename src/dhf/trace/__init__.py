@@ -134,6 +134,14 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
                     and nodes[e[peer]]["type"] in rule["peer_types"]
                     for e in edges
                 )
+            elif operation == "soup_requirements":
+                flagged = not any(
+                    e["type"] == "depends_on"
+                    and a["id"] in (e["src"], e["dst"])
+                    and nodes[e["dst"] if e["src"] == a["id"] else e["src"]]["type"]
+                    == "software_req"
+                    for e in edges
+                ) or not attrs.get("known_anomaly_evaluation")
             elif operation == "match":
                 flagged = True
             elif operation == "outdated_verification":

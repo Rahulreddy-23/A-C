@@ -1,4 +1,4 @@
-spec_version: 1
+spec_version: 2
 params:
   release:
     type: string
@@ -59,6 +59,7 @@ sections:
   max_claims: 4
   standard_refs:
   - IEC 62304 5.3
+  synthesis: true
 - id: components
   title: Component responsibilities
   mode: deterministic
@@ -151,14 +152,16 @@ sections:
   max_claims: 4
   standard_refs:
   - IEC 62304 5.3
+  synthesis: true
 - id: risk_controls
   title: Architectural risk-control measures
   mode: deterministic
   query: architecture_risks
   columns:
     hazard: Hazard
+    hazard_name: Name
     severity: Source severity
-    controls: Existing controls
+    controls: Existing controls and names
   standard_refs:
   - IEC 62304 5.3
 - id: allocation_matrix
@@ -183,7 +186,7 @@ sections:
 - id: gaps
   title: Open design and verification gaps
   mode: deterministic
-  query: verification_gaps
+  query: design_gaps
   columns:
     rule: Rule
     artifact_id: Artifact

@@ -1,0 +1,2 @@
+L01: Review whether {subject} acceptance criteria are implemented by the recorded code; confirm missing behavior with a test before proposing a change.
+L02: The software shall produce a bounded diagnostic trace summary from recorded events without modifying therapy configuration or delivery state.

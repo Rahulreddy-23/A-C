@@ -1,0 +1,2 @@
+findings: '{rule} flags {artifact_id}: {message}. Recommended review action: {action}'
+checklist: 'What evidence closes {rule} for {artifact_id}, and who will review the proposed disposition?'

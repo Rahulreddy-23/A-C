@@ -156,6 +156,8 @@ def generate(
     db: str = "out/evidence.sqlite",
     open_pr: bool = False,
     debug: bool = False,
+    input_file: str | None = None,
+    since: int | None = None,
 ) -> None:
     """Generate a typed, cited DHF draft from its YAML document specification."""
     from pathlib import Path
@@ -170,7 +172,26 @@ def generate(
         store.close()
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence first")
-    result = generate_document(doc, graph, {"release": release}, provider)
+    params = {"release": release}
+    if input_file:
+        import json
+
+        params["review_input"] = json.loads(Path(input_file).read_text())
+    if doc == "drr":
+        import json
+
+        params["documents"] = [
+            json.loads(p.read_text()) for p in Path("out/documents").glob("*.manifest.json")
+        ]
+        if since is not None:
+            prior = Store(Path(db))
+            try:
+                params["previous_snapshot"] = prior.graph(since)
+            finally:
+                prior.close()
+        if Path("out/impact.json").exists():
+            params["impact_reports"] = json.loads(Path("out/impact.json").read_text())
+    result = generate_document(doc, graph, params, provider)
     report_drafting_failures(result["manifest"]["sections"], debug)
     typer.echo(
         f"{doc}: {len(result['manifest']['sections'])} sections → out/documents/{doc}.md + manifest"
@@ -463,3 +484,25 @@ def watch_command(
                 time.sleep(interval)
     except KeyboardInterrupt:
         typer.echo("Watch stopped")
+
+
+@app.command("propose")
+def propose_command(
+    db: str = "out/evidence.sqlite", documents: str = "out/documents", provider: str = "mock"
+) -> None:
+    """Draft L01–L03 review proposals locally, without source writes."""
+    import json
+    from pathlib import Path
+
+    from dhf.graph import Store
+    from dhf.llm import LLM
+    from dhf.propose import propose
+
+    store = Store(Path(db))
+    try:
+        graph = store.graph()
+    finally:
+        store.close()
+    manifests = [json.loads(p.read_text()) for p in Path(documents).glob("*.manifest.json")]
+    result = propose(graph, manifests, llm=LLM(provider))
+    typer.echo(f"{len(result['sections'])} proposal checks → out/proposals/proposals.md + JSON")

@@ -1,0 +1,60 @@
+id: sfmea
+title: Software Failure Modes and Effects Analysis — Draft
+spec_version: 1
+params:
+  release:
+    required: true
+sections:
+- id: inventory
+  title: Component inventory
+  mode: deterministic
+  query: components
+  columns:
+    id: Component
+    name: Name
+    responsibility: Function
+- id: risk_row
+  title: Risk source and trace
+  mode: deterministic
+  query: sfmea_rows
+  columns:
+    hazard: Hazard
+    hazard_name: Hazard name
+    severity: Source severity
+    components: Components
+    function: Function
+  repeat: hazard
+- id: control_trace
+  title: Controls and verification
+  mode: deterministic
+  query: sfmea_rows
+  columns:
+    hazard: Hazard
+    units: Units
+    controls: Recorded controls
+    requirements: Requirements
+    verification: Verification
+    residual_risk: Residual risk
+  repeat: hazard
+- id: failure_modes
+  title: Proposed failure mode, cause and effects
+  mode: ai
+  query: sfmea_cells
+  prompt: risk.cells@1
+  allowed_kinds:
+  - suggested
+  max_claims: 5
+  synthesis: true
+  repeat: hazard
+  render_claims: table
+- id: risk_acceptance
+  title: Residual-risk assessment and acceptance
+  mode: human
+- id: gaps
+  title: Risk analysis gaps
+  mode: deterministic
+  query: sfmea_gaps
+  columns:
+    rule: Rule
+    artifact: Evidence
+    action: Recommended action

@@ -82,8 +82,6 @@ expected_sections:
       status: stale
       artifacts:
       - RES-3-021
-      - SRS-021
-      - UNIT-sensor_pressure
   sdd:
     conventions:
       status: stale
@@ -291,6 +289,32 @@ expected_sections:
       artifacts:
       - RES-3-021
       - RUN-3
+  sfmea:
+    inventory:
+      status: possibly_affected
+      artifacts:
+      - SRS-021
+      - UNIT-sensor_pressure
+    risk_row.HAZ-01:
+      status: stale
+      artifacts:
+      - UNIT-sensor_pressure
+    control_trace.HAZ-01:
+      status: stale
+      artifacts:
+      - UNIT-sensor_pressure
+    risk_row.HAZ-03:
+      status: stale
+      artifacts:
+      - UNIT-sensor_pressure
+    control_trace.HAZ-03:
+      status: stale
+      artifacts:
+      - UNIT-sensor_pressure
+    gaps:
+      status: stale
+      artifacts:
+      - UNIT-sensor_pressure
 impact_basis: Frozen after inspecting baseline cited revisions and confirmed 1-hop
   edges. Stale also includes changed deterministic query facts; each entry names its
   changed evidence causes. Possibly affected sections are reported but never automatically

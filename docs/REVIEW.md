@@ -12,12 +12,6 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 
 ## Open
 
-**R-012 [non-blocking, revisit in M7] M1 — Expected impacted sections in `change_1` are guesses** (`data/synthetic/scenarios/change_1.yaml`)
-- For example, SAD `interfaces` and `architecture` are listed for a threshold change in one unit.
-- In M7, derive the expected list from the impact rule (sections whose cited revisions include a changed artifact, plus labelled 1-hop "possibly affected"). Annotate each expected section with the artifact that makes it stale, so the impact precision/recall metric is honest.
-
-Resolved in e42e8cb: frozen section/status/cause expectations distinguish cited changes, query-fact changes and one-hop possible impact; watch regression checks exact membership.
-
 **R-013 [non-blocking, by M10] M2 — Test-case steps are one template repeated across all cases** (`data/synthetic/evidence.yaml`, test_case entries)
 - Every case has the same four generic steps ("exercise … with nominal input; challenge its boundary; repeat with invalid input"), and titles end in "— case 0NN".
 - That's acceptable for the SSTR tables. The demo will open a few cases, though, so give 5–6 safety-critical cases specific stimuli and values: TC-021 occlusion, the air-in-line case, the over-infusion bound, the alarm latch/acknowledge case and the drug-limit case.
@@ -37,16 +31,6 @@ Resolved in e42e8cb: frozen section/status/cause expectations distinguish cited 
 - **IDs without names.** The risk-control and SOUP tables show bare IDs (`HAZ-01`, `RC-01`). Add title columns (hazard name, control name) so a reviewer can read them without clicking through.
 - **Missing SOUP requirements.** Every SOUP row says "Recorded requirements: —". Make that a finding rather than a silent dash: add a gap rule, e.g. **G12 "SOUP item has no recorded functional/performance requirements or anomaly-list evaluation"** (IEC 62304 §5.3.3–5.3.4, §7.1.3), and render it in "Open design and verification gaps".
 
-**R-032 [non-blocking — required in M7] M6 — The consistency check can't find the planted stale-SAD issues** (`src/dhf/trace/consistency.py`)
-- `dhf consistency` reports 0 findings because `component_consistency` only compares the graph with **freshly generated** documents, which are consistent by construction.
-- The planted stale-documentation issues sit in the **approved baseline**: C01, where COMP-06 is missing from SAD v1.0, and C04, where SAD v1.0 calls COMP-03 "Pressure Monitoring". These are in `expected_gaps.yaml` but are never detected.
-- **Expected fix (M7):**
-  - Run C01–C04 against the latest approved baseline of each document in the docs repo (tag `sad-v1`, later `<doc>-vN`), as well as the generated drafts.
-  - Score them against the C entries in `expected_gaps.yaml`, alongside G01–G11.
-  - This is the "stale documentation" problem from the brief, so it needs to show up in the demo.
-
-Resolved in e42e8cb: all four consistency checks inspect current drafts and latest approved docs-repo tags; sad-v1 emits C01/COMP-06 and C04/COMP-03. Evaluation scoring follows in M10.
-
 ### Live sample of M6 (OpenAI `gpt-4.1-mini`, run by the reviewer with owner approval; 7 sections, $0.0065, merged into `out/ledger.json`)
 
 - **SDD unit sections are excellent.** All three sections for `UNIT-sensor_pressure` passed validation with no issues and are accurate and code-grounded: threshold plus dwell latch, `PressureDecision` states, the exact fault reasons ("Decreasing sample timestamp"…), and the acknowledge/recovery path. This is the best output so far.
@@ -62,14 +46,60 @@ Resolved in e42e8cb: all four consistency checks inspect current drafts and late
   - **Extract inter-component dependencies from the code deterministically**, via AST imports and calls, e.g. `COMP-03 → COMP-04: sensor_pressure requests alarm_latch.latch()`. Feed them into the overview and runtime packs, and draw them in the R-030 diagram.
   - Make the SDD purpose, behavior and errors prompts distinct (why/what · algorithm · invalid input/recovery). In the live sample, all three repeated the dwell-latch explanation.
 
+Resolved in fd91a5c: distinct component records feed architecture.yaml; AST resolves the pressure-to-alarm latch call; bounded structural facts, ADRs and traced hazard/control context feed design synthesis. Unit purpose/behavior/errors prompts have distinct v2 instructions.
+
+**R-035 [non-blocking, by M10 — demo readability] M7 — "Possibly affected" is noisy: changing one unit flags every sibling unit's sections** (`src/dhf/impact/__init__.py`)
+- After `change_1`, SDD reports **12 stale and 21 possibly affected** sections. All 21 belong to `UNIT-sensor_air`, `sensor_calibration` and `sensor_filter`, reached one hop through `COMP-03`. A reviewer has to clear 21 review flags for code that didn't change.
+- **Expected fix:**
+  - Don't propagate one-hop impact through a **component** node into sibling units' narrative sections. Keep one-hop along requirement ↔ unit/test/control links.
+  - Or collapse siblings in the report: "possibly affected: 3 sibling units of COMP-03 — review optional".
+  - Put a per-document summary (stale / possibly affected counts) at the top of `out/impact.md`. The demo will show this report.
+
+
+## Resolved
+
+### M7 (tag `m7-done` → 3bde3d8; code at e42e8cb) — verdict: **approved**
+
+Verified independently by running the demo flow end to end on the mock ADO in a clean worktree:
+- 55 tests pass; ruff is clean.
+- Steps: generate SSTR, SAD and SDD → `apply-scenario change_1` → re-ingest (3 added, 2 changed) → `dhf impact --since 1` → `dhf regenerate --stale`.
+- **Impact:** SAD 6 stale / 3 possibly affected; SDD 12 / 21; SSTR 9 / 0. **Every section lists its causing artifact and reason** (`cited_revision_changed`, `query_facts_changed`, `one_hop_neighbor via COMP-03`). That's strong, explainable evidence for the demo.
+- **Selective regeneration:** only stale sections were regenerated. Section-level diff against v1:
+  - SSTR: 7 changed.
+  - SAD: 4 changed.
+  - SDD: 10 changed, all inside the `sensor_pressure` unit plus allocation rows that show SRS-021's revision.
+  - All other sections are **byte-identical**.
+  - Stale sections that rendered identically, such as the diagram and risk-control table, are conservative flags, not errors.
+- **Consistency now catches the planted stale baseline:** C01 (`sad-v1` misses COMP-06) and C04 (`sad-v1` names COMP-03 "Pressure Monitoring"). Fresh documents pass.
+- The expanded `generate-section` works.
+- `dhf watch --cycles 1` reports "Evidence unchanged" on a stable graph.
+- *Note on R-012:* the expected-impact fixture is annotated with causing artifacts, and I audited it against the impact rule; each stale entry is justified. It's still derived from the implementation's output, though. In M10, call the impact metric "regression against a reviewer-audited expectation", not independent accuracy.
+
+**R-012 [non-blocking, revisit in M7] M1 — Expected impacted sections in `change_1` are guesses** (`data/synthetic/scenarios/change_1.yaml`)
+- For example, SAD `interfaces` and `architecture` are listed for a threshold change in one unit.
+- In M7, derive the expected list from the impact rule (sections whose cited revisions include a changed artifact, plus labelled 1-hop "possibly affected"). Annotate each expected section with the artifact that makes it stale, so the impact precision/recall metric is honest.
+
+Resolved in e42e8cb: frozen section/status/cause expectations distinguish cited changes, query-fact changes and one-hop possible impact; watch regression checks exact membership.
+- *Reviewer verified at e42e8cb.*
+
+**R-032 [non-blocking — required in M7] M6 — The consistency check can't find the planted stale-SAD issues** (`src/dhf/trace/consistency.py`)
+- `dhf consistency` reports 0 findings because `component_consistency` only compares the graph with **freshly generated** documents, which are consistent by construction.
+- The planted stale-documentation issues sit in the **approved baseline**: C01, where COMP-06 is missing from SAD v1.0, and C04, where SAD v1.0 calls COMP-03 "Pressure Monitoring". These are in `expected_gaps.yaml` but are never detected.
+- **Expected fix (M7):**
+  - Run C01–C04 against the latest approved baseline of each document in the docs repo (tag `sad-v1`, later `<doc>-vN`), as well as the generated drafts.
+  - Score them against the C entries in `expected_gaps.yaml`, alongside G01–G11.
+  - This is the "stale documentation" problem from the brief, so it needs to show up in the demo.
+
+Resolved in e42e8cb: all four consistency checks inspect current drafts and latest approved docs-repo tags; sad-v1 emits C01/COMP-06 and C04/COMP-03. Evaluation scoring follows in M10.
+- *Reviewer verified at e42e8cb.*
+
 **R-034 [non-blocking] M6 — `dhf generate-section` can't target expanded sections** (`src/dhf/cli.py:220-245`)
 - `dhf generate-section sdd purpose.UNIT-sensor_pressure` and `sad component_responsibility.COMP-03` fail with "Unknown section", because the lookup uses `spec["sections"]` instead of `expand_sections(spec, graph)`.
 - That breaks the owner-facing cross-provider check for every per-component and per-unit section. Look the section up after expansion.
 
 
 Resolved in e42e8cb: generate-section resolves IDs after graph-driven expansion.
-
-## Resolved
+- *Reviewer verified at e42e8cb.*
 
 ### M6 (tag `m6-done` → c98915a; code at 6922f61) — verdict: **approved**
 

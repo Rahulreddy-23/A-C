@@ -16,6 +16,7 @@ Current milestone: M12 (done) · Development resumed by owner · Last updated: 2
 | M9 | done | m9-done | e972cb5 | Complete port blueprint; tenant deployment pending |
 | M10 | done | m10-done | ecac18b | Evaluation, clause appendix, YAML extensions, audit export and offline demo |
 | M11 | done | m11-done | 279debf | Native synthetic seeder, read-only discovery and onboarding |
+| M12 | done | m12-done | cbf0a85 implementation | Advisory support, effort assumptions and R-046/R-047 |
 ## Now / Next
 - Working on: M12 governance/telemetry and R-047 seeder safeguards complete.
 - Next: M13 explorer, then M14 demo pack and M15 day-1 kit in order. Real tenant execution remains optional/pending credentials.
@@ -218,3 +219,4 @@ Current milestone: M12 (done) · Development resumed by owner · Last updated: 2
 - R-047: `pytest tests/test_onboarding.py -q -s` → `5 passed in 21.31s`; historical opt-in remains exact fixture parity; default native chronology → graph 248/413, all 21 gaps exact, G11 TC-030 only; rerun zero. Mock rejects readonly dates without bypassRules=true. Foreign work items/repos/runs are listed and refused before mutation; explicit --allow-nonempty dry run remains read-only. No real ADO seeding.
 - `python tools/check_port.py` → 7 flows, 22 rules, 47 queries, 22 prompt tools, reference_contracts pass, tenant_parity pending.
 - Final complete offline suite: `uv run pytest -q` → `82 passed in 105.36s`; ruff check → `All checks passed!`, format → `156 files already formatted`.
+- Review-resolution checkpoint suite → `82 passed in 109.77s`; ruff check/format remain green. R-046/R-047 marked `Resolved in cbf0a85`.

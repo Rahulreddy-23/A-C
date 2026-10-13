@@ -40,6 +40,8 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 - **(b)** The SSTR conclusion had 5 kind coercions, where the model labelled claims `sourced` in a suggested-only section. State "every claim in this section is `suggested`" in the prompt to cut audit noise.
 - **(c)** One numeric rejection each for "3" and "256" in narrative. Check that unit-bearing values quoted from evidence ("3 s") reach `source_numbers`.
 
+Resolved in cbf0a85: compact collaborator evidence, suggested-only conclusion v3 and unit-bearing quantity parsing are covered by regressions; unsupported SHA digits stay rejected.
+
 **R-047 [blocking before any real-ADO seeding — fix within Phase 2, before M15] M11 — The seeder will probably fail on a real ADO org, and it doesn't refuse non-empty projects** (`tools/seed_ado/__init__.py:175-211, 330-346`)
 - **(a) Read-only system dates.** The seeder writes `System.ChangedDate` (the mapped `changed_at` field) on create and on the SRS-030 revision update. On real Azure DevOps, `System.ChangedDate`/`CreatedDate` are read-only unless the request uses `bypassRules=true` **and** the identity has "Bypass rules on work item updates". So the first create will most likely return HTTP 400, and the seeder aborts on any error.
   - Even if dates are dropped, G11 depends on chronology. Work items created "now" would postdate the fixture's October test results, so **every** passed test would look outdated and the answer key would break.
@@ -51,6 +53,7 @@ The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `
 - **(b) No non-empty-project guard.** The docs say "never seed an existing production project", but the code doesn't enforce it.
   - **Expected fix:** refuse to seed if the project contains any work items without `DHF:` identity tags, or any repos or runs not created by the seeder, unless `--allow-nonempty` is passed explicitly. Print what was found.
 
+Resolved in cbf0a85: default readonly-date-free chronology preserves exact gaps including only TC-030 G11; historical dates require --bypass-rules. Foreign work-item/repo/run inventory refuses before writes unless --allow-nonempty. Both modes, idempotence and guards pass offline; real tenant checks remain pending.
 
 ## Resolved
 

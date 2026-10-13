@@ -25,16 +25,30 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 - BUG-03's body says "residual-anomaly listing is intentionally missing", and a unit is named `diagnostics_orphan`. Both appear in generated documents the judges will read.
 - Rewrite them as natural engineering text and rename the module (e.g. `diagnostics_trace.py`). Update the answer key and IDs consistently, and re-run the validator.
 
-### M5 review (tag `m5-done`, 7fa1078) — verdict: **changes required**
+**R-029 [non-blocking, before M10 demo script] M5 — The anomaly section's completeness depends on the model; offline, the demo's new failure is missing** (`specs/documents/sstr.yaml` anomaly_assessment, `src/dhf/llm/adapters/mock.py`)
+- After `change_1`, release 1.1 has two failures: `RES-2-008` and `RES-3-021` (the occlusion test, with no linked defect). The query facts list both correctly.
+- With the mock adapter, though, "Failed tests and anomaly assessment" only discusses TC-008/BUG-01, because the mock emits the first three evidence bodies. So the offline `scripts/demo.sh` won't show the key new failure there.
+- **Expected fix:**
+  - Open the section with a **deterministic table of every failed or blocked result**: result, test case, requirement, linked defect, or "none — see G05". Completeness then never depends on the model, and the AI narrative follows the table.
+  - Also make the mock produce one claim per `facts.failed_results` entry, so the offline narrative is representative.
 
-Verified independently by running the full workflow end to end against the mock ADO on port 8099, in a clean worktree, with the mock LLM:
-- 45 tests pass; ruff is clean.
-- `ingest --source ado`, then `generate sstr --open-pr`, creates docs-repo PR 8 on branch `dhf/sstr/1.1/<ts>` containing `sstr.md`, `sstr.docx` and `sstr.manifest.json`.
-- The PR description lists sections, claim counts and gaps. A `DHF review readiness` status is posted as `failed` with "9 unresolved draft blockers".
-- `dhf check sstr` exits 1 with `ready: false`.
-- The fresh DOCX has 0 tracked changes, which is correct with no baseline. It has 507 hyperlinks and 12 highlights.
+## Resolved
 
-The workflow plumbing is solid. Two blocking defects show up as soon as the demo change is applied: I applied `mock-ado apply-scenario change_1`, re-ingested, regenerated, and rendered `render_docx(v2, baseline=v1)`.
+### M5 re-review (tag `m5-done` → 0b01407; fixes in 18ee5e8) — verdict: **approved**
+
+I re-ran the identical end-to-end scenario on the mock ADO in a clean worktree:
+- 52 tests pass; ruff check and format are clean.
+- Steps: generate v1 → `apply-scenario change_1` → re-ingest (3 added, 2 changed) → regenerate v2 → `render_docx(v2, baseline=v1)`.
+- **Redline: 46/737 paragraphs and 15/175 rows changed**, down from 1,376/1,401 and 342/344. Every changed row is a real change:
+  - SRS-021 r1 → r2.
+  - RUN-3 and RES-3-021 added.
+  - Results summary 39/1 → 38/2.
+  - TC-021 Passed → Failed.
+  - A new G11 finding for TC-021.
+  - The eight requirement rows that list `UNIT-sensor_pressure` change, now visibly, because unit revisions show as `UNIT-…@<sha>`.
+- 30 insertions, 16 deletions, **7 comments** (previously 377).
+- After the change, **no `ai_unavailable` sections**; the conclusion regenerates under the 12k synthesis budget.
+- `dhf gaps` correctly adds G05 for RES-3-021 and G11 for TC-021, giving 18 findings in total.
 
 **R-025 [blocking — fix before more M6 work; M7 builds on it] M5 — The redline marks almost the whole document as changed** (`src/dhf/render/__init__.py:21-68`)
 - The change touched one requirement (SRS-021 r1→r2), one unit, one new PR and one failed run. The rendered redline had **694 insertions and 682 deletions, with 342 of 344 table rows and 1,376 of 1,401 paragraphs marked as changed**.
@@ -74,8 +88,6 @@ Resolved in 18ee5e8: comments restricted to inferred/suggested/manual review ite
 - Keep the shared footer generic, move section-specific instructions into each prompt body, and bump the prompt versions so the cache invalidates.
 
 Resolved in 18ee5e8: conclusion-only instructions moved to the conclusion body; shared footer is generic. All four SSTR prompts bumped to version 2 and document prompt references updated.
-
-## Resolved
 
 ### Pre-M6 fixes (resolved in 4c29a5f, checked during the M5 review)
 

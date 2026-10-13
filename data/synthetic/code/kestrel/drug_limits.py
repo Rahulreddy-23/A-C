@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-05
-# Implements: SRS-005, SRS-011, SRS-017, SRS-029
+# Implements: SRS-007, SRS-018
 import math
 from dataclasses import dataclass
 

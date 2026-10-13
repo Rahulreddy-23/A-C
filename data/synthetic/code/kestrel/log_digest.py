@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-06
-# Implements: SRS-006, SRS-012, SRS-018, SRS-024, SRS-030
+# Implements: SRS-025
 import hashlib
 
 

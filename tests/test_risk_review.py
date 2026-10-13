@@ -119,3 +119,26 @@ def test_safety_cases_have_concrete_stimuli():
     ]:
         assert stimulus in nodes[id]["body"]
         assert "case 0" not in nodes[id]["title"]
+
+
+def test_risk_trace_follows_hazard_function_instead_of_index():
+    graph = ingest_fixtures()
+    rows = {r["hazard"]: r for r in risk_rows(graph)}
+    assert set(rows["HAZ-04"]["requirements"]) == {
+        "SRS-009",
+        "SRS-012",
+        "SRS-021",
+        "SRS-022",
+        "SRS-023",
+    }
+    assert {"UNIT-sensor_pressure", "UNIT-sensor_filter", "UNIT-alarm_latch"} <= set(
+        rows["HAZ-04"]["units"]
+    )
+    assert "TC-021" in rows["HAZ-04"]["verification"]
+    assert rows["HAZ-06"]["requirements"] == ["SRS-018", "SRS-019", "SRS-020"]
+    assert rows["HAZ-07"]["requirements"] == ["SRS-024", "SRS-025", "SRS-033"]
+    assert rows["HAZ-08"]["requirements"] == ["SRS-029", "SRS-030"]
+    from dhf.trace import gaps
+
+    assert [f["artifact_id"] for f in gaps(graph) if f["rule"] == "G06"] == ["RC-12"]
+    assert [f["artifact_id"] for f in gaps(graph) if f["rule"] == "G07"] == ["SRS-012"]

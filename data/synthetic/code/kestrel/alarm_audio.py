@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-04
-# Implements: SRS-004, SRS-010, SRS-016, SRS-028
+# Implements: SRS-014
 def audible(critical: bool, muted: bool) -> bool:
     return critical and not muted
 

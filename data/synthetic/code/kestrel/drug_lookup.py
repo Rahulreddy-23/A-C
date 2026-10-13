@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-05
-# Implements: SRS-005, SRS-011, SRS-017, SRS-029
+# Implements: SRS-019, SRS-020
 def lookup(library: dict, key: str) -> dict:
     if key not in library:
         raise KeyError(key)

@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-03
-# Implements: SRS-003, SRS-009, SRS-015, SRS-021, SRS-022, SRS-023, SRS-027, SRS-033
+# Implements: SRS-009, SRS-021
 import math
 from dataclasses import dataclass
 from enum import StrEnum

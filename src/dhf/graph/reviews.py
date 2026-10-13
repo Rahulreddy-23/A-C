@@ -130,6 +130,7 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
                         "Recommended action",
                     ],
                     "hazard": params["entity"],
+                    "source_revisions": {a["id"]: a["source"]["revision"] for a in evidence},
                 },
                 "evidence": evidence,
             }

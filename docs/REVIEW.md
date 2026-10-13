@@ -12,13 +12,6 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
 
 ## Open
 
-**R-013 [non-blocking, by M10] M2 — Test-case steps are one template repeated across all cases** (`data/synthetic/evidence.yaml`, test_case entries)
-- Every case has the same four generic steps ("exercise … with nominal input; challenge its boundary; repeat with invalid input"), and titles end in "— case 0NN".
-- That's acceptable for the SSTR tables. The demo will open a few cases, though, so give 5–6 safety-critical cases specific stimuli and values: TC-021 occlusion, the air-in-line case, the over-infusion bound, the alarm latch/acknowledge case and the drug-limit case.
-- Keep IDs and links unchanged.
-
-Resolved in b82108b: six safety-critical cases have distinct stimuli/boundaries/recovery steps; IDs and links retained and exact dataset validation passes.
-
 **R-030 [non-blocking, by M10 — demo impact] M6 — The architecture diagram is Mermaid source only, so the Word SAD shows a code listing, not a diagram** (`out/documents/sad.architecture.mmd`, SAD `architecture` section)
 - No local Mermaid or Graphviz renderer exists, so the DOCX gets a monospace block of `flowchart LR …`. A rendered architecture figure is one of the most visible parts of a SAD for reviewers and judges.
 - **Expected fix:**
@@ -27,6 +20,94 @@ Resolved in b82108b: six safety-critical cases have distinct stimuli/boundaries/
   - Keep the Mermaid source in the Markdown (ADO's markdown preview can render it) and the checksum in the manifest.
   - Never use an online renderer.
 
+### M8 review (tag `m8-done`, de780a7) — verdict: **approved with one blocking-before-M10 data fix**
+
+**R-036 [blocking — fix before starting M10] M8 — Hazard → risk control → requirement links are paired by index, so the risk traceability is clinically wrong** (`data/synthetic/evidence.yaml` hazards, risk_control and `mitigates`/`implements` links)
+- Each `HAZ-0n` is paired with `RC-0n`, and each `RC-0n` is just "Control n: <title of SRS-00n>":
+
+  | Hazard | Control (requirement) |
+  |---|---|
+  | HAZ-03 Air delivery | Start interlock, Alarm priority |
+  | HAZ-04 **Undetected occlusion** | **Pause control** (SRS-004), plus the unrealised Alarm latch |
+  | HAZ-05 Alarm unavailable | Stop control |
+  | HAZ-06 Incorrect drug limit | Rate conversion |
+  | HAZ-07 Lost audit evidence | Dose calculation |
+  | HAZ-08 Unintended restart | Air detection |
+  | HAZ-01 Over infusion | Flow bounds, but also Pressure sampling |
+
+- So the occlusion hazard is allocated to the **Alarm Manager** (COMP-04, `alarm_*` units) and never reaches SRS-021 (occlusion threshold), `UNIT-sensor_pressure` or TC-021. The bad mapping flows into the sFMEA, the SAD's "Architectural risk-control measures" and the new structural facts (`hazard_controls`) that feed SAD prose.
+- QA/RA judges will spot this immediately, and a wrong hazard–control trace is worse than none.
+- It also weakens the main demo: `change_1` edits the occlusion requirement, but the sFMEA occlusion block doesn't depend on it.
+- **Expected fix:** re-map controls to the requirements and units that actually implement them, and give controls real names:
+
+  | Hazard | Requirements | Units |
+  |---|---|---|
+  | Over infusion | SRS-001/002/028 | `infusion_bounds/volume` |
+  | Under infusion | SRS-006/008 | as appropriate |
+  | Air delivery | SRS-008 | `sensor_air` |
+  | **Undetected occlusion** | **SRS-021/022 + SRS-012 latch** | **`sensor_pressure/filter`, `alarm_latch`** |
+  | Alarm unavailable | SRS-011–014 | `alarm_*` |
+  | Incorrect drug limit | SRS-018–020 | `drug_*` |
+  | Lost audit evidence | SRS-024/025/033 | `log_*` |
+  | Unintended restart | SRS-029/030 | watchdog / power-loss |
+
+  - Use real control names, e.g. "Sustained-pressure occlusion detection with latched critical alarm", not "Control n: …".
+  - Set `risk_control: true` on the realising SRS.
+  - Keep the planted G06 (one unrealised control) and G07 (one unverified risk-control requirement), reassigning them if needed.
+  - Update `expected_gaps.yaml` and the `change_1` impact expectations. After the fix, `change_1` should correctly make the **occlusion sFMEA block** stale, which strengthens the demo.
+  - Re-run the validator, goldens and the change regression.
+
+**R-037 [non-blocking, strongly recommended before M10] M8 — The sFMEA runs top-down from hazards, one guessed failure mode per hazard; reviewers expect bottom-up rows** (`specs/documents/sfmea.yaml`, `src/dhf/graph/design.py`)
+- Today each hazard gets one `[Suggested]` "Failure mode: <hazard name>". That's a hazard analysis, not an FMEA. With the mock, "Local effect" also repeats "Cause".
+- A software FMEA is expected to work **per safety-relevant unit function**, using the extracted interfaces (e.g. `PressureMonitor.evaluate`):
+  - 1–3 failure modes each (fails to detect, false detection, delayed detection)
+  - local effect → system effect → hazard
+  - **severity from the source**
+  - existing controls and detection (requirements, tests)
+  - residual risk left for a human
+- **Expected fix:** add that row table for Class C units, which bounds the cost, and keep the hazard-level view as a summary that links back to the rows. Make the mock emit distinct cells.
+
+**R-038 [non-blocking] M8 — DRR pre-review findings skip the most review-relevant items** (`specs/documents/drr.yaml`, `src/dhf/graph/queries.py`)
+- The 5-claim cap shows only G01×4 and G02×1. It omits **C01/C04 for the very baseline under review (`sad-v1`)**, G05 (a failed result with no defect) and the risk-control gaps G06/G07.
+- **Expected fix:**
+  - Start with a deterministic findings table: every rule, with count and links.
+  - Order the AI suggestions by safety relevance: stale baseline and risk-control gaps first, then failed tests, then coverage.
+  - The empty "Changed evidence since baseline" section should say "No changes since sad-v1 (snapshot 1)" instead of rendering blank.
+  - ACT-01–04 descriptions are placeholders ("Review action N"); give them real content.
+
+**R-039 [non-blocking] M8 — L01 produces 35 identical "review whether…" proposals** (`src/dhf/cli.py` propose, `specs/prompts`)
+- The planted SRS-034/035 (not implemented) look the same as the implemented requirements, so the proposals file is noise.
+- **Expected fix:**
+  - Pre-screen deterministically: G02 requirements are reported as "no implementing change" without the LLM.
+  - Send only requirements *with* linked code to the model, comparing acceptance criteria to the unit code.
+  - Emit a proposal only when a likely gap is found, with its confidence.
+
+
+## Resolved
+
+### M8 (tag `m8-done`, de780a7; R-033 in fd91a5c) — verdict: **approved; R-036 must be fixed before M10**
+
+Verified independently in a clean worktree:
+- 59 tests pass; ruff is clean.
+- `generate sfmea` produced 27 sections, `generate drr --input-file …` 9 sections and `propose` 42 checks, all with 0 validation events.
+- **sFMEA governance is correct:**
+  - Severity is copied only from the risk file.
+  - All AI cells are `[Suggested]` with confidence.
+  - Residual risk is "Human assessment required".
+  - A regression rejects risk-rating text in AI cells.
+  - Gaps F01–F03 are listed.
+- **The DRR invents nothing:** identity comes exactly from `review_input.json`, and discussion, decisions, new actions and approvals are human placeholders.
+- G12 for SOUP is added (`rules: 12`), and the answer key is still exact.
+- Content problems: R-036 (blocking before M10) and R-037–R-039.
+
+**R-013 [non-blocking, by M10] M2 — Test-case steps are one template repeated across all cases** (`data/synthetic/evidence.yaml`, test_case entries)
+- Every case has the same four generic steps ("exercise … with nominal input; challenge its boundary; repeat with invalid input"), and titles end in "— case 0NN".
+- That's acceptable for the SSTR tables. The demo will open a few cases, though, so give 5–6 safety-critical cases specific stimuli and values: TC-021 occlusion, the air-in-line case, the over-infusion bound, the alarm latch/acknowledge case and the drug-limit case.
+- Keep IDs and links unchanged.
+
+Resolved in b82108b: six safety-critical cases have distinct stimuli/boundaries/recovery steps; IDs and links retained and exact dataset validation passes.
+- *Reviewer verified at m8-done:* TC-021 is now titled "Verify occlusion threshold" and safety cases carry explicit stimuli.
+
 **R-031 [non-blocking, by M10] M6 — SAD and SDD readability** (`specs/documents/sad.yaml`, `sdd.yaml`, `specs/templates/section.md.j2`)
 - **Headings.** The SDD has 162 flat H2 headings ("Purpose — UNIT-x", "Behavior — UNIT-x"…). Use one H2 per unit with H3 subsections, so the Word navigation pane and table of contents stay usable. Do the same for SAD component sections.
 - **Data-structure table.** Each cell is a key-sorted blob ("bases: StrEnum; fields: …; name: PressureState"). Use columns: Name | Kind/bases | Fields.
@@ -34,11 +115,7 @@ Resolved in b82108b: six safety-critical cases have distinct stimuli/boundaries/
 - **Missing SOUP requirements.** Every SOUP row says "Recorded requirements: —". Make that a finding rather than a silent dash: add a gap rule, e.g. **G12 "SOUP item has no recorded functional/performance requirements or anomaly-list evaluation"** (IEC 62304 §5.3.3–5.3.4, §7.1.3), and render it in "Open design and verification gaps".
 
 Resolved in b82108b: H2 entity groups/H3 subsections, structured data columns, hazard/control names and G12 SOUP gaps appear in the design documents; golden/coverage tests pass.
-
-### Live sample of M6 (OpenAI `gpt-4.1-mini`, run by the reviewer with owner approval; 7 sections, $0.0065, merged into `out/ledger.json`)
-
-- **SDD unit sections are excellent.** All three sections for `UNIT-sensor_pressure` passed validation with no issues and are accurate and code-grounded: threshold plus dwell latch, `PressureDecision` states, the exact fault reasons ("Decreasing sample timestamp"…), and the acknowledge/recovery path. This is the best output so far.
-- **SAD context is decent.** It properly marks the missing interface protocols as `suggested`.
+- *Reviewer verified at m8-done:* the SDD now has 22 H2 and 160 H3 headings, structure tables have columns, and risk tables include names. *Minor:* the sFMEA controls cell still renders as an "id: …; title: …" blob.
 
 **R-033 [non-blocking, before M8] M6 — SAD synthesis sections just restate component boilerplate** (`data/synthetic/evidence.yaml` components, `src/dhf/graph/design.py`, `specs/prompts/design.*.md`)
 - `architecture_overview`, `component_responsibility.*` and `runtime` mostly repeat one sentence per component: "owns X, exposes explicit inputs and outputs, reports faults to the control path, must retain validated state…".
@@ -51,6 +128,7 @@ Resolved in b82108b: H2 entity groups/H3 subsections, structured data columns, h
   - Make the SDD purpose, behavior and errors prompts distinct (why/what · algorithm · invalid input/recovery). In the live sample, all three repeated the dwell-latch explanation.
 
 Resolved in fd91a5c: distinct component records feed architecture.yaml; AST resolves the pressure-to-alarm latch call; bounded structural facts, ADRs and traced hazard/control context feed design synthesis. Unit purpose/behavior/errors prompts have distinct v2 instructions.
+- *Reviewer verified at m8-done:* SAD packs now carry `hazard_controls`, `unit_allocation` and dependency facts. The hazard–control facts inherit the R-036 data error.
 
 **R-035 [non-blocking, by M10 — demo readability] M7 — "Possibly affected" is noisy: changing one unit flags every sibling unit's sections** (`src/dhf/impact/__init__.py`)
 - After `change_1`, SDD reports **12 stale and 21 possibly affected** sections. All 21 belong to `UNIT-sensor_air`, `sensor_calibration` and `sensor_filter`, reached one hop through `COMP-03`. A reviewer has to clear 21 review flags for code that didn't change.
@@ -61,8 +139,7 @@ Resolved in fd91a5c: distinct component records feed architecture.yaml; AST reso
 
 
 Resolved in b82108b: impact Markdown starts with document counts and collapses sibling subsection flags into three optional unit groups; these do not block readiness.
-
-## Resolved
+- *Reviewer verified at m8-done:* `impact.md` starts with per-document counts, and sibling units are grouped as optional.
 
 ### M7 (tag `m7-done` → 3bde3d8; code at e42e8cb) — verdict: **approved**
 

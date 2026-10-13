@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-04
-# Implements: SRS-004, SRS-010, SRS-016, SRS-028
+# Implements: SRS-012, SRS-013
 from dataclasses import dataclass
 from enum import IntEnum
 

@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-02
-# Implements: SRS-002, SRS-008, SRS-014, SRS-020, SRS-026, SRS-032
+# Implements: SRS-002, SRS-028
 def target_reached(delivered: float, target: float) -> bool:
     return delivered >= target
 

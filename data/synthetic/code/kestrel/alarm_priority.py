@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-04
-# Implements: SRS-004, SRS-010, SRS-016, SRS-028
+# Implements: SRS-011
 def highest(alarms: list[dict]) -> dict | None:
     return max(alarms, key=lambda a: a["priority"], default=None)
 

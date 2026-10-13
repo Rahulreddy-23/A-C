@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-02
-# Implements: SRS-002, SRS-008, SRS-014, SRS-020, SRS-026, SRS-032
+# Implements: SRS-006
 def pulse_interval(rate: float, pulses_per_ml: int) -> float:
     if rate <= 0 or pulses_per_ml <= 0:
         raise ValueError("Positive rate and calibration required")

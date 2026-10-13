@@ -29,7 +29,7 @@ def test_fixture_http_graph_parity_and_exact_changes(ado_server, tmp_path: Path)
         assert semantic(before) == semantic(fixtures)
         store = Store(tmp_path / "evidence.sqlite")
         first = store.ingest(before)
-        assert first["artifacts"] == 248 and first["links"] == 473
+        assert first["artifacts"] == 248 and first["links"] == 413
         assert store.ingest(before)["changed"] == []
         apply_scenario("change_1", ado_server.root)
         after = ado.ingest(tmp_path / "clones")

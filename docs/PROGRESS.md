@@ -159,3 +159,9 @@ Current milestone: M8 (done) · Development resumed by owner · Last updated: 20
 - R-031: grouped H2 navigation and H3 subsections, name/bases/fields structure table, hazard/control names, and G12 regression all pass. R-035: impact Markdown starts with per-document counts and groups the 21 possible sibling subsections into three optional unit rows.
 - Local LibreOffice rendered and inspected every page: sFMEA nine landscape pages; final DRR two pages. Suggested cells are visibly highlighted and source tables remain separate. Desktop Word UI remains pending.
 - The exact native watch/approved-baseline/regeneration regression now covers SAD, SDD, SSTR and sFMEA. All untouched section bytes and owner edits survive. Frozen expected causes include the new risk document.
+
+### M8 follow-up R-036 before M10
+- Corrected all risk bundles and requirement/component/unit/PR annotations by their actual functions. `python -m mock_ado.validate` → `248 artifacts, 413 links, answer_key exact, rules 12`. Removed spurious rotated implementation links; IDs remain stable.
+- G06 remains RC-12 (independent pressure plausibility control); G07 remains SRS-012. G01's missing audit-export case was reassigned from a duplicate case, leaving SRS-032 as the planted non-risk verification gap. Hand-checked RTM and deterministic SSTR golden changed accordingly.
+- Data/trace/generation/risk targeted run: 27 passing checks; the watcher initially failed against an accidentally already-changed inspection baseline. Corrected the frozen baseline and reran `pytest tests/test_impact.py -q` → `2 passed in 23.79s`; ruff → `All checks passed!`.
+- Reviewed frozen change_1 causes: `risk_row.HAZ-04`, `control_trace.HAZ-04` stale from SRS-021/UNIT-sensor_pressure; `failure_modes.HAZ-04` stale also from new RES-3-021. Risk drafting now records its evidence revision dependencies. The native approved-baseline/watch/selective-redline regression passes with untouched bytes preserved.

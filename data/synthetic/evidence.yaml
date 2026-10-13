@@ -206,7 +206,7 @@ artifacts:
     acceptance_criteria: Rates 0.01 and 120 mL/h are accepted under a 120 mL/h maximum;
       zero, negative, non-finite and 120.01 mL/h are rejected without configuration
       change.
-    component: COMP-01
+    component: COMP-02
     risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -242,7 +242,7 @@ artifacts:
     acceptance_criteria: Start with missing configuration or an active sensor fault
       returns inhibited output and records a fault; start with valid settings enters
       RUNNING.
-    component: COMP-03
+    component: COMP-02
     risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -259,8 +259,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Pausing a running session returns zero commanded output on
       the next tick and preserves accumulated delivered volume.
-    component: COMP-04
-    risk_control: true
+    component: COMP-02
+    risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -276,8 +276,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Stopping a session returns zero output on every subsequent
       tick; delivered volume and the stop event remain available.
-    component: COMP-05
-    risk_control: true
+    component: COMP-02
+    risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -293,7 +293,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: At 60 mL/h and 60 pulses/mL the pulse interval is 1 s; nonpositive
       rate or calibration raises ValueError.
-    component: COMP-06
+    component: COMP-02
     risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -310,8 +310,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: For a dose of 2 units and concentration of 4 units/mL, the
       calculated volume is 0.5 mL; zero concentration is rejected.
-    component: COMP-01
-    risk_control: true
+    component: COMP-05
+    risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -328,7 +328,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: An air reading above the configured limit stops output and
       latches an alarm; a missing or disconnected sample has the same inhibited outcome.
-    component: COMP-02
+    component: COMP-03
     risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -362,7 +362,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: Disconnecting a sensor produces a retained fault; reconnecting
       alone cannot clear it without an explicit safe acknowledgement.
-    component: COMP-04
+    component: COMP-03
     risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -379,7 +379,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: Given advisory, warning and critical events, the selected
       visible event has critical priority; ties use stable code order.
-    component: COMP-05
+    component: COMP-04
     risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -397,7 +397,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: A critical alarm remains active after acknowledgement while
       unsafe is true; it clears only after safe state and acknowledgement.
-    component: COMP-06
+    component: COMP-04
     risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -415,8 +415,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Every acknowledgement appends an event containing the code
       and active state; acknowledging an unknown code raises KeyError.
-    component: COMP-01
-    risk_control: false
+    component: COMP-04
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -433,8 +433,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: A critical active latch schedules an audible pulse at the
       configured interval; expired mute requests resume the scheduled pulse.
-    component: COMP-02
-    risk_control: false
+    component: COMP-04
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -450,7 +450,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: Status returns the current mode and delivered volume; a negative
       displayed volume is clamped to zero and never changes control state.
-    component: COMP-03
+    component: COMP-01
     risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -467,7 +467,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: Input text for a finite rate inside configured bounds is
       accepted; empty, malformed, negative and out-of-bounds text is rejected.
-    component: COMP-04
+    component: COMP-01
     risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -485,8 +485,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Rejecting a configuration confirmation preserves the previous
       settings byte-for-byte; accepting returns a copy of the proposed validated settings.
-    component: COMP-05
-    risk_control: false
+    component: COMP-01
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -502,8 +502,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Doses exactly at configured minimum and maximum are accepted;
       values below minimum or above maximum are rejected before volume calculation.
-    component: COMP-06
-    risk_control: false
+    component: COMP-05
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -519,8 +519,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Lookup of a known drug key returns an independent record
       copy; missing keys raise KeyError and never return a default drug.
-    component: COMP-01
-    risk_control: false
+    component: COMP-05
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -536,8 +536,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Modifying any serialized library entry changes the expected
       checksum; a mismatched checksum prevents library activation.
-    component: COMP-02
-    risk_control: false
+    component: COMP-05
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -555,7 +555,7 @@ artifacts:
       is stopped and a critical alarm is latched at the 3 s boundary. Exactly 80 kPa
       does not trigger; invalid samples inhibit output.
     component: COMP-03
-    risk_control: false
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -573,7 +573,7 @@ artifacts:
     acceptance_criteria: A filter window of 3 retains at most 3 valid values; input
       [10, 20, 30] yields 20, and an invalid sample leaves the window unchanged.
     component: COMP-03
-    risk_control: false
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -590,7 +590,7 @@ artifacts:
     acceptance_criteria: A reading of 10 with offset 2 yields 12 under unit gain;
       a non-finite calibration or nonpositive gain is rejected before activation.
     component: COMP-03
-    risk_control: false
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -607,7 +607,7 @@ artifacts:
     acceptance_criteria: Appending ordered events preserves insertion order and event
       content; a decreasing timestamp is rejected without altering existing records.
     component: COMP-06
-    risk_control: false
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -623,8 +623,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Changing one byte in a recorded payload changes its SHA256
       digest; verification against the original digest returns false.
-    component: COMP-01
-    risk_control: false
+    component: COMP-06
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -640,7 +640,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: 'A frame begins with KIC: and ends with a newline; missing
       header, terminator, oversized or empty payload is rejected.'
-    component: COMP-02
+    component: COMP-06
     risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -657,7 +657,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: A response age equal to the configured timeout is not overdue;
       an age greater than the timeout signals a retained communication fault.
-    component: COMP-03
+    component: COMP-06
     risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -674,8 +674,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: At 60 mL/h over 60 s, commanded delivered volume increases
       by 1 mL while running; paused or inhibited sessions deliver zero.
-    component: COMP-04
-    risk_control: false
+    component: COMP-02
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -691,8 +691,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: A heartbeat older than the configured expiry inhibits output;
       backwards or non-finite clock input raises a fault.
-    component: COMP-05
-    risk_control: false
+    component: COMP-06
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -708,8 +708,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Restart begins STOPPED with output inhibited; a stored configuration
       is applied only after complete bounds and checksum validation.
-    component: COMP-06
-    risk_control: false
+    component: COMP-02
+    risk_control: true
     revision: 2
     changed_at: '2026-10-04T12:00:00Z'
     requirement_history:
@@ -727,7 +727,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: Appending timestamp 9 after timestamp 10 raises ValueError
       and preserves the prior event sequence.
-    component: COMP-01
+    component: COMP-06
     risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -744,7 +744,7 @@ artifacts:
     synthetic: true
     acceptance_criteria: Every known residual anomaly has its ID, state and impact
       visible in the review input; an unlisted open defect is reported as a gap.
-    component: COMP-02
+    component: COMP-01
     risk_control: false
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
@@ -761,8 +761,8 @@ artifacts:
     synthetic: true
     acceptance_criteria: Exporting selected audit records preserves source order and
       content hashes; records outside the selected interval are excluded.
-    component: COMP-03
-    risk_control: false
+    component: COMP-06
+    risk_control: true
     revision: 1
     changed_at: '2026-09-20T12:00:00Z'
     requirement_history:
@@ -907,121 +907,86 @@ artifacts:
     safety_class: C
 - id: RC-01
   type: risk_control
-  title: 'Control 1: Flow bounds'
-  body: Enforce flow bounds in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Bounded infusion rate and delivered volume
+  body: The software shall provide bounded infusion rate and delivered volume.
   attributes:
     synthetic: true
     hazard: HAZ-01
 - id: RC-02
   type: risk_control
-  title: 'Control 2: Volume limit'
-  body: Enforce volume limit in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Calibrated pulse scheduling and air-in-line inhibition
+  body: The software shall provide calibrated pulse scheduling and air-in-line inhibition.
   attributes:
     synthetic: true
     hazard: HAZ-02
 - id: RC-03
   type: risk_control
-  title: 'Control 3: Start interlock'
-  body: Enforce start interlock in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Air-in-line detection and inhibited delivery
+  body: The software shall provide air-in-line detection and inhibited delivery.
   attributes:
     synthetic: true
     hazard: HAZ-03
 - id: RC-04
   type: risk_control
-  title: 'Control 4: Pause control'
-  body: Enforce pause control in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Sustained-pressure occlusion detection with latched critical alarm
+  body: The software shall provide sustained-pressure occlusion detection with latched
+    critical alarm.
   attributes:
     synthetic: true
     hazard: HAZ-04
 - id: RC-05
   type: risk_control
-  title: 'Control 5: Stop control'
-  body: Enforce stop control in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Prioritised latched audible alarms and safe acknowledgement
+  body: The software shall provide prioritised latched audible alarms and safe acknowledgement.
   attributes:
     synthetic: true
     hazard: HAZ-05
 - id: RC-06
   type: risk_control
-  title: 'Control 6: Rate conversion'
-  body: Enforce rate conversion in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Validated drug limits, lookup and library integrity
+  body: The software shall provide validated drug limits, lookup and library integrity.
   attributes:
     synthetic: true
     hazard: HAZ-06
 - id: RC-07
   type: risk_control
-  title: 'Control 7: Dose calculation'
-  body: Enforce dose calculation in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Ordered tamper-evident audit recording and export
+  body: The software shall provide ordered tamper-evident audit recording and export.
   attributes:
     synthetic: true
     hazard: HAZ-07
 - id: RC-08
   type: risk_control
-  title: 'Control 8: Air detection'
-  body: Enforce air detection in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Watchdog inhibition and validated power-loss recovery
+  body: The software shall provide watchdog inhibition and validated power-loss recovery.
   attributes:
     synthetic: true
     hazard: HAZ-08
 - id: RC-09
   type: risk_control
-  title: 'Control 9: Pressure sampling'
-  body: Enforce pressure sampling in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Validated pressure samples and calibration
+  body: The software shall provide validated pressure samples and calibration.
   attributes:
     synthetic: true
-    hazard: HAZ-01
+    hazard: HAZ-04
 - id: RC-10
   type: risk_control
-  title: 'Control 10: Sensor diagnostics'
-  body: Enforce sensor diagnostics in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
-  attributes:
-    synthetic: true
-    hazard: HAZ-02
-- id: RC-11
-  type: risk_control
-  title: 'Control 11: Alarm priority'
-  body: Enforce alarm priority in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Retained disconnected-sensor fault
+  body: The software shall provide retained disconnected-sensor fault.
   attributes:
     synthetic: true
     hazard: HAZ-03
+- id: RC-11
+  type: risk_control
+  title: Safe confirmation of therapy configuration
+  body: The software shall provide safe confirmation of therapy configuration.
+  attributes:
+    synthetic: true
+    hazard: HAZ-01
 - id: RC-12
   type: risk_control
-  title: 'Control 12: Alarm latch'
-  body: Enforce alarm latch in the control path before delivery state is updated.
-    On a validation fault, inhibit output and route a latched event to Alarm Manager.
-    Verification must challenge boundary, invalid-input and recovery conditions; the
-    trace graph records whether a realizing requirement and test exist.
+  title: Independent pressure-channel plausibility cross-check
+  body: The software shall provide independent pressure-channel plausibility cross-check.
   attributes:
     synthetic: true
     hazard: HAZ-04
@@ -1889,18 +1854,17 @@ artifacts:
       preserves the prior event sequence.
 - id: TC-032
   type: test_case
-  title: Verify residual anomaly display — case 032
-  body: 'Preconditions: synthetic bench is reset, validated configuration loaded,
-    event recorder enabled. Steps: (1) exercise residual anomaly display with nominal
-    input; (2) challenge its boundary; (3) repeat with invalid input; (4) record controller
-    mode, result and alarms. Expected result: Every known residual anomaly has its
-    ID, state and impact visible in the review input; an unlisted open defect is reported
-    as a gap.'
+  title: Verify ordered audit record export
+  body: Select records between timestamps 10 and 20 inclusive. Export excludes timestamps
+    9 and 21, preserves order and each original content hash. Empty interval produces
+    no records.
   attributes:
     synthetic: true
     level: system
     preconditions: Reset synthetic bench; valid configuration; event recorder enabled
-    steps: Nominal, boundary and invalid input for residual anomaly display
+    steps: Select records between timestamps 10 and 20 inclusive. Export excludes
+      timestamps 9 and 21, preserves order and each original content hash. Empty interval
+      produces no records.
     expected_result: Every known residual anomaly has its ID, state and impact visible
       in the review input; an unlisted open defect is reported as a gap.
 - id: TC-033
@@ -3059,37 +3023,29 @@ artifacts:
     review_type: architecture
 - id: ACT-01
   type: action_item
-  title: Review action 1
-  body: 'Review action ACT-01: verify boundary and recovery evidence for the allocated
-    safety control, attach the recorded result and confirm whether the architecture
-    description agrees with the implementation. State: Closed.'
+  title: Confirm pressure dwell boundary and retest evidence
+  body: Confirm pressure dwell boundary and retest evidence.
   attributes:
     synthetic: true
     state: Closed
 - id: ACT-02
   type: action_item
-  title: Review action 2
-  body: 'Review action ACT-02: verify boundary and recovery evidence for the allocated
-    safety control, attach the recorded result and confirm whether the architecture
-    description agrees with the implementation. State: Closed.'
+  title: Resolve alarm priority tie handling review
+  body: Resolve alarm priority tie handling review.
   attributes:
     synthetic: true
     state: Closed
 - id: ACT-03
   type: action_item
-  title: Review action 3
-  body: 'Review action ACT-03: verify boundary and recovery evidence for the allocated
-    safety control, attach the recorded result and confirm whether the architecture
-    description agrees with the implementation. State: Active.'
+  title: Record SOUP requirements and known-anomaly evaluations
+  body: Record SOUP requirements and known-anomaly evaluations.
   attributes:
     synthetic: true
     state: Active
 - id: ACT-04
   type: action_item
-  title: Review action 4
-  body: 'Review action ACT-04: verify boundary and recovery evidence for the allocated
-    safety control, attach the recorded result and confirm whether the architecture
-    description agrees with the implementation. State: Active.'
+  title: Implement and verify independent pressure plausibility control
+  body: Implement and verify independent pressure plausibility control.
   attributes:
     synthetic: true
     state: Active
@@ -3174,19 +3130,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-001
-  dst: COMP-01
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-002
   dst: SYS-002
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-002
-  dst: COMP-02
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-003
@@ -3194,19 +3140,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-003
-  dst: COMP-03
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-004
   dst: SYS-004
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-004
-  dst: COMP-04
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-005
@@ -3214,19 +3150,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-005
-  dst: COMP-05
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-006
   dst: SYS-006
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-006
-  dst: COMP-06
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-007
@@ -3234,19 +3160,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-007
-  dst: COMP-01
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-008
   dst: SYS-008
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-008
-  dst: COMP-02
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-009
@@ -3254,19 +3170,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-009
-  dst: COMP-03
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-010
   dst: SYS-010
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-010
-  dst: COMP-04
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-011
@@ -3274,19 +3180,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-011
-  dst: COMP-05
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-012
   dst: SYS-012
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-012
-  dst: COMP-06
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-013
@@ -3294,19 +3190,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-013
-  dst: COMP-01
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-014
   dst: SYS-014
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-014
-  dst: COMP-02
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-015
@@ -3314,19 +3200,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-015
-  dst: COMP-03
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-016
   dst: SYS-002
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-016
-  dst: COMP-04
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-017
@@ -3334,19 +3210,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-017
-  dst: COMP-05
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-018
   dst: SYS-004
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-018
-  dst: COMP-06
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-019
@@ -3354,19 +3220,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-019
-  dst: COMP-01
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-020
   dst: SYS-006
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-020
-  dst: COMP-02
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-021
@@ -3374,19 +3230,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-021
-  dst: COMP-03
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-022
   dst: SYS-008
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-022
-  dst: COMP-03
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-023
@@ -3394,19 +3240,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-023
-  dst: COMP-03
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-024
   dst: SYS-010
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-024
-  dst: COMP-06
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-025
@@ -3414,19 +3250,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-025
-  dst: COMP-01
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-026
   dst: SYS-012
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-026
-  dst: COMP-02
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-027
@@ -3434,19 +3260,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-027
-  dst: COMP-03
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-028
   dst: SYS-014
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-028
-  dst: COMP-04
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-029
@@ -3454,19 +3270,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-029
-  dst: COMP-05
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-030
   dst: SYS-002
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-030
-  dst: COMP-06
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-031
@@ -3474,19 +3280,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-031
-  dst: COMP-01
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-032
   dst: SYS-004
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-032
-  dst: COMP-02
-  type: allocated_to
   origin: explicit
   evidence: Synthetic source relation
 - src: SRS-033
@@ -3494,139 +3290,9 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
-- src: SRS-033
-  dst: COMP-03
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
 - src: SRS-034
   dst: SYS-006
   type: derives_from
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-034
-  dst: COMP-04
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-035
-  dst: COMP-05
-  type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-01
-  dst: HAZ-01
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-001
-  dst: RC-01
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-02
-  dst: HAZ-02
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-002
-  dst: RC-02
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-03
-  dst: HAZ-03
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-003
-  dst: RC-03
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-04
-  dst: HAZ-04
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-004
-  dst: RC-04
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-05
-  dst: HAZ-05
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-005
-  dst: RC-05
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-06
-  dst: HAZ-06
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-006
-  dst: RC-06
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-07
-  dst: HAZ-07
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-007
-  dst: RC-07
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-08
-  dst: HAZ-08
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-008
-  dst: RC-08
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-09
-  dst: HAZ-01
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-009
-  dst: RC-09
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-10
-  dst: HAZ-02
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-010
-  dst: RC-10
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-11
-  dst: HAZ-03
-  type: mitigates
-  origin: explicit
-  evidence: Synthetic source relation
-- src: SRS-011
-  dst: RC-11
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: RC-12
-  dst: HAZ-04
-  type: mitigates
   origin: explicit
   evidence: Synthetic source relation
 - src: UNIT-ui_status
@@ -3727,711 +3393,6 @@ links:
 - src: UNIT-diagnostics_trace
   dst: COMP-06
   type: allocated_to
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-1
-  dst: SRS-001
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-1
-  dst: SRS-007
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-1
-  dst: SRS-013
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-1
-  dst: SRS-019
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-1
-  dst: SRS-025
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-1
-  dst: SRS-031
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_status
-  dst: SRS-001
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_status
-  dst: SRS-007
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_status
-  dst: SRS-013
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_status
-  dst: SRS-019
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_status
-  dst: SRS-025
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_status
-  dst: SRS-031
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_input
-  dst: SRS-001
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_input
-  dst: SRS-007
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_input
-  dst: SRS-013
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_input
-  dst: SRS-019
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_input
-  dst: SRS-025
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_input
-  dst: SRS-031
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_confirm
-  dst: SRS-001
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_confirm
-  dst: SRS-007
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_confirm
-  dst: SRS-013
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_confirm
-  dst: SRS-019
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_confirm
-  dst: SRS-025
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-ui_confirm
-  dst: SRS-031
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-2
-  dst: SRS-002
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-2
-  dst: SRS-008
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-2
-  dst: SRS-014
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-2
-  dst: SRS-020
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-2
-  dst: SRS-026
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-2
-  dst: SRS-032
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_bounds
-  dst: SRS-002
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_bounds
-  dst: SRS-008
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_bounds
-  dst: SRS-014
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_bounds
-  dst: SRS-020
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_bounds
-  dst: SRS-026
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_bounds
-  dst: SRS-032
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_volume
-  dst: SRS-002
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_volume
-  dst: SRS-008
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_volume
-  dst: SRS-014
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_volume
-  dst: SRS-020
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_volume
-  dst: SRS-026
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_volume
-  dst: SRS-032
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_motor
-  dst: SRS-002
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_motor
-  dst: SRS-008
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_motor
-  dst: SRS-014
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_motor
-  dst: SRS-020
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_motor
-  dst: SRS-026
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-infusion_motor
-  dst: SRS-032
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-3
-  dst: SRS-003
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-3
-  dst: SRS-009
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-3
-  dst: SRS-015
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-3
-  dst: SRS-021
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-3
-  dst: SRS-022
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-3
-  dst: SRS-023
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-3
-  dst: SRS-027
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-3
-  dst: SRS-033
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_pressure
-  dst: SRS-003
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_pressure
-  dst: SRS-009
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_pressure
-  dst: SRS-015
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_pressure
-  dst: SRS-021
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_pressure
-  dst: SRS-022
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_pressure
-  dst: SRS-023
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_pressure
-  dst: SRS-027
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_pressure
-  dst: SRS-033
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_air
-  dst: SRS-003
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_air
-  dst: SRS-009
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_air
-  dst: SRS-015
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_air
-  dst: SRS-021
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_air
-  dst: SRS-022
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_air
-  dst: SRS-023
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_air
-  dst: SRS-027
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_air
-  dst: SRS-033
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_filter
-  dst: SRS-003
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_filter
-  dst: SRS-009
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_filter
-  dst: SRS-015
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_filter
-  dst: SRS-021
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_filter
-  dst: SRS-022
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_filter
-  dst: SRS-023
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_filter
-  dst: SRS-027
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_filter
-  dst: SRS-033
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_calibration
-  dst: SRS-003
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_calibration
-  dst: SRS-009
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_calibration
-  dst: SRS-015
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_calibration
-  dst: SRS-021
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_calibration
-  dst: SRS-022
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_calibration
-  dst: SRS-023
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_calibration
-  dst: SRS-027
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-sensor_calibration
-  dst: SRS-033
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-4
-  dst: SRS-004
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-4
-  dst: SRS-010
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-4
-  dst: SRS-016
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-4
-  dst: SRS-028
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_priority
-  dst: SRS-004
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_priority
-  dst: SRS-010
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_priority
-  dst: SRS-016
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_priority
-  dst: SRS-028
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_latch
-  dst: SRS-004
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_latch
-  dst: SRS-010
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_latch
-  dst: SRS-016
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_latch
-  dst: SRS-028
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_audio
-  dst: SRS-004
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_audio
-  dst: SRS-010
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_audio
-  dst: SRS-016
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-alarm_audio
-  dst: SRS-028
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-5
-  dst: SRS-005
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-5
-  dst: SRS-011
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-5
-  dst: SRS-017
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-5
-  dst: SRS-029
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-drug_limits
-  dst: SRS-005
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-drug_limits
-  dst: SRS-011
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-drug_limits
-  dst: SRS-017
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-drug_limits
-  dst: SRS-029
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-drug_lookup
-  dst: SRS-005
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-drug_lookup
-  dst: SRS-011
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-drug_lookup
-  dst: SRS-017
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-drug_lookup
-  dst: SRS-029
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-6
-  dst: SRS-006
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-6
-  dst: SRS-012
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-6
-  dst: SRS-018
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-6
-  dst: SRS-024
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: PR-6
-  dst: SRS-030
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_events
-  dst: SRS-006
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_events
-  dst: SRS-012
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_events
-  dst: SRS-018
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_events
-  dst: SRS-024
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_events
-  dst: SRS-030
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_digest
-  dst: SRS-006
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_digest
-  dst: SRS-012
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_digest
-  dst: SRS-018
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_digest
-  dst: SRS-024
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-log_digest
-  dst: SRS-030
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_frame
-  dst: SRS-006
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_frame
-  dst: SRS-012
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_frame
-  dst: SRS-018
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_frame
-  dst: SRS-024
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_frame
-  dst: SRS-030
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_timeout
-  dst: SRS-006
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_timeout
-  dst: SRS-012
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_timeout
-  dst: SRS-018
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_timeout
-  dst: SRS-024
-  type: implements
-  origin: explicit
-  evidence: Synthetic source relation
-- src: UNIT-comms_timeout
-  dst: SRS-030
-  type: implements
   origin: explicit
   evidence: Synthetic source relation
 - src: TC-001
@@ -4590,7 +3551,7 @@ links:
   origin: explicit
   evidence: Synthetic source relation
 - src: TC-032
-  dst: SRS-032
+  dst: SRS-033
   type: verifies
   origin: explicit
   evidence: Synthetic source relation
@@ -5459,3 +4420,698 @@ links:
   type: derives_from
   origin: explicit
   evidence: Synthetic source relation
+- src: RC-01
+  dst: HAZ-01
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-001
+  dst: RC-01
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-002
+  dst: RC-01
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-028
+  dst: RC-01
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-02
+  dst: HAZ-02
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-006
+  dst: RC-02
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-008
+  dst: RC-02
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-03
+  dst: HAZ-03
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-008
+  dst: RC-03
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-04
+  dst: HAZ-04
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-021
+  dst: RC-04
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-022
+  dst: RC-04
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-012
+  dst: RC-04
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-05
+  dst: HAZ-05
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-011
+  dst: RC-05
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-012
+  dst: RC-05
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-013
+  dst: RC-05
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-014
+  dst: RC-05
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-06
+  dst: HAZ-06
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-018
+  dst: RC-06
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-019
+  dst: RC-06
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-020
+  dst: RC-06
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-07
+  dst: HAZ-07
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-024
+  dst: RC-07
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-025
+  dst: RC-07
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-033
+  dst: RC-07
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-08
+  dst: HAZ-08
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-029
+  dst: RC-08
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-030
+  dst: RC-08
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-09
+  dst: HAZ-04
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-009
+  dst: RC-09
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-023
+  dst: RC-09
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-10
+  dst: HAZ-03
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-010
+  dst: RC-10
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-11
+  dst: HAZ-01
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-003
+  dst: RC-11
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-017
+  dst: RC-11
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: RC-12
+  dst: HAZ-04
+  type: mitigates
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-001
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-002
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-003
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-004
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-005
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-006
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-007
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-008
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-009
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-010
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-011
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-012
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-013
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-014
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-015
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-016
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-017
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-018
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-019
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-020
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-021
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-022
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-023
+  dst: COMP-03
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-024
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-025
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-026
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-027
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-028
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-029
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-030
+  dst: COMP-02
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-031
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-032
+  dst: COMP-01
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-033
+  dst: COMP-06
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-034
+  dst: COMP-04
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: SRS-035
+  dst: COMP-05
+  type: allocated_to
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-ui_status
+  dst: SRS-015
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-ui_status
+  dst: SRS-032
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-ui_input
+  dst: SRS-016
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-ui_confirm
+  dst: SRS-017
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-infusion_bounds
+  dst: SRS-001
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-infusion_bounds
+  dst: SRS-003
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-infusion_bounds
+  dst: SRS-004
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-infusion_bounds
+  dst: SRS-005
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-infusion_bounds
+  dst: SRS-030
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-infusion_volume
+  dst: SRS-002
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-infusion_volume
+  dst: SRS-028
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-infusion_motor
+  dst: SRS-006
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-sensor_pressure
+  dst: SRS-009
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-sensor_pressure
+  dst: SRS-021
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-sensor_air
+  dst: SRS-008
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-sensor_air
+  dst: SRS-010
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-sensor_filter
+  dst: SRS-022
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-sensor_calibration
+  dst: SRS-023
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-alarm_priority
+  dst: SRS-011
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-alarm_latch
+  dst: SRS-012
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-alarm_latch
+  dst: SRS-013
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-alarm_audio
+  dst: SRS-014
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-drug_limits
+  dst: SRS-007
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-drug_limits
+  dst: SRS-018
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-drug_lookup
+  dst: SRS-019
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-drug_lookup
+  dst: SRS-020
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-log_events
+  dst: SRS-024
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-log_events
+  dst: SRS-031
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-log_events
+  dst: SRS-033
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-log_digest
+  dst: SRS-025
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-comms_frame
+  dst: SRS-026
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-comms_timeout
+  dst: SRS-027
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: UNIT-comms_timeout
+  dst: SRS-029
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-1
+  dst: SRS-015
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-1
+  dst: SRS-016
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-1
+  dst: SRS-017
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-1
+  dst: SRS-032
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-2
+  dst: SRS-001
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-2
+  dst: SRS-002
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-2
+  dst: SRS-003
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-2
+  dst: SRS-004
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-2
+  dst: SRS-005
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-2
+  dst: SRS-006
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-2
+  dst: SRS-028
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-2
+  dst: SRS-030
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-3
+  dst: SRS-008
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-3
+  dst: SRS-009
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-3
+  dst: SRS-010
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-3
+  dst: SRS-021
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-3
+  dst: SRS-022
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-3
+  dst: SRS-023
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-4
+  dst: SRS-011
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-4
+  dst: SRS-012
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-4
+  dst: SRS-013
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-4
+  dst: SRS-014
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-5
+  dst: SRS-007
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-5
+  dst: SRS-018
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-5
+  dst: SRS-019
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-5
+  dst: SRS-020
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-6
+  dst: SRS-024
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-6
+  dst: SRS-025
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-6
+  dst: SRS-026
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-6
+  dst: SRS-027
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-6
+  dst: SRS-029
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-6
+  dst: SRS-031
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace
+- src: PR-6
+  dst: SRS-033
+  type: implements
+  origin: explicit
+  evidence: Synthetic source trace

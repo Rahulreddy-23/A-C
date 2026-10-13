@@ -1,5 +1,5 @@
 # DHF-COMPONENT: COMP-06
-# Implements: SRS-006, SRS-012, SRS-018, SRS-024, SRS-030
+# Implements: SRS-024, SRS-031, SRS-033
 import hashlib
 import json
 from dataclasses import asdict, dataclass

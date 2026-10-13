@@ -52,16 +52,6 @@ expected_sections:
       artifacts:
       - SRS-021
       - UNIT-sensor_pressure
-    component_allocation.COMP-01:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    component_allocation.COMP-02:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
     component_responsibility.COMP-03:
       status: stale
       artifacts:
@@ -71,11 +61,10 @@ expected_sections:
       artifacts:
       - SRS-021
       - UNIT-sensor_pressure
-    component_allocation.COMP-06:
+    component_allocation.COMP-04:
       status: possibly_affected
       artifacts:
       - SRS-021
-      - UNIT-sensor_pressure
     interfaces:
       status: stale
       artifacts:
@@ -111,21 +100,6 @@ expected_sections:
       status: possibly_affected
       artifacts:
       - SRS-021
-    allocation.UNIT-comms_timeout:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    allocation.UNIT-infusion_bounds:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    allocation.UNIT-log_events:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
     identity.UNIT-sensor_air:
       status: possibly_affected
       artifacts:
@@ -253,7 +227,7 @@ expected_sections:
     purpose.UNIT-sensor_pressure:
       status: stale
       artifacts:
-      - UNIT-sensor_pressure
+      - SRS-021
     interfaces.UNIT-sensor_pressure:
       status: stale
       artifacts:
@@ -261,7 +235,7 @@ expected_sections:
     behavior.UNIT-sensor_pressure:
       status: stale
       artifacts:
-      - UNIT-sensor_pressure
+      - SRS-021
     structures.UNIT-sensor_pressure:
       status: stale
       artifacts:
@@ -269,7 +243,7 @@ expected_sections:
     errors.UNIT-sensor_pressure:
       status: stale
       artifacts:
-      - UNIT-sensor_pressure
+      - SRS-021
     allocation.UNIT-sensor_pressure:
       status: stale
       artifacts:
@@ -278,11 +252,6 @@ expected_sections:
     tests.UNIT-sensor_pressure:
       status: stale
       artifacts:
-      - UNIT-sensor_pressure
-    allocation.UNIT-ui_status:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
       - UNIT-sensor_pressure
   sstr:
     purpose_scope:
@@ -344,22 +313,7 @@ expected_sections:
       status: stale
       artifacts:
       - SRS-021
-    function_trace.UNIT-infusion_bounds:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    function_trace.UNIT-infusion_volume:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    function_trace.UNIT-log_digest:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    function_trace.UNIT-log_events:
+    function_trace.UNIT-infusion_motor:
       status: possibly_affected
       artifacts:
       - SRS-021
@@ -392,16 +346,6 @@ expected_sections:
       - UNIT-sensor_pressure
     function_modes.UNIT-sensor_pressure:
       status: stale
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    risk_row.HAZ-01:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    control_trace.HAZ-01:
-      status: possibly_affected
       artifacts:
       - SRS-021
       - UNIT-sensor_pressure
@@ -439,16 +383,6 @@ expected_sections:
       status: stale
       artifacts:
       - RES-3-021
-      - SRS-021
-      - UNIT-sensor_pressure
-    risk_row.HAZ-07:
-      status: possibly_affected
-      artifacts:
-      - SRS-021
-      - UNIT-sensor_pressure
-    control_trace.HAZ-07:
-      status: possibly_affected
-      artifacts:
       - SRS-021
       - UNIT-sensor_pressure
     gaps:

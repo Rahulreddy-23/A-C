@@ -80,9 +80,9 @@ out/                 generated artifacts (gitignored)
 4. **Prompts, templates, rules and schemas are data, not code.** They live in `specs/` so they can be ported to Copilot Studio unchanged. No prompt text inside Python beyond trivial glue.
 5. **Each pipeline step is a pure function with JSON-serializable input and output.** One step = one future Power Automate flow or Copilot Studio prompt-tool call.
 6. **Provider-agnostic LLM layer.** One interface with adapters for Anthropic, OpenAI and `mock`. Model names come from config. **Tests and CI never call paid APIs.**
-7. **Budget guard.** The whole hackathon has $5 per provider.
+7. **Budget guard.** The owner's **hard cap is $2.50 for Anthropic and $4.00 for OpenAI for the whole hackathon** (set 2026-10-13; OpenAI includes an extra $1.50 for model comparisons). That covers every paid call by Codex, the reviewer and demo runs, cumulatively.
    - Estimate tokens before every call and enforce a per-run cap (`DHF_MAX_USD_PER_RUN`, default 0.25).
-   - Keep a persisted cumulative ledger (`out/ledger.json`) with a hard stop at 80% of budget per provider.
+   - Keep a persisted cumulative ledger (`out/ledger.json`). Codex's own build-time calls stop at `DHF_BUILD_BUDGET_USD` (1.50). Nothing may push actual plus reserved spend past the provider's hard cap: `DHF_HARD_CAP_USD_ANTHROPIC` = 2.50, `DHF_HARD_CAP_USD_OPENAI` = 4.00.
    - Cache responses by `sha256(prompt_id + prompt_version + model + canonical_json(evidence_pack))`. Cache hits are free.
    - Temperature 0.
 8. **Synthetic data only** goes to external LLM APIs. Never commit real company data. Never read or commit `docs/*.pdf`.

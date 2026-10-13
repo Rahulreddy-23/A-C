@@ -130,3 +130,30 @@ Class C units each have a configured primary safety function, checked against th
 ## ADR-023 — Port blueprint with explicit tenant capability gates
 
 The pack maps every pipeline step and data-defined rule/query, preserving prompt bodies exactly and shipping frozen synthetic parity contracts. Dataverse immutable revision keys include content hash because native test records have no incrementing source revision. Canonical hashing, numeric validation, AST and OOXML remain explicit approved function boundaries or verified manual fallbacks, never substitute prompts. Entra-based ADO connections enforce source-read/docs-write scope; tenant DLP and residency require admin verification. Generation uses a queued run and status tool, with channel-specific async callbacks only after verification. Local completeness checks do not imply tenant parity.
+
+
+## ADR-024 — Local repeatable figures and audit payloads
+2026-10-13 · Accepted (M10, R-030)
+
+Render the graph's supported component grid with a small versioned bitmap glyph set and stdlib PNG encoding. This introduces no dependency or online renderer. Keep Mermaid and PNG hashes, embed a numbered Word figure and commit both assets in the docs PR. Audit exports validate Markdown, Word and diagram hashes and every manifest source revision against complete stored snapshots, then emit a deterministic ZIP with safe paths and exhaustive checksums. Share the cited RTM and per-rule action report between CLI and audit exports.
+
+## ADR-025 — Evaluation, declarative extensions and cautious clause evidence
+2026-10-13 · Accepted (M10)
+
+Evaluate synthetic baseline gaps and historical consistency independently from the current changed graph; score a saved pre-regeneration impact report against the reviewer-audited expectation and report missing inputs as pending. Deterministic SSTR/design sections have exact visible-text goldens with only deployment URLs normalized. SUTR and RTM are YAML-only document additions; absent recorded unit tests stay explicit. Clause coverage is an evidence index with uncovered verification/human assessment flags, not a compliance decision. A fresh offline demo owns its mock, cache and source snapshots; human draft completion/merge occurs only in labelled test tooling.
+
+## ADR-026 — Complete fact context and native sandbox governance
+2026-10-13 · Accepted (R-041–R-043)
+
+Every known artifact ID referenced by query facts joins the evidence closure. Synthesis reduction preserves compact ID/title/revision records for these references while retaining adverse-result priority, with regression coverage before and after reduction. FMEA v2 prompts define failure-present effects and a worked function example. The port uses text JSON prompt inputs and native citation/kind/confidence/numeric checks, with a blocked numeric compensation when tenant capabilities are missing. Three capability tiers state the MVP, estimates, cut line and limited parity scope; no tenant result is inferred from the offline reference.
+
+## ADR-027 — Latest owner cumulative spend limit
+2026-10-13 · Accepted
+
+The updated AGENTS.md sets a $2.50 per-provider hard cap, covering actual plus outstanding reservations from engineer, reviewer and demo calls. Enforce this in addition to run/build/legacy configured provider limits; a stale higher config cannot lift it. The older BRIEF M0 acceptance mentions an 80% stop and historical progress retains that evidence, but the current, stricter owner cap governs all future paid work. This M10 development/demo uses the mock provider only and preserves owner .env.
+
+
+## ADR-028 — Provider caps and analytical section routing (owner/PM update)
+2026-10-13 · Accepted (R-044/R-045)
+
+The later owner instruction supersedes ADR-027's uniform $2.50 limit: Anthropic remains $2.50 and OpenAI is $4.00 including the additional $1.50 for model comparisons. Enforce provider-specific caps, actual plus reservations, and show remaining headroom after paid commands; legacy higher values cannot lift them. Build/run caps remain. The PM bake-off selects GPT-4.1 mini for default prose and GPT-5.4 mini only for analytical section data; no nano models, GPT-5.5 only on explicit comparison config. GPT-5 omits temperature and uses low reasoning effort, reserving the complete visible-plus-reasoning token ceiling and reconciling inclusive completion usage once. Prices are versioned per model, unknown models require overrides, and caches/section manifests retain actual routing. The tenant Prompt model mapping is a capability gate, not a claim of availability.

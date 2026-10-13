@@ -141,6 +141,7 @@ def regenerate(
             sections.append(generate_section(definition, graph, manifest["params"], llm))
         else:
             reused = copy.deepcopy(old[id])
+            reused.setdefault("model", {**manifest["model"], "tier": "default"})
             reused["markdown"], reused["sha256"] = actual[id], sha(actual[id])
             sections.append(reused)
     context = {
@@ -162,9 +163,17 @@ def regenerate(
 
     out.mkdir(parents=True, exist_ok=True)
     doc = manifest["doc_id"]
+    import hashlib
+
+    from dhf.render.diagram import write_diagrams
+
+    result["manifest"]["diagrams"] = write_diagrams(doc, sections, out)
     result["manifest"]["docx"] = render_docx(
         result["markdown"], out / (doc + ".docx"), markdown, context["generated_at"]
     )
+    result["manifest"]["docx"]["sha256"] = hashlib.sha256(
+        (out / (doc + ".docx")).read_bytes()
+    ).hexdigest()
     (out / (doc + ".md")).write_text(result["markdown"])
     (out / (doc + ".manifest.json")).write_text(json.dumps(result["manifest"], indent=2))
     return result

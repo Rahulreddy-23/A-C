@@ -12,11 +12,16 @@ class OpenAIAdapter:
         api_key = setting("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("Missing OPENAI_API_KEY; configure it in .env")
+        parameters = (
+            {"reasoning_effort": setting("DHF_OPENAI_REASONING_EFFORT", "low")}
+            if model.startswith("gpt-5")
+            else {"temperature": 0}
+        )
         try:
             response = OpenAI(api_key=api_key, max_retries=0).chat.completions.create(
                 model=model,
                 max_completion_tokens=limit,
-                temperature=0,
+                **parameters,
                 response_format={
                     "type": "json_schema",
                     "json_schema": {

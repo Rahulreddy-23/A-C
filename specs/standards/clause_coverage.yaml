@@ -1,0 +1,16 @@
+# Evidence-index mapping for IEC 62304:2006+A1:2015 and ISO 14971:2019.
+# Presence is not regulatory compliance or approval; validate against licensed standards in the QMS.
+clauses:
+- {id: IEC 62304 5.2, topic: Software requirements, sections: [rtm.trace, sstr.references]}
+- {id: IEC 62304 5.3, topic: Architectural design, sections: [sad.architecture, sad.interfaces, sad.allocation_matrix]}
+- {id: IEC 62304 5.4, topic: Detailed design, sections: [sdd.interfaces.*, sdd.behavior.*, sdd.structures.*]}
+- {id: IEC 62304 5.5, topic: Unit verification, sections: [sutr.results_summary], requires_results: true}
+- {id: IEC 62304 5.6, topic: Integration verification, sections: []}
+- {id: IEC 62304 5.7, topic: System verification, sections: [sstr.results_summary, sstr.results_by_requirement]}
+- {id: IEC 62304 5.8, topic: Release review, sections: [sstr.release_conclusion, sstr.approvals], requires_human: true}
+- {id: IEC 62304 7, topic: Software risk evidence, sections: [sfmea.function_trace.*, sfmea.control_trace.*]}
+- {id: ISO 14971 5, topic: Risk-analysis evidence, sections: [sfmea.risk_row.*]}
+- {id: ISO 14971 6, topic: Risk evaluation, sections: [sfmea.risk_acceptance], requires_human: true}
+- {id: ISO 14971 7, topic: Risk-control evidence, sections: [sfmea.control_trace.*]}
+- {id: ISO 14971 8, topic: Overall residual-risk evaluation, sections: [sfmea.risk_acceptance], requires_human: true}
+- {id: ISO 14971 9, topic: Risk-management review, sections: [drr.discussion, drr.approvals], requires_human: true}

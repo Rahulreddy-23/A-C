@@ -20,7 +20,145 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - Keep the Mermaid source in the Markdown (ADO's markdown preview can render it) and the checksum in the manifest.
   - Never use an online renderer.
 
-### M8 review (tag `m8-done`, de780a7) — verdict: **approved with one blocking-before-M10 data fix**
+### Live sample after R-036 (OpenAI `gpt-4.1-mini`, owner-approved; 5 sections, $0.0114, merged into `out/ledger.json`)
+
+- **sFMEA HAZ-04 has improved substantially.** It now uses SRS-021/022/023, "80 kPa for a configured dwell time (3 seconds)", TC-021/TC-009 and COMP-03/COMP-04. The corrected traces work.
+- **SAD `architecture_overview` is good.** Each component has a distinct responsibility and named collaborators, so R-033 works.
+
+**R-041 [non-blocking, before M10] M8 — Live findings: FMEA "effects" describe the control, not the failure; SAD packs drop the units their facts reference**
+- **(a) FMEA semantics.**
+  - HAZ-03's "Local effect" and "System effect" describe what happens when the control *works* ("inhibited delivery… prevention of air embolism"), not what the failure *causes* (air delivered → embolism risk).
+  - HAZ-04's "System effect" describes an Alarm Manager failure rather than the patient-level outcome. Controls are called "requirements RC-04…".
+  - **Fix:** in the sFMEA prompt and the R-037 row design, define each cell explicitly:
+    - failure mode = how the function fails
+    - cause = why
+    - local effect = immediate consequence *with the failure present*
+    - system effect = device or patient consequence
+    - controls and detection come only from sourced tables
+
+    Add one worked example row.
+- **(b) Evidence/fact mismatch.** In `component_responsibility.COMP-03` and `runtime`, **2 of 4 claims were rejected** for citing `UNIT-sensor_pressure`, `UNIT-alarm_latch`, `COMP-02` and `COMP-04`. The structural facts mention these, but the evidence pack doesn't include them.
+  - **Fix:** every ID referenced in a section's facts must be present in its evidence pack, as compact records. Add a test asserting `ids(facts) ⊆ ids(evidence)` for every AI section.
+
+### M9 review (tag `m9-done`, e972cb5) — verdict: **approved; plan the sandbox build next**
+
+**R-042 [non-blocking — high priority before the sandbox build starts] M9 — The port pack describes the full build but has no realistic plan or cut line for it** (`port/copilot_studio/README.md`)
+- The pack maps everything: 7 flows, 11 Dataverse tables, 21 prompt tools, AST/hash/validator/DOCX function boundaries and the parity cases. Building **all** of that in an unfamiliar sandbox before the Oct 27 demo is not realistic, and the official submission must run in Copilot Studio.
+- **Expected:** add `port/copilot_studio/BUILD_PLAN.md` with:
+  1. **The MVP vertical slice to build first**, in order:
+     - agent with a "Draft the release test report" topic
+     - flow 01/02 ingest into Dataverse
+     - flow 03 gaps for G01/G05/G07/G11
+     - flow 04 for **one** SSTR synthesis section and **one** SAD/SDD section through the prompt tool, with the native validator (R-043)
+     - flow 05 Markdown assembly
+     - flow 06 docs PR plus the readiness status
+     - flow 07 work-item-update trigger showing "SRS-021 changed → these sections stale"
+  2. **Hour estimates** per step and a **cut line**: what gets dropped first if the sandbox lacks Dataverse, premium connectors or a function endpoint.
+  3. **A demo split.** State explicitly what judges will see running natively in Copilot Studio versus what is shown from the reference implementation as "the same specs, executed offline" (DOCX redline, full SDD, audit pack).
+  4. **A capability-check checklist for day 1 in the sandbox**, with a fallback for each gap.
+- **PM update (owner instruction):** the sandbox details aren't known yet, so don't wait for them. Write the plan with **three capability tiers** and finish everything that doesn't depend on the tier:
+  - **Tier A:** Dataverse + premium ADO connector + an approved Azure Function/custom connector. That gives the full slice: AST, hash, validator and DOCX run as functions.
+  - **Tier B:** Dataverse + premium ADO connector, **no** functions. The validator runs natively (R-043). AST is replaced by a reviewed unit inventory imported from the reference implementation. DOCX redlines use Word Compare. Hashes come from the reference implementation.
+  - **Tier C:** **no** Dataverse. Use SharePoint lists for Artifact, Link, Section and Run (state the row and size limits), keep the scope to the SSTR plus the impact demo, and show the rest from the reference implementation.
+  - For each tier, list which flows and prompt tools are built, the hour estimates, the demo storyline, and which parity cases can pass. The owner's answers to `docs/SANDBOX_QUESTIONS.md` will pick the tier, so make the plan easy to collapse to one tier quickly.
+
+**R-043 [non-blocking — before the sandbox build] M9 — Keep the core governance native, and pass prompt-tool inputs as text** (`port/copilot_studio/flows/04-generate-section.md`, `deterministic_logic.md`, `prompts/*.md`)
+- **The validator.** The pack makes the validator an "approved function", falling back to "manual drafting boundary" when none exists. But source-backed vs inferred governance is worth 20% of the score, so the MVP slice must validate claims **natively**:
+  - citations ⊆ evidence IDs and IDs found in the text ⊆ evidence IDs (Power Automate `Filter array` / `contains` / `intersection`)
+  - `kind` in the allowed list
+  - confidence present for inferred/suggested
+  - downgrade and coerce rules
+  - **The numeric check:** use Power Fx `MatchAll` (in a topic or a Dataverse low-code plug-in) to extract numbers and compare them against facts. If that's impossible in the tenant, document a compensating control: numbers only in deterministic tables, and AI claims containing digits get `[Suggested]`. Don't silently drop the check.
+- **Prompt-tool inputs.** The converted prompt tools declare named inputs typed `object`/`array`. Copilot Studio prompt inputs are text (plus files/images), so pass `facts` and `evidence` as **JSON strings**. Note that the tenant's prompt input/output size limits must be checked against the 6k/12k-token budgets on day 1.
+
+**R-044 [non-blocking — do with the next commit] Owner budget cap: $2.50 per provider, enforced in code** (`src/dhf/llm/__init__.py`, `.env.example`, `AGENTS.md` rule 7)
+- On 2026-10-13 the owner set a hard cap of **$2.50 per API for the whole hackathon**, counting all spend. The current cap logic is `min(build_cap 1.50, 0.8 × DHF_PROVIDER_BUDGET_USD 5.00 = 4.00)`. That keeps Codex's own build-time calls under 1.50, but it doesn't encode the owner's ceiling for demo and reviewer runs.
+- **Expected fix:**
+  - Add per-provider hard caps `DHF_HARD_CAP_USD_ANTHROPIC` (2.50) and `DHF_HARD_CAP_USD_OPENAI` (4.00; the owner added $1.50 for model comparisons), enforced as `actual_usd + reserved_usd + this_call_reservation ≤ DHF_HARD_CAP_USD` for every provider and every command, on top of the build cap.
+  - Show the remaining headroom in `dhf` output when a paid provider is used.
+  - Add a test.
+- The reviewer's live checks currently copy `out/ledger.json` into a scratch worktree, run against it, and write it back. That way the cumulative cap already applies to reviewer spend.
+
+### Model bake-off (owner-approved; 5 hard sections × 7 OpenAI models, $0.227; raw outputs kept by the reviewer)
+
+The sections tested were `sstr/release_conclusion`, `sstr/anomaly_assessment`, `sad/architecture_overview`, `sdd/behavior.UNIT-sensor_pressure` and `sfmea/function_modes.UNIT-sensor_pressure`. Prices are from OpenAI's pricing page as of 2026-10-13.
+
+| Model | $ per 5 sections | ≈ $ per full doc set (~120 AI sections) | Quality notes |
+|---|---|---|---|
+| gpt-5-nano | 0.0024 | 0.06 | Thin: 1 FMEA claim kept; leaks meta-language ("synthetic fixture") |
+| gpt-5.4-nano | 0.0064 | 0.15 | **All 5 FMEA claims rejected**; unreliable |
+| **gpt-4.1-mini** | 0.0084 | **0.20** | Consistent, fast (~3 s), correct FMEA system effect; best value |
+| gpt-5-mini | 0.0129 | 0.31 | Deeper code detail (dwell timer, 3 s boundary); slower (5–10 s) |
+| **gpt-5.4-mini** | 0.0234 | **0.56** | **Best FMEA semantics** (local effect "returns SAFE…", system effect → HAZ-04); good review questions |
+| gpt-4.1 | 0.0399 | 0.96 | No better than 4.1-mini |
+| gpt-5.5 | 0.1334 | 3.20 | Best overall (noticed BUG-03 isn't listed as residual), but too expensive to run routinely |
+
+**Rejections don't separate the models.** Every model's rejections were `unknown_ids`, mostly `UNIT-alarm_latch`, `UNIT-sensor_pressure`, SRS-012/034/035 and fact keys like `gap_findings`/`summary`/`G01`. That's the R-041(b) pack problem, not model quality.
+
+**R-045 [non-blocking, before the M10 demo run] M9 — Support per-section model tiers and GPT-5-family parameters** (`src/dhf/llm/adapters/openai.py`, `specs/documents/*.yaml`, `.env.example`, port pack)
+- **Decision (PM):**
+  - Keep **`gpt-4.1-mini` as the default** for all sections.
+  - Use **`gpt-5.4-mini` for analytical sections** only: sFMEA function/hazard modes, the SSTR conclusion, DRR suggestions and L01–L03.
+  - Never use nano models.
+  - Keep `gpt-5.5` only as an optional reference run.
+- **Expected:**
+  - (a) A section-spec field `model_tier: default|analytical`, with the model per tier set in config (`DHF_MODEL_OPENAI`, `DHF_MODEL_OPENAI_ANALYTICAL`) and prices per model.
+  - (b) For `gpt-5*` models, send no `temperature` and set `reasoning_effort` (default `low`). Reasoning tokens are billed as output, so include them in the reservation estimate.
+  - (c) In the port pack, a Copilot Studio Prompt tool picks its model per prompt, so map the tiers to the tenant's prompt model options (sandbox question 3.2).
+  - (d) Add the model ID and tier to each section's manifest entry.
+
+
+## Resolved
+
+### M9 (tag `m9-done`, e972cb5) — verdict: **approved**
+
+Verified independently in a clean worktree:
+- 62 tests pass.
+- `tools/check_port.py` reports `flows: 7, rules: 22, queries: 46, prompt_tools: 21, reference_contracts: pass, tenant_parity: pending`.
+- The pack has a README mapping table, `agent.md` (tools, topics, an async job pattern with a status-polling fallback, and accurate channel caveats), `dataverse_schema.md`, flows 01–07 written step by step so they can be followed without reading Python, `deterministic_logic.md` (every G/C/F/L rule with its operation and parameters, plus function boundaries and fallbacks), `governance.md` (DLP, separate reader/writer connections, no PATs on the ADO connector, web grounding off) and frozen parity cases.
+- **It's honest:** it claims no tenant deployment, residency guarantee or parity result.
+- Follow-ups: R-042 (build plan and cut line) and R-043 (native validator, text inputs).
+
+**R-037 [non-blocking, strongly recommended before M10] M8 — The sFMEA runs top-down from hazards, one guessed failure mode per hazard; reviewers expect bottom-up rows** (`specs/documents/sfmea.yaml`, `src/dhf/graph/design.py`)
+- Today each hazard gets one `[Suggested]` "Failure mode: <hazard name>". That's a hazard analysis, not an FMEA. With the mock, "Local effect" also repeats "Cause".
+- A software FMEA is expected to work **per safety-relevant unit function**, using the extracted interfaces (e.g. `PressureMonitor.evaluate`):
+  - 1–3 failure modes each (fails to detect, false detection, delayed detection)
+  - local effect → system effect → hazard
+  - **severity from the source**
+  - existing controls and detection (requirements, tests)
+  - residual risk left for a human
+- **Expected fix:** add that row table for Class C units, which bounds the cost, and keep the hazard-level view as a summary that links back to the rows. Make the mock emit distinct cells.
+
+Resolved in 450b11d: Class C primary functions have bottom-up source traces and distinct suggested analysis cells; hazard summaries link to unit rows. Source-only severity and human residual risk are tested.
+- *Reviewer verified at m9-done:* the sFMEA now has per-unit sections with a "Safety-relevant function source trace" table (extracted function, e.g. `AlertScheduler.tick`, hazard with source severity, controls, requirements, verification, residual risk) and a proposed-analysis table. Bottom-up structure is achieved. The live FMEA-semantics finding remains open as R-041.
+
+**R-038 [non-blocking] M8 — DRR pre-review findings skip the most review-relevant items** (`specs/documents/drr.yaml`, `src/dhf/graph/queries.py`)
+- The 5-claim cap shows only G01×4 and G02×1. It omits **C01/C04 for the very baseline under review (`sad-v1`)**, G05 (a failed result with no defect) and the risk-control gaps G06/G07.
+- **Expected fix:**
+  - Start with a deterministic findings table: every rule, with count and links.
+  - Order the AI suggestions by safety relevance: stale baseline and risk-control gaps first, then failed tests, then coverage.
+  - The empty "Changed evidence since baseline" section should say "No changes since sad-v1 (snapshot 1)" instead of rendering blank.
+  - ACT-01–04 descriptions are placeholders ("Review action N"); give them real content.
+
+Resolved in 450b11d: Complete deterministic G/C/F findings table, approved-baseline C01/C04 inputs, safety-first suggestions, named empty-diff notice and specific prior actions.
+- *Reviewer verified at m9-done:* the DRR has a complete deterministic G/C/F findings table, safety-first ordering and an empty-diff notice (450b11d).
+
+**R-039 [non-blocking] M8 — L01 produces 35 identical "review whether…" proposals** (`src/dhf/cli.py` propose, `specs/prompts`)
+- The planted SRS-034/035 (not implemented) look the same as the implemented requirements, so the proposals file is noise.
+- **Expected fix:**
+  - Pre-screen deterministically: G02 requirements are reported as "no implementing change" without the LLM.
+  - Send only requirements *with* linked code to the model, comparing acceptance criteria to the unit code.
+  - Emit a proposal only when a likely gap is found, with its confidence.
+Resolved in 450b11d: G02 is pre-screened without model calls; linked code is compared to criteria, agreement emits no proposal, and the fixture flags the missing checksum guard with confidence.
+- *Reviewer verified at m9-done:* L01 pre-screens G02 deterministically and emits proposals only for suspected gaps (450b11d).
+
+**R-040 [blocking — fix now; the suite must be green on every commit] M8 — A test fails at 212e688** (`tests/test_design.py`)
+- At 212e688 the suite is **1 failed, 59 passed**. `test_design` still expects the old `UNIT-sensor_pressure` allocation (8 SRS), but the corrected R-036 traces give `{SRS-009, SRS-021}`.
+- The commit message claimed the regressions pass. Update the expectation to the corrected allocation, which looks right: SRS-022 → `sensor_filter`, SRS-023 → `sensor_calibration`.
+- Run the **full** suite before every commit.
+- *Reviewer verified at m9-done:* the suite is green at `m9-done`: 62 passed (fixed in 450b11d).
+
+Resolved in 450b11d: corrected the pressure allocation assertion to SRS-009/SRS-021; the full m9-done suite passes (62 tests), independently verified by the reviewer.
 
 **R-036 [blocking — fix before starting M10] M8 — Hazard → risk control → requirement links are paired by index, so the risk traceability is clinically wrong** (`data/synthetic/evidence.yaml` hazards, risk_control and `mitigates`/`implements` links)
 - Each `HAZ-0n` is paired with `RC-0n`, and each `RC-0n` is just "Control n: <title of SRS-00n>":
@@ -58,38 +196,7 @@ Written by Claude (PM and reviewer). Codex reads this file at the start of every
   - Re-run the validator, goldens and the change regression.
 
 Resolved in 212e688: controls, requirement/component/unit annotations and PR links follow actual functions; exact answer key and native watch/redline regression pass. Occlusion HAZ-04 is stale under change_1.
-
-**R-037 [non-blocking, strongly recommended before M10] M8 — The sFMEA runs top-down from hazards, one guessed failure mode per hazard; reviewers expect bottom-up rows** (`specs/documents/sfmea.yaml`, `src/dhf/graph/design.py`)
-- Today each hazard gets one `[Suggested]` "Failure mode: <hazard name>". That's a hazard analysis, not an FMEA. With the mock, "Local effect" also repeats "Cause".
-- A software FMEA is expected to work **per safety-relevant unit function**, using the extracted interfaces (e.g. `PressureMonitor.evaluate`):
-  - 1–3 failure modes each (fails to detect, false detection, delayed detection)
-  - local effect → system effect → hazard
-  - **severity from the source**
-  - existing controls and detection (requirements, tests)
-  - residual risk left for a human
-- **Expected fix:** add that row table for Class C units, which bounds the cost, and keep the hazard-level view as a summary that links back to the rows. Make the mock emit distinct cells.
-
-Resolved in 450b11d: Class C primary functions have bottom-up source traces and distinct suggested analysis cells; hazard summaries link to unit rows. Source-only severity and human residual risk are tested.
-
-**R-038 [non-blocking] M8 — DRR pre-review findings skip the most review-relevant items** (`specs/documents/drr.yaml`, `src/dhf/graph/queries.py`)
-- The 5-claim cap shows only G01×4 and G02×1. It omits **C01/C04 for the very baseline under review (`sad-v1`)**, G05 (a failed result with no defect) and the risk-control gaps G06/G07.
-- **Expected fix:**
-  - Start with a deterministic findings table: every rule, with count and links.
-  - Order the AI suggestions by safety relevance: stale baseline and risk-control gaps first, then failed tests, then coverage.
-  - The empty "Changed evidence since baseline" section should say "No changes since sad-v1 (snapshot 1)" instead of rendering blank.
-  - ACT-01–04 descriptions are placeholders ("Review action N"); give them real content.
-
-Resolved in 450b11d: Complete deterministic G/C/F findings table, approved-baseline C01/C04 inputs, safety-first suggestions, named empty-diff notice and specific prior actions.
-
-**R-039 [non-blocking] M8 — L01 produces 35 identical "review whether…" proposals** (`src/dhf/cli.py` propose, `specs/prompts`)
-- The planted SRS-034/035 (not implemented) look the same as the implemented requirements, so the proposals file is noise.
-- **Expected fix:**
-  - Pre-screen deterministically: G02 requirements are reported as "no implementing change" without the LLM.
-  - Send only requirements *with* linked code to the model, comparing acceptance criteria to the unit code.
-  - Emit a proposal only when a likely gap is found, with its confidence.
-
-
-## Resolved
+- *Reviewer verified at 212e688:* hazards now map by meaning: occlusion → RC-04 "Sustained-pressure occlusion detection with latched critical alarm" ← SRS-012/021/022; air → SRS-008; drug → SRS-018–020; audit → SRS-024/025/033; restart → SRS-029/030. RC-12 stays unrealised (G06). The answer key is exact (413 links).
 
 ### M8 (tag `m8-done`, de780a7; R-033 in fd91a5c) — verdict: **approved; R-036 must be fixed before M10**
 
@@ -106,7 +213,6 @@ Verified independently in a clean worktree:
 - G12 for SOUP is added (`rules: 12`), and the answer key is still exact.
 - Content problems: R-036 (blocking before M10) and R-037–R-039.
 
-Resolved in 450b11d: G02 is pre-screened without model calls; linked code is compared to criteria, agreement emits no proposal, and the fixture flags the missing checksum guard with confidence.
 
 **R-013 [non-blocking, by M10] M2 — Test-case steps are one template repeated across all cases** (`data/synthetic/evidence.yaml`, test_case entries)
 - Every case has the same four generic steps ("exercise … with nominal input; challenge its boundary; repeat with invalid input"), and titles end in "— case 0NN".

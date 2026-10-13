@@ -1,6 +1,6 @@
 id: sfmea
 title: "Software Failure Modes and Effects Analysis \u2014 Draft"
-spec_version: 2
+spec_version: 3
 params:
   release:
     required: true
@@ -34,12 +34,13 @@ sections:
   query: sfmea_function_cells
   repeat: software_unit
   repeat_class: C
-  prompt: risk.function@1
+  prompt: risk.function@2
   allowed_kinds:
   - suggested
   max_claims: 5
   synthesis: true
   render_claims: table
+  model_tier: analytical
 - id: risk_row
   title: Risk source and trace
   mode: deterministic
@@ -68,13 +69,14 @@ sections:
   title: Proposed failure mode, cause and effects
   mode: ai
   query: sfmea_cells
-  prompt: risk.cells@1
+  prompt: risk.cells@2
   allowed_kinds:
   - suggested
   max_claims: 5
   synthesis: true
   repeat: hazard
   render_claims: table
+  model_tier: analytical
 - id: risk_acceptance
   title: Residual-risk assessment and acceptance
   mode: human

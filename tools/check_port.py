@@ -45,6 +45,24 @@ def check_port(root: Path = Path("port/copilot_studio")) -> dict:
             .strip()
         )
     graph = validate_graph(json.loads((root / "contracts/canonical_graph.json").read_text()))
+    from dhf.ingest.fixtures import ingest_fixtures
+
+    def semantic(g: dict) -> dict:
+        return {
+            "artifacts": [
+                {
+                    **a,
+                    "source": {
+                        "system": a["source"]["system"],
+                        "revision": a["source"]["revision"],
+                    },
+                }
+                for a in g["artifacts"]
+            ],
+            "links": [{k: v for k, v in e.items() if k != "evidence"} for e in g["links"]],
+        }
+
+    assert semantic(graph) == semantic(ingest_fixtures())
     score = score_findings(
         gaps(graph), yaml.safe_load((root / "contracts/answer_key.yaml").read_text())
     )

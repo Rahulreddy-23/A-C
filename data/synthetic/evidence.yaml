@@ -198,7 +198,7 @@ artifacts:
 - id: SRS-001
   type: software_req
   title: Flow bounds
-  body: Reject flow outside configured bounds. This behavior belongs to COMP-01 and
+  body: Reject flow outside configured bounds. This behavior belongs to COMP-02 and
     prevents silent divergence between operator intent and delivered therapy. Reject
     invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -234,7 +234,7 @@ artifacts:
 - id: SRS-003
   type: software_req
   title: Start interlock
-  body: Reject start when configuration is invalid. This behavior belongs to COMP-03
+  body: Reject start when configuration is invalid. This behavior belongs to COMP-02
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -252,7 +252,7 @@ artifacts:
 - id: SRS-004
   type: software_req
   title: Pause control
-  body: Pause motor output on operator request. This behavior belongs to COMP-04 and
+  body: Pause motor output on operator request. This behavior belongs to COMP-02 and
     prevents silent divergence between operator intent and delivered therapy. Reject
     invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -269,7 +269,7 @@ artifacts:
 - id: SRS-005
   type: software_req
   title: Stop control
-  body: Stop output and preserve delivered volume. This behavior belongs to COMP-05
+  body: Stop output and preserve delivered volume. This behavior belongs to COMP-02
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -286,7 +286,7 @@ artifacts:
 - id: SRS-006
   type: software_req
   title: Rate conversion
-  body: Convert flow into motor pulse intervals. This behavior belongs to COMP-06
+  body: Convert flow into motor pulse intervals. This behavior belongs to COMP-02
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -303,7 +303,7 @@ artifacts:
 - id: SRS-007
   type: software_req
   title: Dose calculation
-  body: Calculate dose from concentration and volume. This behavior belongs to COMP-01
+  body: Calculate dose from concentration and volume. This behavior belongs to COMP-05
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -321,7 +321,7 @@ artifacts:
   type: software_req
   title: Air detection
   body: Stop infusion when air sensor exceeds the configured limit. This behavior
-    belongs to COMP-02 and prevents silent divergence between operator intent and
+    belongs to COMP-03 and prevents silent divergence between operator intent and
     delivered therapy. Reject invalid input explicitly and retain the prior validated
     state on failure.
   attributes:
@@ -355,7 +355,7 @@ artifacts:
 - id: SRS-010
   type: software_req
   title: Sensor diagnostics
-  body: Latch a fault when the sensor disconnects. This behavior belongs to COMP-04
+  body: Latch a fault when the sensor disconnects. This behavior belongs to COMP-03
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -372,7 +372,7 @@ artifacts:
 - id: SRS-011
   type: software_req
   title: Alarm priority
-  body: Prioritize critical faults over advisories. This behavior belongs to COMP-05
+  body: Prioritize critical faults over advisories. This behavior belongs to COMP-04
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -390,7 +390,7 @@ artifacts:
   type: software_req
   title: Alarm latch
   body: Keep critical alarms active until acknowledged safely. This behavior belongs
-    to COMP-06 and prevents silent divergence between operator intent and delivered
+    to COMP-04 and prevents silent divergence between operator intent and delivered
     therapy. Reject invalid input explicitly and retain the prior validated state
     on failure.
   attributes:
@@ -408,7 +408,7 @@ artifacts:
   type: software_req
   title: Alarm acknowledgement
   body: Record acknowledgement without clearing an active unsafe condition. This behavior
-    belongs to COMP-01 and prevents silent divergence between operator intent and
+    belongs to COMP-04 and prevents silent divergence between operator intent and
     delivered therapy. Reject invalid input explicitly and retain the prior validated
     state on failure.
   attributes:
@@ -426,7 +426,7 @@ artifacts:
   type: software_req
   title: Audible alarm
   body: Schedule audible alerts while critical alarms remain active. This behavior
-    belongs to COMP-02 and prevents silent divergence between operator intent and
+    belongs to COMP-04 and prevents silent divergence between operator intent and
     delivered therapy. Reject invalid input explicitly and retain the prior validated
     state on failure.
   attributes:
@@ -443,7 +443,7 @@ artifacts:
 - id: SRS-015
   type: software_req
   title: Display status
-  body: Show operating mode and delivered volume. This behavior belongs to COMP-03
+  body: Show operating mode and delivered volume. This behavior belongs to COMP-01
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -460,7 +460,7 @@ artifacts:
 - id: SRS-016
   type: software_req
   title: Input validation
-  body: Reject malformed operator entries. This behavior belongs to COMP-04 and prevents
+  body: Reject malformed operator entries. This behavior belongs to COMP-01 and prevents
     silent divergence between operator intent and delivered therapy. Reject invalid
     input explicitly and retain the prior validated state on failure.
   attributes:
@@ -478,7 +478,7 @@ artifacts:
   type: software_req
   title: Configuration confirmation
   body: Require confirmation before applying a new configuration. This behavior belongs
-    to COMP-05 and prevents silent divergence between operator intent and delivered
+    to COMP-01 and prevents silent divergence between operator intent and delivered
     therapy. Reject invalid input explicitly and retain the prior validated state
     on failure.
   attributes:
@@ -495,7 +495,7 @@ artifacts:
 - id: SRS-018
   type: software_req
   title: Drug limit validation
-  body: Reject doses outside library limits. This behavior belongs to COMP-06 and
+  body: Reject doses outside library limits. This behavior belongs to COMP-05 and
     prevents silent divergence between operator intent and delivered therapy. Reject
     invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -512,7 +512,7 @@ artifacts:
 - id: SRS-019
   type: software_req
   title: Drug lookup
-  body: Find configured drug records by stable key. This behavior belongs to COMP-01
+  body: Find configured drug records by stable key. This behavior belongs to COMP-05
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -529,7 +529,7 @@ artifacts:
 - id: SRS-020
   type: software_req
   title: Library checksum
-  body: Reject a library with invalid checksum. This behavior belongs to COMP-02 and
+  body: Reject a library with invalid checksum. This behavior belongs to COMP-05 and
     prevents silent divergence between operator intent and delivered therapy. Reject
     invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -617,7 +617,7 @@ artifacts:
   type: software_req
   title: Log integrity
   body: Detect modified log records using content digests. This behavior belongs to
-    COMP-01 and prevents silent divergence between operator intent and delivered therapy.
+    COMP-06 and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
     synthetic: true
@@ -633,7 +633,7 @@ artifacts:
 - id: SRS-026
   type: software_req
   title: Communication framing
-  body: Validate incoming message framing. This behavior belongs to COMP-02 and prevents
+  body: Validate incoming message framing. This behavior belongs to COMP-06 and prevents
     silent divergence between operator intent and delivered therapy. Reject invalid
     input explicitly and retain the prior validated state on failure.
   attributes:
@@ -650,7 +650,7 @@ artifacts:
 - id: SRS-027
   type: software_req
   title: Communication timeout
-  body: Signal a timeout when a response is overdue. This behavior belongs to COMP-03
+  body: Signal a timeout when a response is overdue. This behavior belongs to COMP-06
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -667,7 +667,7 @@ artifacts:
 - id: SRS-028
   type: software_req
   title: Delivery estimation
-  body: Integrate commanded flow over elapsed time. This behavior belongs to COMP-04
+  body: Integrate commanded flow over elapsed time. This behavior belongs to COMP-02
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -684,7 +684,7 @@ artifacts:
 - id: SRS-029
   type: software_req
   title: Watchdog
-  body: Stop output when watchdog heartbeat expires. This behavior belongs to COMP-05
+  body: Stop output when watchdog heartbeat expires. This behavior belongs to COMP-06
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -701,7 +701,7 @@ artifacts:
 - id: SRS-030
   type: software_req
   title: Power loss recovery
-  body: Restore only the last validated configuration. This behavior belongs to COMP-06
+  body: Restore only the last validated configuration. This behavior belongs to COMP-02
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
@@ -720,7 +720,7 @@ artifacts:
 - id: SRS-031
   type: software_req
   title: Time validation
-  body: Reject decreasing event timestamps. This behavior belongs to COMP-01 and prevents
+  body: Reject decreasing event timestamps. This behavior belongs to COMP-06 and prevents
     silent divergence between operator intent and delivered therapy. Reject invalid
     input explicitly and retain the prior validated state on failure.
   attributes:
@@ -738,7 +738,7 @@ artifacts:
   type: software_req
   title: Residual anomaly display
   body: Expose known residual anomalies to the operator. This behavior belongs to
-    COMP-02 and prevents silent divergence between operator intent and delivered therapy.
+    COMP-01 and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:
     synthetic: true
@@ -754,7 +754,7 @@ artifacts:
 - id: SRS-033
   type: software_req
   title: Export audit records
-  body: Export selected audit records on request. This behavior belongs to COMP-03
+  body: Export selected audit records on request. This behavior belongs to COMP-06
     and prevents silent divergence between operator intent and delivered therapy.
     Reject invalid input explicitly and retain the prior validated state on failure.
   attributes:

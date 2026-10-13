@@ -29,7 +29,16 @@ def blocks(markdown: str) -> list[dict]:
         i += 1
         if not line or line.startswith("<!--"):
             continue
-        if line.startswith("|"):
+        if line == "```mermaid":
+            source = []
+            while i < len(lines) and lines[i].strip() != "```":
+                source.append(lines[i])
+                i += 1
+            if i == len(lines):
+                raise ValueError("Unterminated architecture diagram")
+            i += 1
+            output.append({"type": "diagram", "text": "\n".join(source)})
+        elif line.startswith("|"):
             rows = []
             while True:
                 cells = [
@@ -113,7 +122,10 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
         (b["text"] for b in blocks(markdown) if b["type"] == "heading"), "DHF draft"
     )
     section = doc.sections[0]
-    if any(b["type"] == "table" and len(b["rows"][0]) > 5 for b in blocks(markdown)):
+    if any(
+        b["type"] == "diagram" or (b["type"] == "table" and len(b["rows"][0]) > 5)
+        for b in blocks(markdown)
+    ):
         section.orientation = WD_ORIENT.LANDSCAPE
         section.page_width, section.page_height = Inches(11.7), Inches(8.3)
     section.top_margin = section.bottom_margin = Inches(0.65)
@@ -225,9 +237,27 @@ def render_docx(markdown: str, target: Path, baseline: str = "", timestamp: str 
             counts["comments"] += 1
         revision(p, change)
 
+    figure = 0
     for item in paragraph_diff(baseline, markdown):
         block, change = item["block"], item["change"]
-        if block["type"] == "table":
+        if block["type"] == "diagram":
+            from io import BytesIO
+
+            from dhf.render.diagram import diagram_bytes
+
+            figure += 1
+            p = doc.add_paragraph()
+            p.add_run().add_picture(
+                BytesIO(diagram_bytes(block["text"])),
+                width=section.page_width - section.left_margin - section.right_margin,
+            )
+            revision(p, change)
+            content(
+                doc.add_paragraph(style="Caption"),
+                f"Figure {figure}. Component allocation and extracted code dependencies",
+                change,
+            )
+        elif block["type"] == "table":
             table = doc.add_table(rows=0, cols=len(block["rows"][0]))
             table.autofit = False
             weights = [

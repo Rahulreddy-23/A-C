@@ -1,0 +1,23 @@
+id: sutr
+title: Software Unit Test Report
+spec_version: 1
+params:
+  release: {type: string, required: true}
+sections:
+- id: results_summary
+  title: Recorded unit-test results
+  mode: deterministic
+  query: test_results_summary
+  query_params: {test_level: unit}
+  columns: {release: Release, total: Total, passed: Passed, failed: Failed, blocked: Blocked, not_run: Not run}
+  standard_refs: [IEC 62304 5.5]
+- id: unit_trace
+  title: Unit and requirement trace
+  mode: deterministic
+  query: unit_trace
+  columns: {unit: Unit, component: Component, signatures: Interfaces, requirements: Requirements}
+  standard_refs: [IEC 62304 5.5]
+- id: approvals
+  title: Verification review
+  mode: human
+  standard_refs: [IEC 62304 5.5]

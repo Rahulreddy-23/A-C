@@ -135,7 +135,7 @@ uv run dhf generate sdd --release 1.1
 uv run dhf consistency
 ```
 
-The SAD includes a checksummed local Mermaid source file. The SDD groups extracted
+The SAD includes checksummed local Mermaid source and PNG files, with the figure embedded in Word. The SDD groups extracted
 interfaces, structures and explicit allocations per unit. Missing recorded unit
 tests are shown as gaps in the source evidence. Offline mock prose verifies the
 pipeline structure; use a configured provider for human-reviewed prose tuning.
@@ -161,6 +161,31 @@ uv run dhf generate sfmea --release 1.1
 uv run dhf propose
 ```
 
-DRR identity comes from your JSON input (`type`, `date`, `baseline`, `participants`); `--since` selects the previous ingested snapshot for its deterministic scope diff. Discussion, decisions, new actions and approvals remain human fields. sFMEA keeps source severity/controls/verification separate from the suggested analysis cells and human residual-risk assessment. Proposed failure modes do not close F03 until confirmed by a reviewer. L01–L03 proposal files are local suggestions with citations/confidence; they never update ADO. SAD/SDD use grouped navigation headings, readable structure columns and named hazards/controls. G12 identifies missing SOUP requirements or known-anomaly evaluation; the synthetic baseline now has 21 deterministic gaps.
+DRR identity comes from your JSON input (`type`, `date`, `baseline`, `participants`); `--since` selects the previous ingested snapshot for its deterministic scope diff. Discussion, decisions, new actions and approvals remain human fields. Supply `--impact-file <saved-report>` explicitly to include impact findings; reports from unrelated runs are never loaded implicitly. sFMEA keeps source severity/controls/verification separate from the suggested analysis cells and human residual-risk assessment. Proposed failure modes do not close F03 until confirmed by a reviewer. L01–L03 proposal files are local suggestions with citations/confidence; they never update ADO. SAD/SDD use grouped navigation headings, readable structure columns and named hazards/controls. G12 identifies missing SOUP requirements or known-anomaly evaluation; the synthetic baseline now has 21 deterministic gaps.
 
 The [Copilot Studio port pack](port/copilot_studio/README.md) maps the reference to Dataverse, prompt tools and seven Power Automate flows. Run `uv run python tools/check_port.py` to verify exact prompt/contract coverage. Tenant deployment and parity remain pending capability verification.
+
+
+Run the complete offline synthetic demo after `uv sync`:
+
+```sh
+./scripts/demo.sh
+```
+
+Each run starts its own loopback ADO mock and Git repositories in a fresh `out/demo/` folder, uses only the mock LLM, and shuts the server down afterwards. It demonstrates docs PRs, blocked readiness, explicit **test-tooling** simulation of human draft review/owner merge, controlled baselines, live `change_1`, selective redline PRs, YAML-only SUTR/RTM, evaluation and a verified audit ZIP. No eQMS approval is simulated. `out/demo-latest.json` gives paths to the newest run; `out/metrics.md` and JSON contain its metrics. Dependencies must already be installed; the script runs uv offline without synchronization.
+
+```sh
+uv run dhf generate sutr --release 1.1
+uv run dhf generate rtm --release 1.1
+uv run dhf eval --impact-file out/impact.json
+uv run dhf audit-pack --release 1.1
+```
+
+Use `--db` and `--documents` to select a demo run's saved evidence/drafts. For impact evaluation, use its saved **pre-regeneration** report, listed in `out/demo-latest.json`; a missing report is pending, never a perfect score. Impact metrics are regression against a reviewer-audited expectation. The clause appendix indexes source evidence and flags missing unit/integration results and human assessment; it does not assert compliance. Audit export includes prior source revisions used by manifests, cited RTM/gap reports and SHA256SUMS; tampering or a missing referenced source revision fails export/verification.
+
+To switch to a real ADO organization, the owner sets `ADO_BASE_URL`, `ADO_PROJECT`, `ADO_DEVICE_REPO`, `ADO_DOCS_REPO`, source-read/docs-write `APP_ADO_PAT` and `ADO_REQUIRED_REVIEWERS` in the ignored `.env`. Review `specs/ado_mapping.yaml` against the organization's process first. Keep seeder credentials separate; the optional M11 seeder/live contract run is pending a real org. Real company evidence is forbidden from external LLM providers. The latest owner budget instruction imposes a cumulative hard caps of **$2.50 for Anthropic / $4.00 for OpenAI**, actual plus reserved, with Codex's $1.50 build cap and $0.25 run cap; legacy $5 configuration cannot raise those hard caps. Owner `.env` is preserved.
+
+The [sandbox build plan](port/copilot_studio/BUILD_PLAN.md) has three capability tiers, estimates, a cut line and the native/offline demo split. [Sandbox questions](docs/SANDBOX_QUESTIONS.md) select the tier. Tenant execution and native parity still require those capabilities and a recorded test run.
+
+
+Sections select `model_tier: default|analytical` as YAML data. OpenAI defaults to GPT-4.1 mini, with GPT-5.4 mini for risk modes, SSTR conclusion, DRR suggestions and L01–L03. Set `DHF_MODEL_OPENAI_ANALYTICAL` to change that tier. Per-model prices live in `specs/llm/prices.yaml` and accept model-specific overrides (e.g. `DHF_OPENAI_GPT_5_4_MINI_OUTPUT_PER_MILLION`); unknown models require explicit prices. GPT-5 calls omit temperature, use `DHF_OPENAI_REASONING_EFFORT=low` and reserve the visible cap plus `DHF_OPENAI_REASONING_TOKENS=4000` inclusive completion allowance. Each section records model ID and tier; cache identity includes model/tier/reasoning settings. Paid command output shows cumulative headroom. No nano models are enabled. [Official GPT-5.4 mini pricing](https://developers.openai.com/api/docs/models/gpt-5.4-mini), [reasoning token billing](https://developers.openai.com/api/docs/guides/reasoning).

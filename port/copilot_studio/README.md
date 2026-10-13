@@ -22,3 +22,9 @@ This is an implementation blueprint and parity fixture pack, not an imported sol
 Build flows 01–03 before prompts, then 04–06, then 07. Import unchanged document/rule/schema files from `specs/` into a versioned SharePoint configuration library; keep their checksums in GenerationRun. Prompt-tool wrappers below preserve the exact prompt body and cite the same claims.v1 contract. The Azure DevOps connector exposes **Send an HTTP request to Azure DevOps** for REST operations; source reads and docs writes use separate permission boundaries. [Connector reference](https://learn.microsoft.com/en-us/connectors/visualstudioteamservices/).
 
 `catalog.yaml` is the coverage index. `uv run python tools/check_port.py` checks the pack against current specs; executable reference tests remain offline. See [parity_tests.md](parity_tests.md) for tenant execution instructions and expected outputs. Tenant parity is pending, not scored as passed by the local validator.
+
+Start with [BUILD_PLAN.md](BUILD_PLAN.md): a 20–33 hour MVP vertical slice, day-1 capability probes and explicit native/offline demo split. Core governance follows the [native validator](native_validator.md); functions are optional for AST, exact hashing and Word rendering. Prompt inputs are JSON strings passed as text.
+
+Start the sandbox with [BUILD_PLAN.md](BUILD_PLAN.md) (tiers, ordered MVP, estimates, cut line and day-1 gates). Core governance uses the [native validator](native_validator.md); prompt tools take JSON strings as text inputs. Actual tenant size limits and parity remain pending.
+
+Begin with [BUILD_PLAN.md](BUILD_PLAN.md), choose a capability tier using the sandbox questions, and follow [native_validator.md](native_validator.md). Prompt inputs are text JSON. [model_tiers.md](model_tiers.md) maps analytical/default sections to tenant Prompt model choices. Actual size limits, deployment and parity remain pending.

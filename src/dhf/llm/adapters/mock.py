@@ -109,6 +109,9 @@ class MockAdapter:
                     if row["result"] in ids and row["case"] in ids
                 ]
             }
+        if "scope" in pack.get("facts", {}) and "verification_runs" in pack["facts"]:
+            # Reference context is available for validation, not purpose prose.
+            evidence = [a for a in evidence if a["id"].startswith("UN-")]
         return {
             "claims": [
                 {

@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M9 (done) · Development resumed by owner · Last updated: 2026-10-13 IST
+Current milestone: M10 (in progress) · Development resumed by owner · Last updated: 2026-10-13 IST
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -13,10 +13,10 @@ Current milestone: M9 (done) · Development resumed by owner · Last updated: 20
 | M6 | done | m6-done | c98915a | SAD/SDD, allocations and local diagram source |
 | M7 | done | m7-done | 3bde3d8 | Native watch, exact impact, selective PRs and C01–C04 |
 | M8 | done | m8-done | b82108b | DRR, sFMEA, proposals and readability fixes |
-| M9 | done | m9-done | checkpoint below | Complete port blueprint; tenant deployment pending |
+| M9 | done | m9-done | e972cb5 | Complete port blueprint; tenant deployment pending |
 ## Now / Next
-- Working on: M9 complete; starting M10 evaluation, audit export and offline demo.
-- Next: M10 demo and all remaining acceptance checks. The restored stash remains as a backup.
+- Working on: final M10 suite, offline demo and acceptance checkpoint. R-036/R-037 are complete; the latest model-tier/cap/tenant-plan follow-ups are implemented.
+- Next: tag/push m10-done after final checks. Copilot Studio tenant execution remains pending sandbox capabilities. The restored stash remains as a backup.
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -98,6 +98,7 @@ Current milestone: M9 (done) · Development resumed by owner · Last updated: 20
 - Full-document paid-provider narrative review remains optional; single-section OpenAI and Anthropic checks are recorded below. Tests and offline demo use mock.
 - Real ADO M11 — needs a real org; not part of the offline build.
 ## Known issues
+- Copilot Studio tenant deployment/parity is not executed; the local port pack and three-tier plan are complete. Full-document paid-provider semantic review remains a human check.
 ## Deviations from BRIEF (with reason)
 - Synthetic fixture has 20 units and 4 unverified SRS (including risk control SRS-012), meeting the approximate sizes and at-least gap requirements.
 - Local contract tests require sandbox elevation for loopback bind. The test fixture still blocks all external sockets.
@@ -106,8 +107,8 @@ Current milestone: M9 (done) · Development resumed by owner · Last updated: 20
 ## LLM spend (from out/ledger.json)
 | Provider | Spent | Cap |
 |---|---|---|
-| anthropic | $0.0137161 actual + $0.0096725 reserved | $1.50 build / $4 hard stop |
-| openai | $0.0023408 actual + $0.0021046 reserved | $1.50 build / $4 hard stop |
+| anthropic | $0.0137161 actual + $0.0096725 reserved | $1.50 build / $2.50 owner hard cap |
+| openai | $0.24695035 actual + $0.0021046 reserved | $1.50 build / $4.00 owner hard cap |
 
 ### M5 refresh — R-025/R-026 (plus touched-area R-027/R-028)
 - `uv run pytest -q -s` → `52 passed in 39.34s`; exact HTTP scenario regression: `redline: 46/744 paragraphs; 15/175 rows; {'insertions': 30, 'deletions': 16, 'comments': 7}`. Changes are under 10%, confined to affected rows/sections; hyperlink-only changes have zero tracked edits.
@@ -179,3 +180,18 @@ Current milestone: M9 (done) · Development resumed by owner · Last updated: 20
 - Native test IDs use run ID plus result ID (not test-case native ID); run/result revision is `1` with content-hash changes. Dataverse immutable key includes canonical ID and content hash to retain such revisions safely. Native ADO connector authentication does not accept PATs; supported Entra connection and source/docs permission boundaries are documented.
 - Microsoft-primary-source checks document link-only trigger omissions and polling fallback, supported async infrastructure/Teams callback and run-status fallback. No tenant deployment, licenses, custom functions, residency or parity execution is claimed.
 - Full reference checks: `62 passed in 70.28s`; ruff clean / `137 files already formatted`. No paid calls. R-036 is in 212e688 and R-037–R-039 in 450b11d before M10.
+
+
+### M10 implementation and review follow-ups
+- Offline demo includes native HTTP ingestion, docs-only PRs, readiness failures, explicitly labelled test-tooling owner review/merge, baselines, watch/change_1, selective regeneration, YAML SUTR/RTM, eval and checksum audit export. Fresh per-run mock/cache paths preserve owner .env and shared paid ledger. DRR impact input is explicit; it cannot load an unrelated run's global report.
+- R-030: deterministic stdlib PNG (six components, 20 units, two declared interfaces, extracted pressure→alarm call), numbered embedded Word figure, Mermaid/PNG checksums and docs PR assets. Local LibreOffice PDF inspection: SAD 16 pages, sFMEA 26 pages, SSTR 12 pages; all contact sheets inspected and figure/pressure/occlusion pages inspected at full size. No clipping observed; tracked insertions/deletions remain visible. Desktop Word UI remains an optional owner check.
+- R-041: every facts-referenced artifact joins query evidence; bounded synthesis retains compact context and adverse records. The all-AI-section subset and reduction tests pass. FMEA prompts v2 define failure-present effects and a worked row; no model assigns severity or residual risk. Clinical source narratives now agree with their component allocation. Frozen change_1 expectations remove spurious old rotated-component neighbors, add the actual RC-04/latch neighbor and track SRS-021 in pressure prose; occlusion remains stale. Golden visible sections are reviewed source tables; only environment URLs normalize in evaluation.
+- R-042/R-043: BUILD_PLAN contains ordered MVP, hour ranges, cut line, capability gates and A/B/C tiers with scoped parity/native-offline storylines. Tier C specifies Artifact/Link/Section/Run SharePoint lists, indexed run queries, file storage and deliberately narrow size/row caps. Core validator uses native citation/kind/confidence and Power Fx number checks or explicitly blocked numeric compensation. All 21 prompt tools use text JSON inputs; tenant limits remain unverified.
+- R-044/R-045: owner caps are Anthropic $2.50 / OpenAI $4.00 actual+reserved, in addition to run/build caps; paid CLI output shows headroom. Section YAML routes default/analytical models, records model/tier and prices per actual model, prohibits nano and includes reasoning settings in cache identity. GPT-5 omits temperature, sets low effort and reserves the inclusive visible+reasoning ceiling. Offline SDK spies and ledger tests verify this; no paid calls were made during M10 engineering.
+- Initial M10 full suite found two regressions (67 passed, 2 failed): JSON transport overhead and scope mock selection. Both implementations were corrected without relaxing the redline assertions. Subsequent complete suite with model tiers: `73 passed in 78.96s`; final report-isolation check is included in the release suite below.
+- Port completeness: `uv run python tools/check_port.py` → `flows: 7, rules: 22, queries: 47, prompt_tools: 21, reference_contracts: pass, tenant_parity: pending`.
+
+- Final implementation suite: `uv run pytest -q` → `74 passed in 81.48s`; `uv run ruff check .` → `All checks passed!`; `uv run ruff format --check .` → `147 files already formatted`. No skips/xfails or paid API calls.
+- `./scripts/demo.sh` → exit 0; final pre-commit run `out/demo/03c71dc466`. `dhf ingest` → `Snapshot 1: 248 artifacts, 413 links`; `dhf gaps` → `21 deterministic gaps`; `dhf rtm` → `35 RTM rows`; `dhf propose` → `40 proposal checks`; product source PATCH → `403`. Native watch detects `2 changed, 3 added`; selective regeneration completes all four docs and readiness blocks the new SSTR suggestions. All AI sections available, zero validation events.
+- `dhf eval` → `Unknown IDs: 0; gaps precision=1.00 recall=1.00`; `out/metrics.md`/JSON and clause appendix produced. Saved change_1 impact → 75 exact section/status/cause records, precision/recall 1.00. Historical sad-v1 C01/C04 → 2 true positives, no false positives/negatives; current draft consistency → 0. Deterministic baseline goldens → SAD 4 / SDD 5 / SSTR 7 checked, no mismatches. Current coverage → SRS-to-test 31/35 (88.57%), SRS-to-code 33/35 (94.29%), hazard-control-verification paths 8/8; retained G06/G07 remain explicit findings.
+- `dhf audit-pack` → `32 verified files`; tampered ZIP/document and absent manifest-referenced source revisions are rejected by regression tests. `sutr` has 2 sections and `rtm` 2 sections via specs only; Python hash inventory unchanged. SUTR explicitly records no source unit-test results; a separate classified-unit-result test proves filtering.

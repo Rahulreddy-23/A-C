@@ -2,9 +2,12 @@ rules:
 - id: L01
   op: requirement_implementation
   prompt: proposal.implementation@1
+  model_tier: analytical
 - id: L02
   op: orphan_requirement
   prompt: proposal.orphan@1
+  model_tier: analytical
 - id: L03
   op: design_contradiction
   prompt: proposal.contradiction@1
+  model_tier: analytical

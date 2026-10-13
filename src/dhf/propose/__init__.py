@@ -60,6 +60,7 @@ def proposal_jobs(graph: dict, documents: list[dict]) -> list[dict]:
                     "title": rule["id"] + " proposal — " + subject["id"],
                     "query": "proposal_pack",
                     "prompt": rule["prompt"],
+                    "model_tier": rule.get("model_tier", "default"),
                     "allowed_kinds": ["suggested"],
                     "max_claims": 3,
                     "synthesis": True,

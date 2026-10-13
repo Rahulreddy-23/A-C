@@ -181,6 +181,11 @@ def query(graph: dict, name: str, params: dict) -> dict:
         design = design_query(graph, name, params)
         facts, evidence = design["facts"], design["evidence"]
     selected = {a["id"]: a for a in evidence}
+    # Structured relationships are evidence dependencies, just as body citations are.
+    for id in ID_PATTERN.findall(canonical(facts)):
+        id = id.rstrip(".")
+        if id in nodes:
+            selected[id] = nodes[id]
     # Keep referenced context in the pack, including when prose names a component.
     pending = list(selected.values())
     while pending:

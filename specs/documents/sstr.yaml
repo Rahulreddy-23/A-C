@@ -1,6 +1,6 @@
 id: sstr
 title: Software System Test Report
-spec_version: 4
+spec_version: 5
 standard_refs:
 - IEC 62304 5.7
 - IEC 62304 5.8
@@ -133,6 +133,7 @@ sections:
   - numbers_match_facts
   max_claims: 6
   synthesis: true
+  model_tier: analytical
 - id: evidence_index
   title: Evidence index
   mode: deterministic

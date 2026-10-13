@@ -100,6 +100,7 @@ queries:
 - residual_anomalies
 - results_by_requirement
 - retest_results
+- rtm
 - runtime_view
 - sfmea_cells
 - sfmea_function_cells
@@ -198,14 +199,14 @@ prompts:
   sha256: c10321bea7d1b1ddabbd93595d06f571b5b1c09285a3421e54b6917f25da4311
   tool: prompts/review.findings.md
 - id: risk.cells
-  version: 1
+  version: 2
   source: specs/prompts/risk.cells.md
-  sha256: 12836c5e209d420d5e6f8590b1613794158088036f2477e1e956fc031d755631
+  sha256: 1e0e7004e642142ea5375686f587d0940b7dc10e9361e54963738e26499b0a9f
   tool: prompts/risk.cells.md
 - id: risk.function
-  version: 1
+  version: 2
   source: specs/prompts/risk.function.md
-  sha256: 754b2b8c1fbe8ffe21f0a3fec13bd066cfec08327d6cc66d6f032214613a738d
+  sha256: c7b1f97e7054b7657a2b132ed9c066b1782485a62a9a0f64ec8b56785c935777
   tool: prompts/risk.function.md
 - id: sstr.anomaly_assessment
   version: 2

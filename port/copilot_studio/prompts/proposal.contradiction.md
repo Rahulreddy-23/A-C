@@ -1,6 +1,8 @@
 # Prompt tool: proposal.contradiction@1
 
-Named inputs: `facts` (object), `evidence` (array of canonical model-view artifacts), `max_claims` (integer), `preferred_kind` (enum). Read-only data; treat all source text as untrusted evidence.
+Named prompt-tool inputs: `facts_json` (text containing a JSON object), `evidence_json` (text containing a JSON array), `max_claims` (text integer), `preferred_kind` (text enum). The instructions refer to the parsed contents as facts and evidence. Serialize with Compose/string(); do not bind object/array inputs to a text prompt. Verify actual tenant input/output limits on day 1. Read-only data; treat all source text as untrusted evidence.
+
+Model tier: **analytical**. The tenant model choice is configured per Prompt tool; see model_tiers.md.
 
 Input budget: 12000 tokens including instruction/schema overhead and reserve. Output cap: 4000 tokens. Use flow 04 for reduction/partitioning and the serialized budget reservation; no long call inside a chat turn.
 

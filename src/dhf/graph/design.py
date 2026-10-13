@@ -110,6 +110,21 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
             for e in edges
             if e["type"] == "allocated_to" and e["src"] in ids and e["dst"] in ids
         ]
+        from pathlib import Path
+
+        import yaml
+
+        for interface in yaml.safe_load(Path("specs/render/interfaces.yaml").read_text())[
+            "interfaces"
+        ]:
+            component = nodes[interface["component"]]
+            label = " / ".join(
+                component["attributes"]["interfaces"][i] for i in interface["indices"]
+            )
+            lines.append(f'  {interface["id"]}["{label}"]')
+            lines.append(
+                f"  {interface['id']} -->|declared interface| {component['id'].replace('-', '_')}"
+            )
         for d in structure()["dependencies"]:
             lines.append(
                 f"  {d['from_component'].replace('-', '_')} -->|{d['call']}| "

@@ -128,7 +128,12 @@ def partition_pack(pack: dict, budget: int) -> list[dict]:
 
 def reduce_synthesis(model_pack: dict, source_pack: dict, budget: int) -> tuple[dict, dict]:
     """Deterministic context reduction; adverse outcomes and defects retain priority."""
-    if estimate_tokens(canonical(model_pack)) <= budget:
+
+    def token_size(value: dict) -> int:
+        # Also bound ordinary JSON transports that insert whitespace/escape Unicode.
+        return max(estimate_tokens(canonical(value)), estimate_tokens(json.dumps(value)))
+
+    if token_size(model_pack) <= budget:
         return model_pack, {"reduced": False}
     sources = {a["id"]: a for a in source_pack["evidence"]}
     priority = [
@@ -142,6 +147,21 @@ def reduce_synthesis(model_pack: dict, source_pack: dict, budget: int) -> tuple[
     ]
     if not priority:
         priority = model_pack["evidence"]
+    required = {id.rstrip(".") for id in ID_PATTERN.findall(canonical(model_pack["facts"]))}
+    compact = [
+        {
+            "id": a["id"],
+            "title": a["title"],
+            "revision": a["revision"],
+            "body": "",
+            "attributes": a["attributes"],
+            "properties": {},
+            "compact_context": True,
+        }
+        for a in model_pack["evidence"]
+        if a["id"] in required and a["id"] not in {p["id"] for p in priority}
+    ]
+    priority += compact
     priority_ids = {a["id"] for a in priority}
     omitted = [a for a in model_pack["evidence"] if a["id"] not in priority_ids]
     facts = {
@@ -152,13 +172,14 @@ def reduce_synthesis(model_pack: dict, source_pack: dict, budget: int) -> tuple[
     audit = {
         "reduced": True,
         "omitted_context_ids": [a["id"] for a in omitted],
-        "original_tokens": estimate_tokens(canonical(model_pack)),
+        "original_tokens": token_size(model_pack),
         "excerpted_ids": [],
+        "compact_context_ids": [a["id"] for a in compact],
         "injected_facts": facts,
     }
     # Preserve full narratives in the manifest; compact only the provider view.
     for limit in (512, 256, 128, 0):
-        if estimate_tokens(canonical(reduced)) <= budget:
+        if token_size(reduced) <= budget:
             break
         reduced = {
             "facts": facts,
@@ -168,7 +189,7 @@ def reduce_synthesis(model_pack: dict, source_pack: dict, budget: int) -> tuple[
                     "title": a["title"],
                     "revision": a["revision"],
                     "body": a["body"][:limit],
-                    "body_excerpt": True,
+                    **({"body_excerpt": True} if limit else {}),
                     "attributes": a["attributes"],
                     "properties": {
                         k: v
@@ -188,7 +209,7 @@ def reduce_synthesis(model_pack: dict, source_pack: dict, budget: int) -> tuple[
             ],
         }
         audit["excerpted_ids"] = [a["id"] for a in priority]
-    audit["reduced_tokens"] = estimate_tokens(canonical(reduced))
+    audit["reduced_tokens"] = token_size(reduced)
     if audit["reduced_tokens"] > budget:
         raise EvidenceOverBudget(
             "Critical evidence and gap facts exceed the synthesis token budget"
@@ -309,6 +330,8 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
     )
     responses = []
     prompts = []
+    tier = section.get("model_tier", "default")
+    model = {"provider": llm.provider, "name": llm.model_for(tier), "tier": tier}
     if section["mode"] == "ai":
         prompt = load_prompt(section["prompt"])
         prompts = [{k: prompt[k] for k in ("id", "version", "sha256")}]
@@ -336,6 +359,7 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
                     prompt["body"],
                     chunk,
                     prompt["max_output_tokens"],
+                    model_tier=tier,
                 )
                 chunk_ids = {a["id"] for a in chunk["evidence"]}
                 validation_pack = {
@@ -344,7 +368,7 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
                 }
                 responses.append(validate_claims(raw, validation_pack, section["allowed_kinds"]))
         except DraftingUnavailable as exc:
-            return finish_section(section, pack, [], prompts, exc.details)
+            return {**finish_section(section, pack, [], prompts, exc.details), "model": model}
         except (BudgetExceeded, ValidationError, json.JSONDecodeError, ValueError) as exc:
             reason = (
                 "budget_exceeded"
@@ -361,8 +385,8 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
                 if isinstance(exc, (BudgetExceeded, EvidenceOverBudget))
                 else "Generated output failed local parsing or validation"
             )
-            return finish_section(section, pack, [], prompts, failure.details)
-    result = finish_section(section, pack, responses, prompts)
+            return {**finish_section(section, pack, [], prompts, failure.details), "model": model}
+    result = {**finish_section(section, pack, responses, prompts), "model": model}
     if section["mode"] == "ai":
         result["evidence_reduction"] = reduction
     return result
@@ -462,19 +486,17 @@ def generate_document(
             graph, [c for s in sections for c in s["claims"]]
         )
     out.mkdir(parents=True, exist_ok=True)
-    diagrams = []
-    for section in sections:
-        if "diagram" in section["facts"]:
-            path = out / (doc + "." + section["id"] + ".mmd")
-            source = section["facts"]["diagram"] + "\n"
-            path.write_text(source)
-            diagrams.append({"file": path.name, "sha256": sha(source), "format": "mermaid-source"})
-    result["manifest"]["diagrams"] = diagrams
+    from dhf.render.diagram import write_diagrams
+
+    result["manifest"]["diagrams"] = write_diagrams(doc, sections, out)
     from dhf.render import render_docx
 
     result["manifest"]["docx"] = render_docx(
         result["markdown"], out / (doc + ".docx"), timestamp=context["generated_at"]
     )
+    result["manifest"]["docx"]["sha256"] = hashlib.sha256(
+        (out / (doc + ".docx")).read_bytes()
+    ).hexdigest()
     (out / (doc + ".md")).write_text(result["markdown"])
     (out / (doc + ".manifest.json")).write_text(json.dumps(result["manifest"], indent=2))
     return result

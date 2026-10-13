@@ -1,0 +1,4 @@
+# Declared source interface fields to show at the edge of the component diagram.
+interfaces:
+- {id: EXT_operator, component: COMP-01, indices: [0, 1]}
+- {id: EXT_samples, component: COMP-03, indices: [0, 2]}

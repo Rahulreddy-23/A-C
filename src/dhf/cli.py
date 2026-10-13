@@ -1,4 +1,9 @@
+from typing import TYPE_CHECKING
+
 import typer
+
+if TYPE_CHECKING:
+    from dhf.llm import LLM
 
 app = typer.Typer(
     help="Evidence-backed DHF drafts, traceability and review workflows.", no_args_is_help=True
@@ -87,26 +92,9 @@ def gaps_command(db: str = "out/evidence.sqlite") -> None:
     (out / "gaps.json").write_text(
         json.dumps({"findings": findings, "coverage": coverage(graph)}, indent=2)
     )
-    from collections import Counter
+    from dhf.trace.reports import gap_rules, gaps_markdown
 
-    import yaml
-
-    counts = Counter(f["rule"] for f in findings)
-    rules = yaml.safe_load(Path("specs/rules/gaps.yaml").read_text())["rules"]
-    summary = (
-        "# Evidence gaps\n\n| Rule | Count | Why it matters | Recommended action |\n"
-        "|---|---:|---|---|\n"
-    )
-    summary += "".join(
-        f"| {r['id']} | {counts[r['id']]} | {r['title']} | {r['action']} |\n" for r in rules
-    )
-    detail = "\n| Rule | Artifact revision | Finding | Recommended action |\n|---|---|---|---|\n"
-    detail += "".join(
-        f"| {f['rule']} | [{f['artifact_id']}@r{f['revision']}]({f['source_url']}) | "
-        f"{f['message']} | {f['action']} |\n"
-        for f in findings
-    )
-    (out / "gaps.md").write_text(summary + detail)
+    (out / "gaps.md").write_text(gaps_markdown(findings, gap_rules()))
     typer.echo(f"{len(findings)} deterministic gaps → out/gaps.md + out/gaps.json")
 
 
@@ -126,25 +114,9 @@ def rtm_command(release: str = "1.1", db: str = "out/evidence.sqlite") -> None:
     finally:
         store.close()
     Path("out/rtm.json").write_text(json.dumps(rows, indent=2))
-    nodes = {a["id"]: a for a in graph["artifacts"]}
+    from dhf.trace.reports import rtm_markdown
 
-    def citation(id: str) -> str:
-        return f"[{id}]({nodes[id]['source']['url']})"
-
-    text = (
-        "# Requirement trace matrix\n\n"
-        "| Requirement | Rev | Components | Units | Changes | Tests | Latest results |\n"
-        "|---|---|---|---|---|---|---|\n"
-    )
-    for r in rows:
-        cells = [citation(r["requirement"]), r["revision"]]
-        cells += [
-            ", ".join(citation(id) for id in r[key])
-            for key in ("components", "units", "changes", "tests")
-        ]
-        cells += [", ".join(citation(v["result"]) + ": " + v["outcome"] for v in r["results"])]
-        text += "| " + " | ".join(cells) + " |\n"
-    Path("out/rtm.md").write_text(text)
+    Path("out/rtm.md").write_text(rtm_markdown(graph, rows))
     typer.echo(f"{len(rows)} RTM rows → out/rtm.md + out/rtm.json")
 
 
@@ -158,6 +130,8 @@ def generate(
     debug: bool = False,
     input_file: str | None = None,
     since: int | None = None,
+    documents: str = "out/documents",
+    impact_file: str | None = None,
 ) -> None:
     """Generate a typed, cited DHF draft from its YAML document specification."""
     from pathlib import Path
@@ -181,7 +155,7 @@ def generate(
         import json
 
         params["documents"] = [
-            json.loads(p.read_text()) for p in Path("out/documents").glob("*.manifest.json")
+            json.loads(p.read_text()) for p in Path(documents).glob("*.manifest.json")
         ]
         from dhf.ingest.ado import ADO
         from dhf.review import DocsReview
@@ -198,12 +172,16 @@ def generate(
                 params["previous_snapshot"] = prior.graph(since)
             finally:
                 prior.close()
-        if Path("out/impact.json").exists():
-            params["impact_reports"] = json.loads(Path("out/impact.json").read_text())
-    result = generate_document(doc, graph, params, provider)
+        if impact_file:
+            params["impact_reports"] = json.loads(Path(impact_file).read_text())
+    from dhf.llm import LLM
+
+    llm = LLM(provider)
+    result = generate_document(doc, graph, params, provider, out=Path(documents), llm=llm)
+    report_budget(llm)
     report_drafting_failures(result["manifest"]["sections"], debug)
     typer.echo(
-        f"{doc}: {len(result['manifest']['sections'])} sections → out/documents/{doc}.md + manifest"
+        f"{doc}: {len(result['manifest']['sections'])} sections → {documents}/{doc}.md + manifest"
     )
     typer.echo(f"Validation: { {k: len(v) for k, v in result['manifest']['validation'].items()} }")
     if open_pr:
@@ -217,16 +195,24 @@ def generate(
         try:
             review = DocsReview(ado)
             published = review.publish(result, gap_count=len(gaps(graph)))
-            Path(f"out/documents/{doc}.docx").write_bytes(
-                (review.root / (doc + ".docx")).read_bytes()
-            )
-            Path(f"out/documents/{doc}.manifest.json").write_text(
+            Path(documents, doc + ".docx").write_bytes((review.root / (doc + ".docx")).read_bytes())
+            Path(documents, doc + ".manifest.json").write_text(
                 json.dumps(result["manifest"], indent=2)
             )
             typer.echo(f"PR {published['pr_id']}: {published['pr_url']}")
             typer.echo(f"Readiness: {len(published['readiness']['blockers'])} blockers")
         finally:
             ado.close()
+
+
+def report_budget(llm: "LLM") -> None:
+    if llm.provider != "mock":
+        budget = llm.budget_status()
+        typer.echo(
+            f"{budget['provider']} cumulative headroom: ${budget['remaining_usd']:.6f} "
+            f"of ${budget['hard_cap_usd']:.2f} hard cap "
+            f"(actual ${budget['actual_usd']:.6f}, reserved ${budget['reserved_usd']:.6f})"
+        )
 
 
 def report_drafting_failures(sections: list[dict], debug: bool = False) -> None:
@@ -278,6 +264,7 @@ def generate_section_command(
     llm = LLM(provider)
     result = generate_section(selected, graph, {"release": release}, llm)
     report_drafting_failures([result], debug)
+    report_budget(llm)
     target = Path(f"out/cross-provider/{doc}-{section}-{provider}.json")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(result, indent=2))
@@ -428,13 +415,22 @@ def regenerate_command(
         raise typer.BadParameter("Specify --stale")
     graph, reports = document_impacts(db, documents)
     root = Path(documents)
+    from dhf.llm import LLM
+
+    llms: dict[str, LLM] = {}
     for report in reports:
         changed = [s["id"] for s in report["sections"] if s["status"] == "stale"]
         if not changed:
             continue
         doc = report["document"]
         manifest = json.loads((root / (doc + ".manifest.json")).read_text())
-        result = regenerate(graph, manifest, (root / (doc + ".md")).read_text(), report, root)
+        provider = manifest["model"]["provider"]
+        if provider not in llms:
+            llms[provider] = LLM(provider)
+        result = regenerate(
+            graph, manifest, (root / (doc + ".md")).read_text(), report, root, llms[provider]
+        )
+        report_budget(llms[provider])
         typer.echo(f"{doc}: regenerated {len(changed)} sections")
         if open_pr:
             ado = ADO()
@@ -444,6 +440,9 @@ def regenerate_command(
                 )
                 (root / (doc + ".manifest.json")).write_text(
                     json.dumps(result["manifest"], indent=2)
+                )
+                (root / (doc + ".docx")).write_bytes(
+                    (DocsReview(ado).root / (doc + ".docx")).read_bytes()
                 )
                 typer.echo(f"PR {published['pr_id']}: {published['pr_url']}")
             finally:
@@ -513,5 +512,83 @@ def propose_command(
     finally:
         store.close()
     manifests = [json.loads(p.read_text()) for p in Path(documents).glob("*.manifest.json")]
-    result = propose(graph, manifests, llm=LLM(provider))
+    llm = LLM(provider)
+    result = propose(graph, manifests, llm=llm)
+    report_budget(llm)
     typer.echo(f"{len(result['sections'])} proposal checks → out/proposals/proposals.md + JSON")
+
+
+@app.command("eval")
+def eval_command(
+    db: str = "out/evidence.sqlite",
+    documents: str = "out/documents",
+    impact_file: str | None = None,
+    baseline_snapshot: int = 1,
+) -> None:
+    """Score synthetic baseline goldens and saved pre-regeneration change impact."""
+    import json
+    from pathlib import Path
+
+    from dhf.evaluation import clause_markdown, evaluate, metrics_markdown
+    from dhf.graph import Store
+
+    root = Path(documents)
+    manifests = [json.loads(p.read_text()) for p in sorted(root.glob("*.manifest.json"))]
+    if not manifests:
+        raise typer.BadParameter("Generate documents first")
+    store = Store(Path(db))
+    try:
+        graph, baseline = store.graph(), store.graph(baseline_snapshot)
+    finally:
+        store.close()
+    if not baseline["artifacts"]:
+        raise typer.BadParameter("Unknown baseline snapshot")
+    reports = json.loads(Path(impact_file).read_text()) if impact_file else None
+    result = evaluate(
+        graph,
+        baseline,
+        manifests,
+        {d["doc_id"]: (root / (d["doc_id"] + ".md")).read_text() for d in manifests},
+        reports,
+    )
+    Path("out").mkdir(exist_ok=True)
+    Path("out/metrics.json").write_text(json.dumps(result, indent=2))
+    Path("out/metrics.md").write_text(metrics_markdown(result))
+    Path("out/clause_coverage.md").write_text(clause_markdown(result["clause_coverage"]))
+    typer.echo(
+        f"Unknown IDs: {result['unknown_id_count']}; "
+        f"gaps precision={result['gap_detection']['precision']:.2f} "
+        f"recall={result['gap_detection']['recall']:.2f}"
+    )
+    typer.echo("Metrics → out/metrics.md + JSON; clause appendix → out/clause_coverage.md")
+    if (
+        result["unknown_ids"]
+        or result["schema_errors"]
+        or any(d["mismatches"] for d in result["deterministic_goldens"].values())
+    ):
+        raise typer.Exit(1)
+
+
+@app.command("audit-pack")
+def audit_pack_command(
+    release: str = "1.1",
+    db: str = "out/evidence.sqlite",
+    documents: str = "out/documents",
+    output: str = "out/audit-pack.zip",
+) -> None:
+    """Export draft documents, provenance snapshots, trace reports and checked hashes."""
+    from pathlib import Path
+
+    from dhf.graph import Store
+    from dhf.review.audit import audit_pack
+
+    store = Store(Path(db))
+    try:
+        snapshots = [
+            store.graph(row[0])
+            for row in store.db.execute("SELECT id FROM snapshots ORDER BY id").fetchall()
+        ]
+    finally:
+        store.close()
+    result = audit_pack(snapshots, Path(documents), Path(output), release)
+    typer.echo(f"Audit pack: {result['verified_files']} verified files → {output}")

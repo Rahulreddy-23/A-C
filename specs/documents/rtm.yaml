@@ -1,0 +1,15 @@
+id: rtm
+title: Requirement Traceability Matrix
+spec_version: 1
+params:
+  release: {type: string, required: true}
+sections:
+- id: trace
+  title: Requirement traceability
+  mode: deterministic
+  query: rtm
+  columns: {requirement: Requirement, revision: Revision, components: Components, units: Units, changes: Changes, tests: Tests, results: Latest results}
+  standard_refs: [IEC 62304 5.2]
+- id: review
+  title: Trace review and dispositions
+  mode: human

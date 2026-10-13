@@ -129,7 +129,22 @@ class DocsReview:
             **counts,
         }
         (self.root / (doc + ".manifest.json")).write_text(json.dumps(manifest, indent=2))
-        git_command(["add", "--", doc + ".md", doc + ".docx", doc + ".manifest.json"], self.root)
+        from dhf.render.diagram import write_diagrams
+
+        diagrams = write_diagrams(doc, manifest["sections"], self.root)
+        manifest["diagrams"] = diagrams
+        (self.root / (doc + ".manifest.json")).write_text(json.dumps(manifest, indent=2))
+        git_command(
+            [
+                "add",
+                "--",
+                doc + ".md",
+                doc + ".docx",
+                doc + ".manifest.json",
+                *(d["file"] for d in diagrams),
+            ],
+            self.root,
+        )
         if git_command(["diff", "--cached", "--name-only"], self.root):
             git_command(
                 [

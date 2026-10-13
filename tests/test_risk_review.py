@@ -185,3 +185,50 @@ def test_function_analysis_uses_real_callables_and_baseline_findings(tmp_path):
         s["id"] for s in proposals["sections"] if s["id"].startswith("L01") and s["claims"]
     ] == ["L01.SRS-020"]
     assert "L01.SRS-001" not in (tmp_path / "proposals/proposals.md").read_text()
+
+
+def test_drr_uses_only_the_explicit_impact_report(tmp_path, monkeypatch, ado_server):
+    import shutil
+
+    from typer.testing import CliRunner
+
+    from dhf.cli import app
+    from dhf.graph import Store
+    from dhf.review import DocsReview
+
+    graph = ingest_fixtures()
+    review_input = Path("data/synthetic/review_input.json").resolve()
+    shutil.copytree("specs", tmp_path / "specs")
+    db = tmp_path / "evidence.sqlite"
+    store = Store(db)
+    store.ingest(graph)
+    store.close()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DHF_CACHE_ROOT", str(tmp_path / "llm"))
+    monkeypatch.setenv("ADO_BASE_URL", f"http://127.0.0.1:{ado_server.server_port}/kestrel-org")
+    monkeypatch.setenv("APP_ADO_PAT", "mock-app-token")
+    monkeypatch.setattr(DocsReview, "approved_documents", lambda self: [])
+    Path("out").mkdir()
+    Path("out/impact.json").write_text("Unrelated run; invalid JSON must not be read")
+    command = [
+        "generate",
+        "drr",
+        "--db",
+        str(db),
+        "--documents",
+        str(tmp_path / "docs"),
+        "--input-file",
+        str(review_input),
+        "--since",
+        "1",
+    ]
+    result = CliRunner().invoke(app, command)
+    assert result.exit_code == 0, result.output
+    manifest_path = tmp_path / "docs/drr.manifest.json"
+    assert "impact_reports" not in json.loads(manifest_path.read_text())["params"]
+    report = [{"document": "sstr", "sections": [{"id": "anomaly_assessment", "status": "stale"}]}]
+    supplied = tmp_path / "own-impact.json"
+    supplied.write_text(json.dumps(report))
+    result = CliRunner().invoke(app, [*command, "--impact-file", str(supplied)])
+    assert result.exit_code == 0, result.output
+    assert json.loads(manifest_path.read_text())["params"]["impact_reports"] == report

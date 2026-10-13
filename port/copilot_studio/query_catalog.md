@@ -1,6 +1,6 @@
 # Named query flows
 
-Each query returns `{facts,evidence}`; graph membership is fixed by SnapshotNumber. Evidence includes full provenance. Follow ID references in body until closure, deduplicate and sort IDs; source_numbers is a validation-only fact and never an impact cause. Entity and release inputs are named, not hidden state.
+Each query returns `{facts,evidence}`; graph membership is fixed by SnapshotNumber. Evidence includes full provenance. Include every ID referenced by facts, then follow ID references in body until closure, deduplicate and sort IDs; source_numbers is a validation-only fact and never an impact cause. Entity and release inputs are named, not hidden state.
 
 | Query | Construct and selection |
 |---|---|
@@ -29,6 +29,7 @@ Each query returns `{facts,evidence}`; graph membership is fixed by SnapshotNumb
 | residual_anomalies | Dataverse filtered view/child flow: All open defects and source residual_listed flag; draft disposition as suggested. |
 | results_by_requirement | Dataverse filtered view/child flow: RTM rows for release with cases and latest outcomes; dates/IDs exact. |
 | retest_results | Dataverse filtered view/child flow: Latest release results whose source run is a retest, exact cases/outcomes. |
+| rtm | Dataverse filtered view/child flow: For every software requirement attach exact revision, component allocations, incoming implementing units/PRs and verifying cases with unique latest results. Compute coverage in code. |
 | runtime_view | Dataverse filtered view/child flow: Components, ADRs, hazards and controls; deterministic unit allocation/signatures/imported call dependencies and per-component hazard controls. |
 | sfmea_cells | Dataverse filtered view/child flow: Same bounded hazard context; revision map makes changed implementation/retest stale. Five labelled suggested cells. |
 | sfmea_function_cells | Dataverse filtered view/child flow: Same function source trace plus exact revision dependencies and five authoring labels. Draft one failure mode per Class C primary function; all cells suggested. |

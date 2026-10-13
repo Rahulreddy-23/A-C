@@ -35,7 +35,7 @@ def test_caps_persistence_and_failed_reservation(tmp_path: Path, monkeypatch) ->
     llm = LLM("openai", tmp_path, MockAdapter(), run_cap=20, build_cap=20, total_cap=5)
     llm.generate("t", 1, "p", PACK, 1000)
     spent = json.loads((tmp_path / "ledger.json").read_text())["openai"]["reserved_usd"]
-    assert 2 < spent < 4  # First reservation fits the 80% stop; a second cannot.
+    assert 2 < spent < 4  # First reservation fits the hard cap; a second cannot.
     with pytest.raises(BudgetExceeded):
         LLM("openai", tmp_path, MockAdapter(), run_cap=20, build_cap=20, total_cap=5).generate(
             "t", 2, "p", PACK, 1000
@@ -333,3 +333,88 @@ def test_sdk_error_is_sanitized_in_section_cli(monkeypatch, capsys) -> None:
     output = capsys.readouterr().out
     assert "openai" in output and "http=401" in output and "request=req-test" in output
     assert "sk-sensitive" not in output and "Traceback" not in output
+
+
+@pytest.mark.parametrize("provider,cap", [("openai", 4.00), ("anthropic", 2.50)])
+def test_owner_hard_cap_counts_actual_and_outstanding_even_with_legacy_config(
+    tmp_path, monkeypatch, provider, cap
+):
+    from dhf.llm.adapters.mock import MockAdapter
+
+    monkeypatch.setenv("DHF_PROVIDER_BUDGET_USD", "5")
+    monkeypatch.setenv("DHF_HARD_CAP_USD", "5")
+    monkeypatch.setenv("DHF_OPENAI_INPUT_PER_MILLION", "1")
+    monkeypatch.setenv("DHF_OPENAI_OUTPUT_PER_MILLION", "1")
+    path = tmp_path / "ledger.json"
+    tmp_path.mkdir(exist_ok=True)
+    path.write_text(json.dumps({provider: {"actual_usd": cap - 0.10, "reserved_usd": 0.0999}}))
+    llm = LLM(provider, tmp_path, MockAdapter(), run_cap=10, build_cap=10, total_cap=10)
+    assert llm.hard_cap == cap
+    with pytest.raises(BudgetExceeded):
+        llm.generate("cap", 1, "p", PACK, 1000)
+    assert llm.calls == 0
+    from typer.testing import CliRunner
+
+    from dhf.cli import report_budget
+
+    assert llm.budget_status()["remaining_usd"] == pytest.approx(0.0001)
+    import typer
+
+    cli = typer.Typer()
+    cli.command()(lambda: report_budget(llm))
+    output = CliRunner().invoke(cli).output
+    assert f"cumulative headroom: $0.000100 of ${cap:.2f} hard cap" in output
+    assert json.loads(path.read_text())[provider]["actual_usd"] == cap - 0.10
+
+
+def test_openai_gpt5_parameters_and_inclusive_usage(monkeypatch):
+    from types import SimpleNamespace as NS
+
+    import dhf.llm.adapters.openai as oa
+
+    monkeypatch.setenv("OPENAI_API_KEY", "fake-not-a-real-key")
+    captured = []
+
+    def create(**kwargs):
+        captured.append(kwargs)
+        return NS(
+            choices=[NS(finish_reason="stop", message=NS(refusal=None, content='{"claims":[]}'))],
+            usage=NS(prompt_tokens=20, completion_tokens=150),
+        )
+
+    monkeypatch.setattr(oa, "OpenAI", lambda **_: NS(chat=NS(completions=NS(create=create))))
+    result = oa.OpenAIAdapter().complete("gpt-5.4-mini", "p", PACK, 8000)
+    assert "temperature" not in captured[0]
+    assert captured[0]["reasoning_effort"] == "low"
+    assert captured[0]["max_completion_tokens"] == 8000
+    assert result["_usage"]["output_tokens"] == 150
+    oa.OpenAIAdapter().complete("gpt-4.1-mini", "p", PACK, 4000)
+    assert captured[1]["temperature"] == 0 and "reasoning_effort" not in captured[1]
+
+
+def test_model_tiers_prices_reasoning_reservation_and_cache(tmp_path, monkeypatch):
+    from dhf.llm.adapters.mock import MockAdapter
+
+    seen = []
+
+    class CaptureAdapter(MockAdapter):
+        def complete(self, model, prompt, pack, limit):
+            seen.append((model, limit))
+            return {"claims": []}
+
+    llm = LLM("openai", tmp_path, CaptureAdapter())
+    llm.generate("tier", 1, "p", PACK, 4000)
+    llm.generate("tier", 1, "p", PACK, 4000, model_tier="analytical")
+    assert seen == [("gpt-4.1-mini", 4000), ("gpt-5.4-mini", 8000)]
+    assert llm.prices("gpt-5.4-mini") == (0.75, 4.50)
+    assert llm.prices("gpt-5.5") == (5.00, 30.00)
+    # Reasoning allowance alone reserves at least 4000 * $4.50 / 1M.
+    assert json.loads((tmp_path / "ledger.json").read_text())["openai"]["reserved_usd"] > 0.036
+    llm.generate("tier", 1, "p", PACK, 4000, model_tier="analytical")
+    assert llm.hits == 1 and len(seen) == 2
+    monkeypatch.setenv("DHF_OPENAI_REASONING_EFFORT", "medium")
+    llm.generate("tier", 1, "p", PACK, 4000, model_tier="analytical")
+    assert len(seen) == 3
+    monkeypatch.setenv("DHF_MODEL_OPENAI_ANALYTICAL", "gpt-5.4-nano")
+    with pytest.raises(ValueError, match="Nano"):
+        llm.generate("tier", 1, "p", PACK, model_tier="analytical")

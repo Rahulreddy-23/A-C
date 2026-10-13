@@ -1,0 +1,9 @@
+# Standard text token prices per million USD, verified 2026-10-13.
+# https://developers.openai.com/api/docs/models/gpt-4.1-mini
+# https://developers.openai.com/api/docs/models/gpt-5.4-mini
+# https://developers.openai.com/api/docs/models/gpt-5.5
+# Re-verify before live use; regional/service-tier uplifts need explicit price overrides.
+openai:
+  gpt-4.1-mini: {input: 0.40, output: 1.60}
+  gpt-5.4-mini: {input: 0.75, output: 4.50}
+  gpt-5.5: {input: 5.00, output: 30.00}

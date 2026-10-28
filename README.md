@@ -1,4 +1,7 @@
 # A-C
+
+New to the project? Start with the [plain-language project and local demo guide](docs/LOCAL_DEMO_GUIDE.md).
+
 ## 60-second quick start
 
 With Python 3.12 and uv installed:

@@ -62,6 +62,8 @@ These are the document names you will see:
 
 Opening or refreshing the HTML file displays saved results. It does not run document generation. You can explore the prepared demonstration without starting a server or using AI credentials.
 
+For the input → processing → output story, current import/upload limits and a command-by-command example, read [INPUT_OUTPUT_DEMO.md](INPUT_OUTPUT_DEMO.md).
+
 ## 4. Open the existing demo — easiest option
 
 1. Open **Finder**.

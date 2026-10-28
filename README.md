@@ -2,6 +2,8 @@
 
 New to the project? Start with the [plain-language project and local demo guide](docs/LOCAL_DEMO_GUIDE.md).
 
+For inputs, outputs, current import limits and how to present the complete flow, see the [input-to-output walkthrough](docs/INPUT_OUTPUT_DEMO.md).
+
 ## 60-second quick start
 
 With Python 3.12 and uv installed:

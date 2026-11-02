@@ -1,12 +1,50 @@
-# Onboard an ADO project
+# Onboard a real project
 
-The product uses APP_ADO_PAT only for source reads and docs-repo writes. Keep company evidence local; external LLM providers accept synthetic evidence only. The seed tool is separate, writes synthetic sources only, and uses SEED_ADO_PAT. Never seed an existing production project. The real service/process contract is pending owner-provided sandbox access; local native API tests are not tenant verification.
+Company evidence stays on the machine:
+- **Locally:** the deterministic steps (import, gaps, RTM, explorer) run with `DHF_PROVIDER=mock`.
+- **Personal OpenAI/Anthropic keys:** never receive non-synthetic evidence. The LLM layer refuses it.
+- **The BD tenant transport:** also refuses company evidence until the owner and BD clear the dataset (REVIEW R-059).
+- **Outputs and the dataset folder:** gitignored.
 
-1. Configure ADO_BASE_URL, ADO_PROJECT, source/docs repo names and APP_ADO_PAT in the ignored .env. Give the app source-read access and write/PR access only to the docs repo. Source write probes must be denied by permissions.
-2. Run `uv run dhf discover`. It reads WIQL/work-item batches, native fields/relation metadata, test runs and repositories, writing `out/discovery/ado_mapping.yaml` and `.discovery.json`. It does not overwrite the active mapping. Inspect types/counts, tags, areas, fields used, relations and every unknown.
-3. Confirm process-specific type/tag discriminators, field reference names, relationship directions, Related type pairs, severity values and AreaPath allocations with the owner. A renamed field is a suggestion requiring confirmation. Add explicit unit annotations/component inventory for the source code where needed; no AI-inferred link counts as verified. Copy the reviewed mapping to specs/ado_mapping.yaml only after that review; keep company evidence and inventories out of commits.
-4. Run `uv run dhf ingest --source ado --db out/onboarding.sqlite`, then `uv run dhf gaps --db out/onboarding.sqlite` and `uv run dhf rtm --db out/onboarding.sqlite`. Inspect immutable provenance, skipped/unmapped types, quantities, latest-result totals and missing traces. Compare source counts from discovery; resolve unknown mappings before calling the ingest complete.
-5. Generate a local mock-provider draft: `uv run dhf generate sstr --db out/onboarding.sqlite --documents out/onboarding-docs`. Review citations/revisions and deterministic facts. Add --open-pr only after confirming the docs connection and reviewer IDs. Human approvals remain in the eQMS.
+## A. Existing DHF documents (works offline today)
+
+```sh
+uv run dhf import-docs <dataset-folder> --db out/real-docs/evidence.sqlite --output-dir out/real-docs
+uv run dhf gaps --db out/real-docs/evidence.sqlite --output-dir out/real-docs
+DHF_PRODUCT_NAME="<product>" DHF_RELEASE=<release> uv run dhf explore \
+  --db out/real-docs/evidence.sqlite --documents out/real-docs/none --output out/real-docs/explorer.html
+```
+
+- **What is read:** `specs/doc_import/dhf_documents.yaml` decides this:
+  - requirement tables, specification records, architecture items, the requirements-to-items matrix, design units and their template sections, and CSV test cases;
+  - latest issue only; redlines and reference copies are excluded;
+  - personal CSV columns are dropped before rows are read.
+- **What it reports:** `import-report.md` lists imported, excluded and unread files, then the D01–D05 consistency findings.
+- **Rules it can't assess:** rules that need ADO links (Tested By, Parent/Child) show as **not assessable** rather than as thousands of gaps.
+
+## B. The live ADO project (read-only)
+
+1. **Credentials.** Use a PAT with **Work Items (Read)** and **Test Management (Read)**. Add Code (Read) only when the owner approves code evidence. Keep the PAT out of the repo; pass `APP_ADO_PAT` in the environment for the run.
+2. **Settings.** Put `ADO_BASE_URL`, `ADO_PROJECT` and `ADO_SCOPE` in an untracked env file (`DHF_ENV_FILE`).
+   - A non-local organization is read-only automatically (`ADO_READ_ONLY=auto`). Only GET and the WIQL/batch read POSTs leave the process, enforced at the transport. Docs-repo PRs and pushes are refused.
+3. **Scope.** Copy `specs/ado_scope.example.yaml` outside git and set:
+   - seed files or IDs (for example the provided requirement and specification URL lists);
+   - link-follow depth and relation types;
+   - `max_items`;
+   - the test plans whose runs to read;
+   - an optional repository.
+
+   Without a scope, a project larger than `ADO_MAX_ITEMS` is refused.
+4. **Discover.** `uv run dhf discover` reads the scoped items, field and relation metadata, plan-filtered runs and the repository list. It writes a draft mapping and `.discovery.json`.
+   - Check `id_field_candidates` (the field holding document IDs such as specification IDs).
+   - Check `custom_fields`, work-item types, area paths and unknowns.
+5. **Map.** Write a reviewed mapping profile outside git and point `ADO_MAPPING` at it. Set:
+   - work-item types;
+   - `id_fields` and `attribute_fields`;
+   - relation directions;
+   - area-path components.
+6. **Ingest.** Run `uv run dhf ingest --source ado --db out/real/evidence.sqlite`. It prints the read-only mode, the scope and every skipped class (unmapped types, out-of-scope results or bugs, unavailable IDs). Then run `dhf gaps`, `dhf rtm` and `dhf explore` against that database with `--output-dir out/real`.
+7. **Draft locally.** `uv run dhf generate sstr --release <release> --db out/real/evidence.sqlite --documents out/real/docs` uses the mock provider. Opening PRs requires a docs repository the owner controls and `ADO_READ_ONLY=0` for that run only. Human approvals remain in the eQMS.
 
 ## Seed the synthetic sandbox
 

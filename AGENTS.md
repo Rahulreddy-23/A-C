@@ -4,9 +4,9 @@ Read this file and `docs/BRIEF.md` before every task. `docs/BRIEF.md` is the pro
 
 ## Roles
 
-- **Codex** — engineer. Builds the product milestone by milestone, working locally in this folder.
-- **Claude** — PM and code reviewer. Watches this folder (git history, `docs/PROGRESS.md`) and reviews each milestone against the acceptance criteria in `docs/BRIEF.md` and the rules below. Writes findings to `docs/REVIEW.md`.
-- **Repo owner** — product owner. Owns credentials, merges `dev` into `main`, has final say on scope.
+- **Claude** — engineer, PM and code reviewer. Since 2026-11-03 the owner has put Claude in charge of the project. Claude builds milestone by milestone, reviews against the acceptance criteria in `docs/BRIEF.md` and the rules below, and records findings in `docs/REVIEW.md`.
+- **Codex** — built M0–M16 as engineer; may be re-engaged by the owner, in which case the review workflow below applies unchanged.
+- **Repo owner** — product owner. Owns credentials, merges `dev` into `main`, has final say on scope and on any use of company data.
 
 ## Environment
 
@@ -86,6 +86,9 @@ out/                 generated artifacts (gitignored)
    - Cache responses by `sha256(prompt_id + prompt_version + model + canonical_json(evidence_pack))`. Cache hits are free.
    - Temperature 0.
 8. **Synthetic data only** goes to external LLM APIs. Never commit real company data. Never read or commit `docs/*.pdf`.
+   - The owner's dataset in `Hackathon_2026/` is company data. It is gitignored and is processed locally only: deterministic import, gaps and the explorer, with outputs under `out/`.
+   - Committed docs describe product behaviour, not dataset contents (no IDs, names or text from it).
+   - A real ADO organization is read-only by default (`ADO_READ_ONLY=auto`). Never weaken that, or the synthetic-only LLM guard, without the owner's explicit decision.
 9. **Secrets** only via `.env` (gitignored), with a `.env.example`. Never log tokens.
 10. **Provenance everywhere.** Every artifact stores source system, URL, revision, retrieved_at and content hash. Every generated document gets a manifest (BRIEF §7).
 11. **Local processing.** No external rendering, telemetry or analytics services (no online Mermaid, Kroki or PlantUML servers, no CDN-loaded JS in generated HTML). Diagrams render locally or stay as source text.

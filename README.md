@@ -58,6 +58,11 @@ uv run dhf ingest --source fixtures   # offline file adapter
 uv run dhf ingest --source ado        # HTTP + device Git clone; start mock first
 ```
 
+Real projects: an existing DHF (Word documents plus ADO CSV exports) imports offline with
+`uv run dhf import-docs <folder>`. A live ADO project is read through `ADO_SCOPE` and is read-only
+by default. Company evidence stays local and never goes to personal LLM keys. See
+[real-project onboarding](docs/REAL_DATA_ONBOARDING.md).
+
 Every ingestion stores an immutable SQLite snapshot, provenance, content hashes,
 revisions and added/changed/removed IDs. Code units and signatures come from Python
 ASTs, SOUP versions from pinned dependency manifests, and implementation links

@@ -216,3 +216,35 @@ The direct canvas draws only anchor-incident edges, with ports sorted by peer po
 2026-10-14 · Accepted (R-054)
 
 Keep reported token counts mandatory by default. With `DHF_COPILOT_USAGE=estimated`, missing/null counts use the shared rounded-up UTF-8 bytes ÷ 3 estimate for the eight prompt text inputs and serialized output; supplied invalid counts still fail. Prefer valid reported counts in either mode. Source metadata is local and cannot be set by model prose. Cache entries preserve their original usage source across mode changes; cache hits remain free. The ledger retains cumulative credits by source and reports `mixed` when both kinds occur, while old successful ledger/cache entries retain their reported provenance. Section/document manifests and metrics preserve source labels; all credits remain local estimates, with tenant Monitor authoritative. Selective regeneration records only its new run's credits and no USD cost for Copilot, preserving sources on reused/cached sections. These are offline contracts, not tenant execution.
+
+
+## ADR-039 — Real organizations are read-only and scoped
+2026-11-03 · Accepted (owner's first real-project trial; owner instruction "read only, never write")
+
+The first attempt against a real project showed the adapter assumed a small synthetic project: it read every work item, required the Kestrel code repository and crashed on test results for cases outside the ingest. Read-only is now a property of the organization, not of convention. Any non-loopback organization defaults to `ADO_READ_ONLY=auto` → read-only, enforced twice: `request()` refuses docs-repo PRs, and an httpx request hook refuses everything except GET and the WIQL/batch read POSTs before the network. Docs-repo pushes are refused too. Opting out (`ADO_READ_ONLY=0`) is reserved for a docs repository the owner controls.
+
+Ingest scope is configuration (`ADO_SCOPE` YAML):
+- **Seeds:** IDs or files of work-item URLs, an optional WIQL query, and link expansion with a depth and named relation types.
+- **Caps:** a hard `max_items` limit, and test-plan-filtered runs.
+- **Optional parts:** a repository and revision history.
+
+Results and bugs outside the scope are counted and skipped. Discovery treats the reciprocal end of a mapped link type as known, and lists document-ID-like and custom fields so the mapping can name a human ID field (`id_fields`) rather than inventing one. The mock now shows links on both ends, honours `errorPolicy=Omit` and filters runs by plan, as real ADO does.
+
+## ADR-040 — Existing DHF documents as a local evidence baseline
+2026-11-03 · Accepted
+
+Real datasets arrive as the existing DHF (requirements, specification, architecture, per-item designs) plus ADO CSV exports. `dhf import-docs` turns them into ordinary artifacts and explicit `allocated_to` links. A YAML profile drives it: file globs, table headers, heading structure, "latest issue only", and exclusion of redlines and reference copies. The extraction step is a pure function over parsed blocks. Provenance is the file name plus a content hash. Columns listed under `drop` (personal data) are removed before rows are read. No LLM is involved and nothing leaves the machine.
+
+Baseline rules D01–D05 check internal consistency of the documents themselves:
+- requirements the architecture matrix does not allocate;
+- matrix names with no architecture item;
+- items without design;
+- units without an item;
+- units missing template sections.
+
+They are reported for document-sourced artifacts only. This is the "after-the-fact" baseline that continuous ADO evidence can later be compared against; it does not replace ADO ingestion.
+
+## ADR-041 — Absent link classes are "not assessable", not gaps
+2026-11-03 · Accepted
+
+A missing-link rule whose link class never occurs anywhere in the ingested evidence cannot distinguish "nothing is linked" from "this source cannot carry the link" (documents have no ADO Tested By links). Listing every artifact as a gap produced thousands of misleading findings on the first real import. `unassessable_rules` names such rules. Gap Markdown, CLI totals and the explorer report them once as not assessable, and coverage shows "not assessable" instead of 0%. Gap JSON keeps every raw finding for audit. On the synthetic project every rule remains assessable, so demo metrics are unchanged.

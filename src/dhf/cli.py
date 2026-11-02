@@ -156,13 +156,16 @@ def import_docs_command(
 
 
 @app.command("rtm")
-def rtm_command(release: str = "1.1", db: str = "out/evidence.sqlite") -> None:
+def rtm_command(
+    release: str = "1.1", db: str = "out/evidence.sqlite", output_dir: str = "out"
+) -> None:
     """Write requirement → component/code/test/latest-result trace rows."""
     import json
     from pathlib import Path
 
     from dhf.graph import Store
     from dhf.trace import rtm
+    from dhf.trace.reports import rtm_markdown
 
     store = Store(Path(db))
     try:
@@ -170,11 +173,11 @@ def rtm_command(release: str = "1.1", db: str = "out/evidence.sqlite") -> None:
         rows = rtm(graph, release)
     finally:
         store.close()
-    Path("out/rtm.json").write_text(json.dumps(rows, indent=2))
-    from dhf.trace.reports import rtm_markdown
-
-    Path("out/rtm.md").write_text(rtm_markdown(graph, rows))
-    typer.echo(f"{len(rows)} RTM rows → out/rtm.md + out/rtm.json")
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "rtm.json").write_text(json.dumps(rows, indent=2))
+    (out / "rtm.md").write_text(rtm_markdown(graph, rows))
+    typer.echo(f"{len(rows)} RTM rows → {out / 'rtm.md'} + {out / 'rtm.json'}")
 
 
 @app.command()

@@ -1,6 +1,6 @@
 # Build Progress
 ## Status
-Current milestone: M16 done (offline) · M13 visual check completed by the reviewer per REVIEW.md · Waiting for owner sandbox answers · Last updated: 2026-10-14 IST
+Current milestone: M17 real-data readiness (Claude as engineer since 2026-11-03) · live ADO trial waits on a new read-only PAT (REVIEW R-058) · Last updated: 2026-11-03
 ## Milestones
 | M | Status | Tag | Commit | Notes |
 |---|---|---|---|---|
@@ -21,9 +21,16 @@ Current milestone: M16 done (offline) · M13 visual check completed by the revie
 | M14 | done | m14-done | 275c62c | Verified offline rehearsal and frozen demo pack |
 | M15 | done | m15-done | 5a88eb9 | Day-1 kit and sandbox guardrails; tenant validation pending |
 | M16 | done offline | m16-done | a4963c4 | Copilot HTTP/folder transport and credit guard; tenant execution pending |
+| M17 | in progress | — | 6449ab5, e9ab449, 75c4c3f | Read-only scoped real-org ingest, document-baseline import, not-assessable reporting; live ADO trial blocked on PAT |
 ## Now / Next
-- Working on: R-054 implementation and offline verification complete; development stops after the resolution checkpoint.
-- Next: wait for the owner’s sandbox answers. No tenant setup or execution until instructed; M13 visual verification is complete per the reviewer’s evidence in REVIEW.md.
+- Done: the real dataset imports locally (documents + CSV) with D01–D05 findings and a real-data explorer. Live ADO ingest is ready but unverified on the real project.
+- Blocked on the owner:
+  - a new read-only PAT (R-058);
+  - a decision on company evidence and the BD tenant drafting path (R-059);
+  - a decision on code evidence (R-061).
+- Next: run scoped discovery and ingest on the real project, write the reviewed mapping profile (R-060), then build a template set that follows the owner's DHF document structure (R-062).
+
+
 ## Acceptance evidence
 ### M0
 - `uv run dhf --help` → `Usage: dhf [OPTIONS] COMMAND [ARGS]...`; `version` listed.
@@ -325,3 +332,39 @@ Current milestone: M16 done (offline) · M13 visual check completed by the revie
 - Added `docs/INPUT_OUTPUT_DEMO.md`, linked from README and the local guide. Covers actual inputs, intermediate evidence storage, checks, drafting, review/export, outputs, a show/say flow and exact Terminal commands. Explicitly records that the browser has no upload button and arbitrary PDF/DOCX/ZIP importing is not implemented. Documents the supported fixture/ADO paths, Python extraction scope, mapping review, and the specific meanings of `--documents`, `--input-file` and `--baseline-file`. No source/document upload or company connection is claimed.
 - Executed each documented baseline command using the bundled fixture and mock provider: `ingest` → 248 artifacts / 413 links; `gaps` → 21 deterministic findings; `rtm` → 35 rows; `generate sstr` → 12 sections / zero validation events; `explore` → 248 artifacts / one generated report; `audit-pack` → 11 verified files. Outputs under `out/flow-demo/`; command transcript `out/flow-demo/walkthrough.log`. The full demo remains separately available with seven document types and a 33-file audit.
 - Verified the HTML's embedded record/link/document counts, manifest provider/section count, all three generated SSTR files, guide links and audit checksums. `check_demo_pack.py` remains 51 links / 19 fallbacks / 33 audit files / tracked redline pass. `git diff --check` clean. Documentation-only change; no new tests or product code, paid calls, tenant operations or source writes. Core development remains stopped pending sandbox answers.
+
+### M17 — Real-data readiness (owner dataset trial)
+
+Dataset-specific results are local only (`out/real-docs/`, gitignored). This section records product evidence, not dataset contents.
+
+- **First real-project contact (before fixes)**
+  - ADO rejected the supplied PAT as expired (`x-tfs-serviceerror`).
+  - None of the dataset's files could be ingested: the ADO adapter needed whole-project reads and the Kestrel repository, and there was no document or CSV adapter.
+- **6449ab5 — read-only scoped ADO ingest**
+  - Real organizations are read-only by default, with a transport-level guard.
+  - `ADO_SCOPE` covers seeds, WIQL, link expansion, caps, test plans, repository and history.
+  - Rich-text fields become plain text; `id_fields` and `attribute_fields` added; expired-PAT reason reported.
+  - The mock shows reciprocal links and honours `errorPolicy` and `planId`.
+- **e9ab449 — `dhf import-docs`**
+  - A profile-driven document and CSV baseline with D01–D05 and personal columns dropped.
+  - Gaps report rules as not assessable when the link class is absent.
+  - Watch-test race removed.
+- **75c4c3f — explorer**
+  - Product, subject and release are settings; synthetic or confidential label; not-assessable coverage.
+  - D-findings shown for document-sourced evidence only.
+- **Real dataset, run locally:**
+  - `import-docs` read the latest issue of each document family, excluded redlines and reference copies, and dropped the personal CSV column.
+  - It produced requirements, specifications, architecture items, design units, test cases and allocation links.
+  - The parser bugs it exposed were fixed before commit.
+  - The import found consistency findings in the existing documents, under every D rule except D03 after the ID fix.
+  - `dhf gaps` reports the 9 ADO-link rules as not assessable instead of thousands of false gaps.
+  - The explorer renders the baseline offline.
+- **Verification (2026-11-03):**
+  - `uv run pytest -q` → `138 passed in 163.69s`
+  - `uv run ruff check .` → `All checks passed!`
+  - `uv run ruff format --check .` → `194 files already formatted`
+  - `./scripts/demo.sh` → completed in 48 s; `out/metrics.md`: unknown IDs 0, baseline gaps precision 1.00 / recall 1.00 (21), change_1 impact precision 1.00 / recall 1.00 (75 records).
+- **Known issues**
+  - Live ADO ingest, the real mapping profile and drafting from company evidence are unverified (R-058, R-059, R-060).
+  - The RTM is specification-centric, so on a document baseline its rows show allocation only through requirements.
+

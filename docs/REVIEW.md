@@ -1,6 +1,43 @@
 # Review Log
 
-Written by Claude (PM and reviewer). Codex reads this file at the start of every milestone.
+Written by Claude. Since 2026-11-03 Claude is engineer as well as PM and reviewer (AGENTS.md); Codex reads this file at the start of every milestone if re-engaged.
+
+## M17 — Real-data readiness (owner dataset trial, 2026-11-03)
+
+The owner supplied the hackathon dataset (`Hackathon_2026/`, gitignored, company data) and a read-only PAT for the real project. Dataset-specific results stay local in `out/real-docs/` and are not quoted here.
+
+**R-055 [blocking] M17 — The ADO adapter could not run on a real project** (`src/dhf/ingest/ado.py`)
+- It read the whole project (WIQL caps at 20,000 items; there were no scope or limits), required the Kestrel code repository, crashed on test results and bugs outside the ingest, passed ADO HTML fields through as text, and had no read-only guarantee beyond convention.
+- Resolved in 6449ab5: read-only by default for real organizations, enforced at the transport. Added `ADO_SCOPE` (seeds, WIQL, link expansion, `max_items`, test plans, optional repository and history), rich-text conversion, `id_fields`/`id_formats`/`attribute_fields`, a clear expired-PAT reason, and Retry-After handling. The mock now shows reciprocal links. 8 tests.
+
+**R-056 [blocking] M17 — Nothing in a real DHF dataset could be ingested** (no document or CSV adapter)
+- Resolved in e9ab449: `dhf import-docs` with a YAML extraction profile, baseline rules D01–D05, and personal CSV columns dropped. Two real-data parser bugs were found and fixed before commit (record bodies running into the next record; descriptions sharing a line with their label). One false finding was fixed by qualifying unit IDs with their software item.
+
+**R-057 [blocking] M17 — Reports and the explorer misread absent link classes as gaps and were branded Kestrel**
+- Resolved in e9ab449 and 75c4c3f: rules are marked "not assessable" (ADR-041), product, subject and release are now settings, and the evidence label reads synthetic or confidential.
+
+**R-058 [blocking, owner] M17 — The supplied PAT has expired**
+- ADO answered 401 with "The Personal Access Token used has expired." No request reached project data.
+- **Needed:** a new PAT with **Work Items (Read)** and **Test Management (Read)** only. Add **Code (Read)** only if R-061 is approved.
+- If the organization enforces conditional access, a valid PAT may still be refused off-network; the error text will say so.
+
+**R-059 [owner decision] M17 — Company evidence and the BD-approved drafting path**
+- `LLM.generate` refuses non-synthetic evidence for every provider except `mock`, including `copilotstudio`. So the official BD tenant path cannot draft from the real dataset today; deterministic import, gaps and the explorer work locally.
+- Relaxing the guard was attempted and correctly blocked as a safety weakening, so it stays strict.
+- **Proposed design if the owner and BD clear the dataset for the sandbox (SANDBOX_QUESTIONS 4.1):** an explicit clearance reference (e.g. `DHF_REAL_DATA_APPROVAL`) that unlocks the BD tenant transport only and is recorded in every manifest. Personal OpenAI/Anthropic keys never receive company evidence.
+
+**R-060 [open] M17 — Real mapping profile pending discovery**
+- The documents show the human IDs and custom properties (feature, spec type, release, requirement type) that the mapping must name.
+- One sample work item's text appears in the specification under a different document ID than its ADO ID. The document ID therefore lives in a field, which `id_fields` supports and discovery's `id_field_candidates` will find.
+- Run `dhf discover` with the trial scope once R-058 is resolved.
+
+**R-061 [owner decision] M17 — Code evidence for the SDD**
+- The real designs describe .NET and web units; the code extractor handles Python only, and source repositories are out of the trial scope.
+- Code-derived SDD content needs the owner's approval to read a source repository, plus a C#/TypeScript extractor.
+
+**R-062 [non-blocking] M17 — Generated documents use generic IEC 62304 section structures, not the owner's DHF template structure**
+- The owner's SAD, SDD, SSTR and design-review documents follow their own headings and tables.
+- A template set mirroring those headings, mapped to existing queries, would make drafts directly comparable to the documents reviewers know.
 
 **Item format:** `R-NNN [blocking|non-blocking] M<N> — finding (file:line) — expected fix`
 

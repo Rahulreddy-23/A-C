@@ -1,11 +1,15 @@
 """Azure DevOps REST 7.1 adapter; no knowledge of mock administration."""
 
 import hashlib
+import ipaddress
 import os
+import re
 import subprocess
+import time
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, unquote, urlsplit
 
 import httpx
 import yaml
@@ -14,6 +18,54 @@ from dhf.config import setting
 from dhf.ingest.code import PythonExtractor
 from dhf.ingest.native import native_record, normalize_result, normalize_run, normalize_workitem
 from dhf.models.evidence import validate_graph
+
+READ_POSTS = ("/_apis/wit/wiql", "/_apis/wit/workitemsbatch")
+WORKITEM_URL = re.compile(r"/_apis/wit/workItems/(\d+)$", re.I)
+DEFAULT_FOLLOW = (
+    "System.LinkTypes.Hierarchy-Forward",
+    "System.LinkTypes.Hierarchy-Reverse",
+    "Microsoft.VSTS.Common.TestedBy-Forward",
+    "Microsoft.VSTS.Common.TestedBy-Reverse",
+)
+
+
+class ReadOnlyViolation(PermissionError):
+    """Raised before any non-read request can leave the process."""
+
+
+def is_loopback_host(host: str) -> bool:
+    if host == "localhost" or host.endswith(".localhost"):
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def read_only_mode(base: str) -> bool:
+    """Real organizations are read-only unless the owner explicitly opts a docs repo in."""
+    value = setting("ADO_READ_ONLY", "auto").strip().lower()
+    if value in ("1", "true", "yes", "on"):
+        return True
+    if value in ("0", "false", "no", "off"):
+        return False
+    return not is_loopback_host(urlsplit(base).hostname or "")
+
+
+def load_scope(path: str = "") -> dict:
+    """Optional ingest scope (ADO_SCOPE YAML); without one the whole project is read.
+
+    seed_files hold ADO work-item URLs or bare IDs, one per line, resolved relative to
+    the scope file."""
+    path = path or setting("ADO_SCOPE", "")
+    if not path:
+        return {}
+    scope = yaml.safe_load(Path(path).read_text()) or {}
+    ids = {int(i) for i in scope.get("seed_ids", [])}
+    for name in scope.get("seed_files", []):
+        text = (Path(path).parent / name).read_text()
+        ids |= {int(m) for m in re.findall(r"(?m)(?:_workitems/edit/|^\s*)(\d+)\s*$", text)}
+    return {**scope, "seed_ids": sorted(ids)}
 
 
 def git_command(args: list[str], cwd: Path, token: str = "", strip: bool = True) -> str:
@@ -49,7 +101,11 @@ def clone_location(root: Path, remote: str) -> Path:
 
 class ADO:
     def __init__(
-        self, base_url: str | None = None, project: str | None = None, token: str | None = None
+        self,
+        base_url: str | None = None,
+        project: str | None = None,
+        token: str | None = None,
+        scope: dict | None = None,
     ) -> None:
         self.base = (
             base_url or setting("ADO_BASE_URL", "http://localhost:8089/kestrel-org")
@@ -57,30 +113,54 @@ class ADO:
         self.project = project or setting("ADO_PROJECT", "Kestrel")
         self.token = token or setting("APP_ADO_PAT", "mock-app-token")
         self.url = self.base + "/" + quote(self.project, safe="")
-        self.client = httpx.Client(base_url=self.url, auth=("", self.token), timeout=30)
-        self.mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+        self.read_only = read_only_mode(self.base)
+        self.scope = load_scope() if scope is None else scope
+        self.report: Counter = Counter()
+        self.client = httpx.Client(
+            base_url=self.url,
+            auth=("", self.token),
+            timeout=60,
+            event_hooks={"request": [self.guard]},
+        )
+        self.mapping = yaml.safe_load(
+            Path(setting("ADO_MAPPING", "specs/ado_mapping.yaml")).read_text()
+        )
 
     def close(self) -> None:
         self.client.close()
 
+    def guard(self, request: httpx.Request) -> None:
+        """Transport-level last line of defence: read-only mode sends reads only."""
+        path = request.url.path
+        if request.method == "GET" or (request.method == "POST" and path.endswith(READ_POSTS)):
+            return
+        if self.read_only:
+            raise ReadOnlyViolation(f"Read-only mode blocked {request.method} {path}")
+
     def request(
         self, method: str, path: str, data: dict | None = None, params: dict | None = None
     ) -> dict:
-        if method != "GET" and not (
-            method == "POST"
-            and (
-                path in ("/_apis/wit/wiql", "/_apis/wit/workitemsbatch")
-                or path.startswith(
-                    "/_apis/git/repositories/"
-                    + setting("ADO_DOCS_REPO", "kestrel-dhf-docs")
-                    + "/pullrequests"
-                )
-            )
-        ):
-            raise ValueError("Product forbids source-system writes")
-        response = self.client.request(
-            method, path, json=data, params={"api-version": "7.1", **(params or {})}
+        docs_repo = setting("ADO_DOCS_REPO", "kestrel-dhf-docs")
+        docs_write = method == "POST" and path.startswith(
+            "/_apis/git/repositories/" + docs_repo + "/pullrequests"
         )
+        if method != "GET" and not (method == "POST" and path in READ_POSTS) and not docs_write:
+            raise ValueError("Product forbids source-system writes")
+        if docs_write and self.read_only:
+            raise ReadOnlyViolation(
+                "Read-only mode: docs-repo writes are disabled for this organization "
+                "(set ADO_READ_ONLY=0 only for a docs repository you own)"
+            )
+        query = {"api-version": "7.1", **(params or {})}
+        response = self.client.request(method, path, json=data, params=query)
+        for attempt in range(3):  # ADO throttling: honour Retry-After, then give up
+            if response.status_code not in (429, 503):
+                break
+            time.sleep(min(float(response.headers.get("Retry-After", 2**attempt)), 30))
+            response = self.client.request(method, path, json=data, params=query)
+        if response.status_code in (203, 401):
+            reason = unquote(response.headers.get("x-tfs-serviceerror", "")) or "sign-in required"
+            raise PermissionError(f"ADO rejected APP_ADO_PAT: {reason}")
         response.raise_for_status()
         return response.json()
 
@@ -99,6 +179,15 @@ class ADO:
         return values
 
     def workitems(self, since: str | None = None) -> list[dict]:
+        limit = int(self.scope.get("max_items", setting("ADO_MAX_ITEMS", "5000")))
+        if self.scope.get("seed_ids") or self.scope.get("wiql"):
+            seeds = set(self.scope.get("seed_ids", []))
+            if self.scope.get("wiql"):
+                seeds |= set(self.query_ids(self.scope["wiql"], limit))
+            items = self.expand(seeds, self.scope.get("follow", {}), limit)
+            if since:
+                items = [i for i in items if i["fields"].get("System.ChangedDate", "") > since]
+            return items
         query = (
             "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '"
             + self.project.replace("'", "''")
@@ -106,19 +195,69 @@ class ADO:
         )
         if since:
             query += " AND [System.ChangedDate] > '" + since.replace("'", "''") + "'"
-        ids = [
-            i["id"] for i in self.request("POST", "/_apis/wit/wiql", {"query": query})["workItems"]
-        ]
+        return self.fetch(self.query_ids(query, limit))
+
+    def query_ids(self, query: str, limit: int) -> list[int]:
+        found = self.request("POST", "/_apis/wit/wiql", {"query": query}, {"$top": limit + 1})
+        ids = [i["id"] for i in found["workItems"]]
+        if len(ids) > limit:
+            raise ValueError(
+                f"Query matched more than {limit} work items; set ADO_SCOPE "
+                "(seed_ids, seed_files or wiql) or raise max_items"
+            )
+        return ids
+
+    def fetch(self, ids: list[int]) -> list[dict]:
+        """Batch-read work items with relations; deleted or inaccessible IDs are omitted."""
         result = []
         for start in range(0, len(ids), 200):
-            result.extend(
-                self.request(
-                    "POST",
-                    "/_apis/wit/workitemsbatch",
-                    {"ids": ids[start : start + 200], "$expand": "Relations"},
-                )["value"]
-            )
+            page = self.request(
+                "POST",
+                "/_apis/wit/workitemsbatch",
+                {"ids": ids[start : start + 200], "$expand": "Relations", "errorPolicy": "Omit"},
+            )["value"]
+            result.extend(item for item in page if item)
+        if len(result) < len(ids):
+            self.report["work items unavailable"] += len(ids) - len(result)
+        for item in result:
+            web = f"{self.url}/_workitems/edit/{item['id']}"
+            item.setdefault("_links", {"html": {"href": web}})
         return result
+
+    def expand(self, seeds: set[int], follow: dict, limit: int) -> list[dict]:
+        """Seed work items plus linked items up to `depth` hops along the chosen link types."""
+        depth = int(follow.get("depth", 1))
+        relations = set(follow.get("relations", DEFAULT_FOLLOW))
+        items: dict[int, dict] = {}
+        frontier = set(seeds)
+        for level in range(depth + 1):
+            frontier -= items.keys()
+            if len(items) + len(frontier) > limit:
+                raise ValueError(
+                    f"Scope expansion exceeds max_items={limit} at depth {level}; "
+                    "reduce follow.depth or follow.relations"
+                )
+            fetched = self.fetch(sorted(frontier))
+            items.update((item["id"], item) for item in fetched)
+            if level == depth:
+                break
+            frontier = {
+                int(match[1])
+                for item in fetched
+                for relation in item.get("relations", [])
+                if relation["rel"] in relations and (match := WORKITEM_URL.search(relation["url"]))
+            }
+        return [items[i] for i in sorted(items)]
+
+    def test_runs(self) -> list[dict]:
+        """All runs without a scope; with one, only runs of the listed test plans."""
+        if not self.scope:
+            return self.collection("/_apis/test/runs")
+        return [
+            run
+            for plan in self.scope.get("test_plans", [])
+            for run in self.collection("/_apis/test/runs", {"planId": plan})
+        ]
 
     def ingest(self, clone_root: Path = Path("out/clones")) -> dict:
         retrieved = datetime.now(UTC).isoformat()
@@ -127,13 +266,20 @@ class ADO:
         artifacts = []
         native_ids = {}
         item_kinds = {}
+        history_enabled = self.scope.get("history", True)
         for item in items:
-            history = self.collection(f"/_apis/wit/workitems/{item['id']}/revisions")
+            history = (
+                self.collection(f"/_apis/wit/workitems/{item['id']}/revisions")
+                if history_enabled
+                else [item]
+            )
             artifact = normalize_workitem(item, history, mapping, retrieved)
-            if artifact is not None:
-                artifacts.append(artifact)
-                native_ids[str(item["id"])] = artifact["id"]
-                item_kinds[str(item["id"])] = artifact["type"]
+            if artifact is None:
+                self.report["unmapped " + item["fields"].get("System.WorkItemType", "?")] += 1
+                continue
+            artifacts.append(artifact)
+            native_ids[str(item["id"])] = artifact["id"]
+            item_kinds[str(item["id"])] = artifact["type"]
         links = []
         reverse = {v: k for k, v in mapping["relations"].items() if v != "System.LinkTypes.Related"}
         for item in items:
@@ -163,10 +309,13 @@ class ADO:
                             "ADO relation " + relation["url"],
                         )
                     )
-        for raw_run in self.collection("/_apis/test/runs"):
+        for raw_run in self.test_runs():
             run = normalize_run(raw_run, mapping, retrieved, self.url)
             artifacts.append(run)
             for result in self.collection(f"/_apis/test/runs/{raw_run['id']}/results"):
+                if str(result["testCase"]["id"]) not in native_ids:
+                    self.report["test results outside scope"] += 1
+                    continue
                 artifact = normalize_result(result, run, native_ids, retrieved, self.url)
                 artifacts.append(artifact)
                 links.extend(
@@ -181,6 +330,9 @@ class ADO:
                     ]
                 )
                 for bug in result.get("associatedBugs", []):
+                    if str(bug["id"]) not in native_ids:
+                        self.report["associated bugs outside scope"] += 1
+                        continue
                     links.append(
                         edge(
                             artifact["id"],
@@ -189,8 +341,44 @@ class ADO:
                             "Associated bug",
                         )
                     )
-        repo_name = setting("ADO_DEVICE_REPO", "kestrel-device-sw")
-        repo = next(r for r in self.collection("/_apis/git/repositories") if r["name"] == repo_name)
+        repo_name = (
+            self.scope.get("repository", setting("ADO_DEVICE_REPO", ""))
+            if self.scope
+            else setting("ADO_DEVICE_REPO", "kestrel-device-sw")
+        )
+        if repo_name:
+            self.code_evidence(repo_name, clone_root, retrieved, native_ids, artifacts, links)
+        else:
+            self.report["code evidence not configured"] += 1
+        by_id = {a["id"]: a for a in artifacts}
+        links.extend(
+            edge(
+                a["id"],
+                a["attributes"]["component"],
+                "allocated_to",
+                "Native AreaPath component mapping",
+            )
+            for a in artifacts
+            if a["type"] == "software_req" and a["attributes"].get("component") in by_id
+        )
+        return validate_graph({"artifacts": artifacts, "links": links})
+
+    def code_evidence(
+        self,
+        repo_name: str,
+        clone_root: Path,
+        retrieved: str,
+        native_ids: dict,
+        artifacts: list[dict],
+        links: list[dict],
+    ) -> None:
+        """Clone the source repo read-only, extract code evidence and linked PRs."""
+        repo = next(
+            (r for r in self.collection("/_apis/git/repositories") if r["name"] == repo_name),
+            None,
+        )
+        if repo is None:
+            raise ValueError(f"Source repository {repo_name!r} not found in {self.project}")
         clone_root.mkdir(parents=True, exist_ok=True)
         clone = clone_location(clone_root / repo_name, repo["remoteUrl"])
         if not clone.exists():
@@ -233,32 +421,22 @@ class ADO:
                     for r in reqs
                     if by_id[r]["attributes"].get("component")
                 ),
-                "COMP-06",
+                self.mapping.get("default_component"),
             )
+            attrs = {"synthetic": synthetic} | ({"component": component} if component else {})
             artifacts.append(
                 native_record(
                     pr_id,
                     "code_change",
                     pr["title"],
                     pr["title"],
-                    {"synthetic": synthetic, "component": component},
+                    attrs,
                     self.url + f"/_git/{repo_name}/pullrequest/{pr['pullRequestId']}",
                     str(pr["pullRequestId"]),
                     retrieved,
                 )
             )
             links.extend(edge(pr_id, r, "implements", "ADO PR work-item reference") for r in reqs)
-        links.extend(
-            edge(
-                a["id"],
-                a["attributes"]["component"],
-                "allocated_to",
-                "Native AreaPath component mapping",
-            )
-            for a in artifacts
-            if a["type"] == "software_req" and a["attributes"].get("component") in by_id
-        )
-        return validate_graph({"artifacts": artifacts, "links": links})
 
 
 def edge(src: str, dst: str, kind: str, evidence: str) -> dict:

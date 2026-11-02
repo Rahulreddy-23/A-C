@@ -38,6 +38,15 @@ def ingest(source: str = "ado", db: str = "out/evidence.sqlite", verbose: bool =
             data = adapter.ingest()
         finally:
             adapter.close()
+        mode = "read-only" if adapter.read_only else "docs-repo writes enabled"
+        scope = (
+            f"{len(adapter.scope.get('seed_ids', []))} seed items"
+            if adapter.scope
+            else "whole project"
+        )
+        typer.echo(f"ADO {adapter.project} ({mode}, {scope})")
+        for key, count in sorted(adapter.report.items()):
+            typer.echo(f"  {key}: {count}")
     else:
         raise typer.BadParameter("source must be ado or fixtures")
     store = Store(Path(db))

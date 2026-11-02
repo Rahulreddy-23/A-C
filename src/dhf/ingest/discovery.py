@@ -1,9 +1,36 @@
 """Read-only native inventory and a candidate process mapping for human confirmation."""
 
 import copy
-from collections import Counter
+import re
+from collections import Counter, defaultdict
 
 from dhf.ingest.ado import ADO
+
+RECIPROCAL = {
+    "System.LinkTypes.Hierarchy-Forward": "System.LinkTypes.Hierarchy-Reverse",
+    "System.LinkTypes.Hierarchy-Reverse": "System.LinkTypes.Hierarchy-Forward",
+    "Microsoft.VSTS.Common.TestedBy-Forward": "Microsoft.VSTS.Common.TestedBy-Reverse",
+    "Microsoft.VSTS.Common.TestedBy-Reverse": "Microsoft.VSTS.Common.TestedBy-Forward",
+    "System.LinkTypes.Dependency-Forward": "System.LinkTypes.Dependency-Reverse",
+    "System.LinkTypes.Dependency-Reverse": "System.LinkTypes.Dependency-Forward",
+}
+DOCUMENT_ID = re.compile(r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+$")
+
+
+def id_field_candidates(items: list[dict]) -> dict[str, list[str]]:
+    """Per work-item type, string fields whose values look like document IDs (SPEC-X-12)."""
+    by_type: dict[str, list[dict]] = defaultdict(list)
+    for item in items:
+        by_type[item["fields"].get("System.WorkItemType", "unknown")].append(item["fields"])
+    return {
+        typ: sorted(
+            name
+            for name in {n for f in rows for n in f}
+            if sum(isinstance(f.get(name), str) and bool(DOCUMENT_ID.match(f[name])) for f in rows)
+            >= 0.8 * len(rows)
+        )
+        for typ, rows in sorted(by_type.items())
+    }
 
 
 def discovery_report(
@@ -62,7 +89,10 @@ def discovery_report(
         {r["referenceName"] for r in links}
         | {r["rel"] for item in items for r in item.get("relations", [])}
     )
-    for rel in set(relation_types) - set(mapping["relations"].values()):
+    mapped = set(mapping["relations"].values())
+    for rel in sorted(set(relation_types) - mapped):
+        if RECIPROCAL.get(rel) in mapped:
+            continue  # ADO shows each link on both ends; the mapped end is enough
         unknowns.append(
             {
                 "kind": "relation",
@@ -99,6 +129,10 @@ def discovery_report(
             "link_types": relation_types,
             "tags": dict(sorted(tags.items())),
             "area_paths": areas,
+            "id_field_candidates": id_field_candidates(items),
+            "custom_fields": sorted(
+                f for f in used if not f.startswith(("System.", "Microsoft.VSTS."))
+            ),
             "test_runs": [{k: r.get(k) for k in ("id", "name", "state")} for r in runs],
             "repositories": [{k: r.get(k) for k in ("id", "name", "defaultBranch")} for r in repos],
         },
@@ -110,7 +144,7 @@ def discover(ado: ADO) -> dict:
         ado.workitems(),
         ado.request("GET", ado.base + "/_apis/wit/fields")["value"],
         ado.request("GET", ado.base + "/_apis/wit/workitemrelationtypes")["value"],
-        ado.collection("/_apis/test/runs"),
+        ado.test_runs(),
         ado.collection("/_apis/git/repositories"),
         ado.mapping,
     )

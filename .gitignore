@@ -15,3 +15,9 @@ __pycache__/
 .ruff_cache/
 tools/seed_ado/.state*.json
 .DS_Store
+
+# real BD hackathon dataset (confidential, contains personal data) — never commit
+Hackathon_2026/
+
+# local browser-tool output
+.playwright-mcp/

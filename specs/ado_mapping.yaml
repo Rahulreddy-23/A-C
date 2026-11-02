@@ -34,6 +34,7 @@ components:
   COMP-04: Alarm Manager
   COMP-05: Drug Library
   COMP-06: Logging & Comms
+default_component: COMP-06  # PRs without a linked, allocated requirement
 area_components:
   Kestrel\UI: COMP-01
   Kestrel\Infusion Control: COMP-02

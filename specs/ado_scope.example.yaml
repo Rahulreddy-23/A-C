@@ -1,0 +1,29 @@
+# Ingest scope for a real ADO project (copy outside git, e.g. out/real/scope.yaml, and set ADO_SCOPE).
+# Without a scope the whole project is read, which real projects refuse above max_items.
+
+# Work items to start from: explicit IDs and/or files of ADO work-item URLs or IDs (one per line,
+# paths relative to this file).
+seed_ids: []
+seed_files: []
+#  - ../../Hackathon_2026/Requirements.txt
+#  - ../../Hackathon_2026/Specifications.txt
+
+# Optional WIQL query whose results are added to the seeds.
+# wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.AreaPath] UNDER 'Project\\Area'"
+
+# Follow links outward from the seeds (ADO shows each link on both ends).
+follow:
+  depth: 1
+  relations:
+    - System.LinkTypes.Hierarchy-Forward
+    - System.LinkTypes.Hierarchy-Reverse
+    - Microsoft.VSTS.Common.TestedBy-Forward
+    - Microsoft.VSTS.Common.TestedBy-Reverse
+
+max_items: 2000
+# Revision history per item powers change tracking; one extra request per work item.
+history: true
+# Test runs and results come only from these test plans; results for out-of-scope cases are skipped.
+test_plans: []
+# Source repository to clone read-only for code evidence; empty skips code evidence.
+repository: ""

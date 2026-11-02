@@ -2,12 +2,87 @@
 
 import re
 from html import unescape
+from html.parser import HTMLParser
 from xml.etree import ElementTree as ET
+
+HTML_TAG = re.compile(
+    r"</?(p|div|br|span|table|tr|td|th|ul|ol|li|b|i|u|strong|em|h[1-6]|font|img|a)\b[^>]*>", re.I
+)
+
+
+class HTMLText(HTMLParser):
+    """Readable text from ADO rich-text fields: blocks become lines, table rows 'a | b'."""
+
+    BLOCKS = {"p", "div", "ul", "ol", "table", "pre", "blockquote", "hr"} | {
+        f"h{n}" for n in range(1, 7)
+    }
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.lines: list[str] = []
+        self.current: list[str] = []
+        self.row: list[str] | None = None
+        self.cell: list[str] | None = None
+        self.skip = 0
+
+    def end_line(self) -> None:
+        line = re.sub(r"\s+", " ", "".join(self.current)).strip()
+        if line:
+            self.lines.append(line)
+        self.current = []
+
+    def boundary(self, bullet: bool = False) -> None:
+        if self.cell is not None:
+            self.cell.append(" ")
+        else:
+            self.end_line()
+            if bullet:
+                self.current.append("- ")
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        if tag in ("script", "style"):
+            self.skip += 1
+        elif tag == "tr":
+            self.end_line()
+            self.row = []
+        elif tag in ("td", "th"):
+            self.cell = []
+        elif tag in self.BLOCKS or tag in ("br", "li"):
+            self.boundary(bullet=tag == "li")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("script", "style"):
+            self.skip = max(0, self.skip - 1)
+        elif tag in ("td", "th") and self.cell is not None:
+            if self.row is not None:
+                self.row.append(re.sub(r"\s+", " ", "".join(self.cell)).strip())
+            self.cell = None
+        elif tag == "tr" and self.row is not None:
+            if any(self.row):
+                self.lines.append(" | ".join(self.row))
+            self.row = None
+        elif tag in self.BLOCKS or tag == "li":
+            self.boundary()
+
+    def handle_data(self, data: str) -> None:
+        if not self.skip:
+            (self.cell if self.cell is not None else self.current).append(data)
+
+
+def html_text(value: str) -> str:
+    """ADO stores descriptions and steps as HTML; plain text passes through unchanged."""
+    if not value or not HTML_TAG.search(value):
+        return value
+    parser = HTMLText()
+    parser.feed(value)
+    parser.close()
+    parser.end_line()
+    return "\n".join(parser.lines)
 
 
 # The optional synthetic marker is the only permitted fixture metadata input.
 def synthetic_marker(text: str, tags: list[str], mapping: dict) -> bool:
-    return mapping["tags"]["synthetic"] in tags or bool(
+    return mapping.get("tags", {}).get("synthetic", "Synthetic") in tags or bool(
         re.search(r'DHF-META:\s*\{\s*"synthetic"\s*:\s*true\s*\}', text)
     )
 
@@ -17,9 +92,20 @@ def plain_body(text: str) -> str:
 
 
 def workitem_kind(fields: dict, mapping: dict) -> str | None:
-    tags = [t.strip() for t in fields.get(mapping["fields"]["tags"], "").split(";")]
+    tags = [t.strip() for t in fields.get(mapping["fields"].get("tags", ""), "").split(";")]
     kind = mapping["work_item_types"].get(fields["System.WorkItemType"])
     return next((kind[t] for t in tags if t in kind), None) if isinstance(kind, dict) else kind
+
+
+def native_identifier(item: dict, kind: str, tags: list[str], mapping: dict) -> str:
+    """DHF identity tag, else a mapped ID field (e.g. a Spec ID), else a per-type format."""
+    prefix = mapping.get("id_tag_prefix")
+    tagged = next((t[len(prefix) :] for t in tags if prefix and t.startswith(prefix)), None)
+    if tagged:
+        return tagged
+    field = mapping.get("id_fields", {}).get(kind)
+    value = str(item["fields"].get(field, "")).strip() if field else ""
+    return value or mapping.get("id_formats", {}).get(kind, "ADO-{id}").format(id=item["id"])
 
 
 def normalize_workitem(
@@ -30,45 +116,41 @@ def normalize_workitem(
     kind = workitem_kind(fields, mapping)
     if kind is None:
         return None
-    tags = [t.strip() for t in fields.get(names["tags"], "").split(";")]
-    id = next(
-        (
-            t[len(mapping["id_tag_prefix"]) :]
-            for t in tags
-            if t.startswith(mapping["id_tag_prefix"])
-        ),
-        f"ADO-{item['id']}",
-    )
-    description = fields.get(names["body"], "")
+    tags = [t.strip() for t in fields.get(names.get("tags", ""), "").split(";")]
+    marker_tags = mapping.get("tags", {})
+    description = fields.get(names.get("body", ""), "")
     attrs = {
         "synthetic": synthetic_marker(description, tags, mapping),
         "changed_at": fields[names["changed_at"]],
         "state": fields[names["state"]],
     }
-    area = fields.get(names["area"], "")
-    if area in mapping["area_components"]:
+    for semantic, reference in mapping.get("attribute_fields", {}).items():
+        if fields.get(reference) not in (None, ""):
+            attrs[semantic] = html_text(str(fields[reference]))
+    area = fields.get(names.get("area", ""), "")
+    if area in mapping.get("area_components", {}):
         attrs["component"] = mapping["area_components"][area]
-    severity = fields.get(names["severity"])
+    severity = fields.get(names.get("severity", ""))
     if severity is not None:
-        attrs["severity"] = mapping["severity_values"].get(
+        attrs["severity"] = mapping.get("severity_values", {}).get(
             str(severity), int(severity) if str(severity).isdigit() else None
         )
     if kind == "software_req":
-        attrs["acceptance_criteria"] = fields.get(names["acceptance_criteria"], "")
-        attrs["risk_control"] = mapping["tags"]["risk_requirement"] in tags
+        attrs["acceptance_criteria"] = html_text(fields.get(names.get("acceptance_criteria"), ""))
+        attrs["risk_control"] = marker_tags.get("risk_requirement") in tags
         attrs["requirement_history"] = [
             {"revision": v["rev"], "changed_at": v["fields"][names["changed_at"]]} for v in history
         ]
     if kind == "test_case":
         attrs["level"] = "unit" if "Unit-Test" in tags else "system"
-        attrs["steps"] = parse_steps(fields.get(names["steps"], ""))
+        attrs["steps"] = parse_steps(fields.get(names.get("steps", ""), ""))
     if kind == "defect":
-        attrs["residual_listed"] = mapping["tags"]["residual_anomaly"] in tags
+        attrs["residual_listed"] = marker_tags.get("residual_anomaly") in tags
     return {
-        "id": id,
+        "id": native_identifier(item, kind, tags, mapping),
         "type": kind,
         "title": fields[names["title"]],
-        "body": plain_body(description),
+        "body": html_text(plain_body(description)),
         "attributes": attrs,
         "source": {
             "system": "ado",
@@ -81,16 +163,16 @@ def normalize_workitem(
 
 
 def parse_steps(text: str) -> list[dict]:
+    """Test steps XML; real ADO nests HTML inside parameterizedString and in shared steps."""
     if not text:
         return []
-    root = ET.fromstring(text)
-    return [
-        {
-            "action": unescape("".join(step.find("parameterizedString").itertext())),
-            "expected": unescape("".join(step.findall("parameterizedString")[1].itertext())),
-        }
-        for step in root.findall("step")
-    ]
+    steps = []
+    for step in ET.fromstring(text).iter("step"):
+        parts = [
+            html_text(unescape("".join(p.itertext()))) for p in step.findall("parameterizedString")
+        ]
+        steps.append({"action": (parts + [""])[0], "expected": (parts + ["", ""])[1]})
+    return steps
 
 
 def normalize_run(run: dict, mapping: dict, retrieved: str, base: str) -> dict:
@@ -119,20 +201,21 @@ def normalize_run(run: dict, mapping: dict, retrieved: str, base: str) -> dict:
 
 def normalize_result(result: dict, run: dict, native_ids: dict, retrieved: str, base: str) -> dict:
     tc = native_ids[str(result["testCase"]["id"])]
-    run_id = str(result["testRun"]["id"])
+    run_id = str(result.get("testRun", {}).get("id") or run["source"]["native_id"])
+    title = result.get("testCaseTitle") or result["testCase"].get("name", "")
     attrs = {
         "synthetic": run["attributes"]["synthetic"],
         "release": run["attributes"]["release"],
-        "completed_at": result["completedDate"],
+        "completed_at": result.get("completedDate", ""),
         "test_case": tc,
-        "outcome": result["outcome"],
+        "outcome": result.get("outcome") or "Unspecified",
         "run": f"RUN-{run_id}",
     }
     return native_record(
         f"RES-{run_id}-{int(result['id']):03}",
         "test_result",
-        result["testCaseTitle"],
-        plain_body(result.get("comment", result["testCaseTitle"])),
+        title,
+        plain_body(result.get("comment") or title),
         attrs,
         base + f"/_apis/test/runs/{run_id}/results/{result['id']}",
         str(result["id"]),

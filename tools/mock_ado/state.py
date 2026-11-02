@@ -169,6 +169,7 @@ def init(root: Path = ROOT, empty: bool = False) -> dict:
                 "name": a["title"] + (" retest" if a["attributes"]["is_retest"] else ""),
                 "buildConfiguration": {"platform": a["attributes"]["environment"]},
                 "state": "Completed",
+                "plan": {"id": "1", "name": "Kestrel system verification"},
                 "completedDate": a["attributes"]["completed_at"],
                 "comment": payload(a),
                 "results": results,

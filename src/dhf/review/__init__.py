@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dhf.config import setting
 from dhf.generate import sha
-from dhf.ingest.ado import ADO, clone_location, git_command
+from dhf.ingest.ado import ADO, ReadOnlyViolation, clone_location, git_command
 from dhf.llm import canonical
 from dhf.render import render_docx
 
@@ -120,6 +120,8 @@ class DocsReview:
         return "", ""
 
     def commit(self, branch: str, doc: str, markdown: str, manifest: dict, previous: str) -> None:
+        if self.ado.read_only:
+            raise ReadOnlyViolation("Read-only mode: refusing to push to the docs repository")
         (self.root / (doc + ".md")).write_text(markdown)
         from dhf.generate.support import support_comments
 

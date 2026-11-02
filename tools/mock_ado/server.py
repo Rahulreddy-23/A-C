@@ -10,6 +10,14 @@ from urllib.parse import parse_qs, urlsplit
 from dhf.config import setting
 from mock_ado.state import ROOT, apply_scenario, auth_token, init, read_state, write_state
 
+RECIPROCAL = {
+    "System.LinkTypes.Hierarchy-Forward": "System.LinkTypes.Hierarchy-Reverse",
+    "System.LinkTypes.Hierarchy-Reverse": "System.LinkTypes.Hierarchy-Forward",
+    "Microsoft.VSTS.Common.TestedBy-Forward": "Microsoft.VSTS.Common.TestedBy-Reverse",
+    "Microsoft.VSTS.Common.TestedBy-Reverse": "Microsoft.VSTS.Common.TestedBy-Forward",
+    "System.LinkTypes.Related": "System.LinkTypes.Related",
+}
+
 
 class Server(ThreadingHTTPServer):
     def __init__(self, root: Path = ROOT, port: int = 8089, empty: bool = False) -> None:
@@ -78,12 +86,28 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         data = json.loads(self.rfile.read(length)) if length else {}
 
+        # ADO shows every work-item link on both ends (Tests / Tested By, Parent / Child).
+        incoming: dict[str, list[dict]] = {}
+        for source, entry in state["items"].items():
+            for relation in entry["current"]["relations"]:
+                target = re.search(r"/workitems/(\d+)$", "/" + relation["url"], re.I)
+                if target and relation["rel"] in RECIPROCAL:
+                    incoming.setdefault(target[1], []).append(
+                        {"rel": RECIPROCAL[relation["rel"]], "url": f"_apis/wit/workitems/{source}"}
+                    )
+
         def item_url(item: dict, expanded: bool = False) -> dict:
             value = copy.deepcopy(item)
             value["url"] = f"{base}/_apis/wit/workitems/{value['id']}"
             value["_links"] = {
                 "html": {"href": f"{base}/_workitems/edit/{value['id']}?rev={value['rev']}"}
             }
+            known = {(r["rel"], r["url"].rsplit("/", 1)[-1]) for r in value["relations"]}
+            value["relations"] += [
+                r
+                for r in incoming.get(str(value["id"]), [])
+                if (r["rel"], r["url"].rsplit("/", 1)[-1]) not in known
+            ]
             for relation in value["relations"]:
                 relation["url"] = (
                     relation["url"]
@@ -138,12 +162,16 @@ class Handler(BaseHTTPRequestHandler):
         if path.endswith("/workitemsbatch") and method == "POST":
             if len(data["ids"]) > 200:
                 return self.respond({"message": "Maximum batch size 200"}, 400)
+            expanded = str(data.get("$expand", "")).lower() in ("relations", "all")
+            omit = str(data.get("errorPolicy", "")).lower() == "omit"
+            missing = [i for i in data["ids"] if str(i) not in state["items"]]
+            if missing and not omit:
+                return self.respond({"message": f"Work item {missing[0]} does not exist"}, 404)
             return collection(
                 [
-                    item_url(
-                        state["items"][str(i)]["current"],
-                        str(data.get("$expand", "")).lower() in ("relations", "all"),
-                    )
+                    item_url(state["items"][str(i)]["current"], expanded)
+                    if str(i) in state["items"]
+                    else None
                     for i in data["ids"]
                 ]
             )
@@ -178,8 +206,13 @@ class Handler(BaseHTTPRequestHandler):
                 is_html=True,
             )
         if path.endswith("/test/runs") and method == "GET":
+            plan = query.get("planId", [None])[0]
             return collection(
-                [{k: v for k, v in r.items() if k != "results"} for r in state["runs"]]
+                [
+                    {k: v for k, v in r.items() if k != "results"}
+                    for r in state["runs"]
+                    if plan is None or str(r.get("plan", {}).get("id")) == plan
+                ]
             )
         match = re.search(r"/test/runs/(\d+)/results$", path)
         if match and method == "GET":

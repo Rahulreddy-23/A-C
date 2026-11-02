@@ -80,13 +80,14 @@ def ingest(source: str = "ado", db: str = "out/evidence.sqlite", verbose: bool =
 
 
 @app.command("gaps")
-def gaps_command(db: str = "out/evidence.sqlite") -> None:
+def gaps_command(db: str = "out/evidence.sqlite", output_dir: str = "out") -> None:
     """Write deterministic gap findings and trace coverage as Markdown and JSON."""
     import json
     from pathlib import Path
 
     from dhf.graph import Store
-    from dhf.trace import coverage, gaps
+    from dhf.trace import coverage, gaps, unassessable_rules
+    from dhf.trace.reports import gap_rules, gaps_markdown
 
     store = Store(Path(db))
     try:
@@ -96,15 +97,62 @@ def gaps_command(db: str = "out/evidence.sqlite") -> None:
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence first")
     findings = gaps(graph)
-    out = Path("out")
-    out.mkdir(exist_ok=True)
+    blind = unassessable_rules(graph, gap_rules())
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
     (out / "gaps.json").write_text(
-        json.dumps({"findings": findings, "coverage": coverage(graph)}, indent=2)
+        json.dumps(
+            {"findings": findings, "coverage": coverage(graph), "not_assessable": blind}, indent=2
+        )
     )
-    from dhf.trace.reports import gap_rules, gaps_markdown
+    (out / "gaps.md").write_text(gaps_markdown(findings, gap_rules(), blind))
+    shown = sum(f["rule"] not in blind for f in findings)
+    typer.echo(
+        f"{shown} deterministic gaps"
+        + (f" ({len(blind)} rules not assessable from these sources)" if blind else "")
+        + f" → {out / 'gaps.md'} + {out / 'gaps.json'}"
+    )
 
-    (out / "gaps.md").write_text(gaps_markdown(findings, gap_rules()))
-    typer.echo(f"{len(findings)} deterministic gaps → out/gaps.md + out/gaps.json")
+
+@app.command("import-docs")
+def import_docs_command(
+    folder: str,
+    profile: str = "specs/doc_import/dhf_documents.yaml",
+    db: str = "out/docs/evidence.sqlite",
+    output_dir: str = "out/docs",
+) -> None:
+    """Import existing DHF documents and ADO CSV exports as a local evidence baseline."""
+    import json
+    from pathlib import Path
+
+    import yaml
+
+    from dhf.graph import Store
+    from dhf.ingest.documents import import_folder
+    from dhf.trace import evaluate_rules
+    from dhf.trace.reports import import_markdown
+
+    graph, summary = import_folder(Path(folder), Path(profile))
+    Path(db).parent.mkdir(parents=True, exist_ok=True)
+    store = Store(Path(db))
+    try:
+        result = store.ingest(graph)
+    finally:
+        store.close()
+    rules = yaml.safe_load(Path("specs/rules/document_baseline.yaml").read_text())["rules"]
+    findings = evaluate_rules(graph, rules)
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "import-report.json").write_text(
+        json.dumps({"summary": summary, "findings": findings}, indent=2)
+    )
+    (out / "import-report.md").write_text(import_markdown(summary, findings, rules, graph))
+    typer.echo(
+        f"Snapshot {result['snapshot']}: "
+        + ", ".join(f"{k}={v}" for k, v in summary["artifact_counts"].items())
+        + f", links={len(graph['links'])}"
+    )
+    typer.echo(f"{len(findings)} baseline findings → {out / 'import-report.md'}")
 
 
 @app.command("rtm")

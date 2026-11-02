@@ -1,0 +1,60 @@
+# Existing DHF documents and ADO CSV exports → evidence graph (local, deterministic, no LLM).
+# Files are matched by glob; content by table headers and heading structure. Header and heading
+# comparisons ignore case, spaces and punctuation. Nothing here is product-specific.
+exclude:
+  - "*redline*"
+  - "(REF)*"
+  - "REF *"
+  - "REF-*"
+documents:
+  - name: product requirements
+    glob: "*PRD*.docx"
+    pick: latest            # several issues of one document: import the highest version only
+    tables:
+      - header: [Req ID, Short Text, Requirement Text]
+        type: system_req
+        id: Req ID
+        title: Short Text
+        body: Requirement Text
+        attributes: {release: Release, req_type: Req Type}
+  - name: software specification
+    glob: "*Software Specification*.docx"
+    pick: latest
+    records:                # a two-row key table followed by its title/description paragraphs
+      - header: [Spec ID, SW Feature, Spec Type]
+        type: software_req
+        id: Spec ID
+        title_prefix: "Title:"
+        strip_prefixes: ["Description:"]   # the label may share a line with the text
+        attributes: {feature: SW Feature, spec_type: Spec Type}
+  - name: software architecture
+    glob: "*Software Architecture Document*.docx"
+    pick: latest
+    sections:
+      - parent: Software Item Design   # every child heading is a software item
+        type: component
+        id_prefix: "SI-"
+    matrices:
+      - header: [Req. ID, Software Items]
+        link: allocated_to
+        src: Req. ID
+        dst: Software Items           # names, comma separated, resolved against components
+        none_values: ["N/A", "NA", "None", "-"]
+  - name: software design
+    glob: "*SDD*.docx"
+    pick: all
+    units:
+      - marker: Software Unit Description   # a heading whose first child is this is a unit
+        type: software_unit
+        id_prefix: "UNIT-"
+        required_sections: [Software Unit Description, Processing Logic, Error Handling]
+csv:
+  - name: test cases
+    glob: "Test_Cases.csv"
+    type: test_case
+    id: ID
+    id_format: "TC-{}"
+    title: Title
+    attributes: {state: State, tags: Tags}
+    list_attributes: [tags]
+    drop: [Assigned To]   # personal data never enters the evidence store

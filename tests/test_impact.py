@@ -61,10 +61,19 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
             merge_docs_pr(published["pr_id"], ado_server.root)
             review.create_baseline(doc, published["pr_id"])
             (root / (doc + ".md")).write_text(result["markdown"])
-        import threading
+        import time
 
-        change = threading.Timer(2, apply_scenario, args=("change_1", ado_server.root))
-        change.start()
+        real_sleep = time.sleep
+        applied: list[dict] = []
+
+        def between_cycles(seconds: float) -> None:
+            # Apply the source change exactly between watch cycles (no timing race).
+            if applied:
+                real_sleep(seconds)
+            else:
+                applied.append(apply_scenario("change_1", ado_server.root))
+
+        monkeypatch.setattr(time, "sleep", between_cycles)
         run = CliRunner().invoke(
             app,
             [
@@ -79,8 +88,7 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
                 str(root),
             ],
         )
-        change.join()
-        assert run.exit_code == 0, run.output
+        assert applied and run.exit_code == 0, run.output
         assert "2 changed, 3 added" in run.output
         graph = store.graph()
         expected = yaml.safe_load(Path("data/synthetic/scenarios/change_1.yaml").read_text())[

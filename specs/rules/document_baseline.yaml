@@ -1,0 +1,51 @@
+# Consistency checks over an imported document baseline (dhf import-docs). Deterministic.
+rules:
+- id: D01
+  title: System requirement not allocated to any software item
+  types:
+  - system_req
+  not_attrs:
+    allocation: N/A
+  op: missing_link
+  link: allocated_to
+  direction: out
+  peer_types:
+  - component
+  action: Allocate the requirement in the architecture matrix or record why it has no software
+    realization.
+- id: D02
+  title: Allocation names a software item the architecture does not describe
+  types:
+  - system_req
+  op: attr_present
+  attr: unresolved_allocations
+  action: Correct the matrix entry or add the software item to the architecture.
+- id: D03
+  title: Software item has no documented software units
+  types:
+  - component
+  op: missing_link
+  link: allocated_to
+  direction: in
+  peer_types:
+  - software_unit
+  action: Provide the detailed design for the software item or justify its absence.
+- id: D04
+  title: Software unit not traced to an architecture software item
+  types:
+  - software_unit
+  op: missing_link
+  link: allocated_to
+  direction: out
+  peer_types:
+  - component
+  action: Describe the unit's software item (for example shared libraries) in the architecture
+    or correct the item name in the design.
+- id: D05
+  title: Software unit design lacks template sections
+  types:
+  - software_unit
+  op: attr_present
+  attr: missing_sections
+  action: Complete the missing design sections (for example Error Handling) or record why they
+    do not apply.

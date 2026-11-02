@@ -20,6 +20,21 @@ rules:
   C04:
     op: component_name
     mapping: deterministic_logic.md
+  D01:
+    op: missing_link
+    mapping: deterministic_logic.md
+  D02:
+    op: attr_present
+    mapping: deterministic_logic.md
+  D03:
+    op: missing_link
+    mapping: deterministic_logic.md
+  D04:
+    op: missing_link
+    mapping: deterministic_logic.md
+  D05:
+    op: attr_present
+    mapping: deterministic_logic.md
   F01:
     op: missing_control
     mapping: deterministic_logic.md

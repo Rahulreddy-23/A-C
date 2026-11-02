@@ -144,6 +144,8 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
                 ) or not attrs.get("known_anomaly_evaluation")
             elif operation == "match":
                 flagged = True
+            elif operation == "attr_present":
+                flagged = bool(attrs.get(rule["attr"]))
             elif operation == "outdated_verification":
                 passed = [
                     r
@@ -187,6 +189,28 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
                     }
                 )
     return findings
+
+
+def unassessable_rules(graph: dict, rules: list[dict]) -> list[str]:
+    """Missing-link rules whose link class never occurs in the graph.
+
+    Either the ingested sources cannot carry those links (e.g. documents without ADO
+    Tested By links) or nothing is linked at all; reports must say which, not list N gaps."""
+    types = {a["id"]: a["type"] for a in graph["artifacts"]}
+    edges = confirmed_links(graph)
+    result = []
+    for rule in rules:
+        if rule["op"] != "missing_link":
+            continue
+        own, peer = ("dst", "src") if rule["direction"] == "in" else ("src", "dst")
+        if not any(
+            e["type"] == rule["link"]
+            and types[e[own]] in rule["types"]
+            and types[e[peer]] in rule["peer_types"]
+            for e in edges
+        ):
+            result.append(rule["id"])
+    return result
 
 
 def gaps(graph: dict, rules_path: Path = Path("specs/rules/gaps.yaml")) -> list[dict]:

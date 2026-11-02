@@ -95,7 +95,7 @@ out/                 generated artifacts (gitignored)
 
 ## Commit and checkpoint rules
 
-- Work on branch `dev`. Never commit to or push `main`; the owner merges.
+- Work on a topic branch cut from `dev` (for example `claude/<topic>`) and open a PR into `dev`. Never push `dev` or `main` directly, never merge your own PR, and never force-push a shared branch without the owner's explicit approval. The owner reviews, fixes and merges, including `dev` into `main`.
 - Make small commits with prefixed messages, e.g. `M3: add G01–G11 rules engine`.
 - **At the start of every milestone**, read the open items in `docs/REVIEW.md` and fix every `[blocking]` item before new work.
   - Mark each fixed item with `Resolved in <sha>: <note>`. Don't edit or delete the reviewer's text.
@@ -105,7 +105,7 @@ out/                 generated artifacts (gitignored)
   1. Run tests and ruff; they must be green.
   2. Run the milestone's acceptance commands.
   3. Update `docs/PROGRESS.md` with the **real output** as evidence.
-  4. Commit, tag `m<N>-done`, and push `dev` plus tags to origin.
+  4. Commit, push the topic branch and open or update its PR. Tag `m<N>-done` only after the owner merges it.
 - If a requirement is ambiguous, choose the simplest reasonable option, record it under "Deviations" in `docs/PROGRESS.md`, and keep going.
 - Append architectural choices to `docs/DECISIONS.md` (ADR log, append-only).
 - **Never fake progress.**

@@ -164,3 +164,27 @@ def test_import_docs_command_writes_store_and_report(tmp_path) -> None:
     assert "software_req=2" in result.output and "baseline findings" in result.output
     report = (tmp_path / "out" / "import-report.md").read_text()
     assert "| D05 | 2 |" in report and "UNIT-Fleet.Ks.Fleet.Core" in report
+
+
+def test_explorer_is_product_neutral_and_honest_about_document_baselines(tmp_path, monkeypatch):
+    import base64
+    import re
+
+    from dhf.ingest.fixtures import ingest_fixtures
+    from dhf.render.explorer import create_explorer
+
+    def payload(html: str) -> dict:
+        return json.loads(base64.b64decode(re.search(r"atob\('([A-Za-z0-9+/=]+)'\)", html)[1]))
+
+    build(tmp_path)
+    graph, _ = import_folder(tmp_path, PROFILE)
+    monkeypatch.setenv("DHF_PRODUCT_NAME", "Fleetwatch")
+    monkeypatch.setenv("DHF_RELEASE", "2.0")
+    data = payload(create_explorer(graph, []))
+    assert data["product"]["name"] == "Fleetwatch" and data["release"] == "2.0"
+    assert data["product"]["evidence"] == "Confidential evidence, local only"
+    assert {"G01", "G02", "G04"} <= set(data["not_assessable"])
+    assert {f["rule"] for f in data["findings"]} == {"D01", "D02", "D03", "D04", "D05"}
+    demo = payload(create_explorer(ingest_fixtures(), []))
+    assert demo["not_assessable"] == [] and demo["product"]["evidence"] == "Synthetic evidence"
+    assert not [f for f in demo["findings"] if f["rule"].startswith("D")]

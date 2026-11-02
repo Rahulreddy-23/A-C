@@ -112,11 +112,11 @@ def explorer_payload(
     affected = {c["artifact"] for s in stale for c in s["causes"] if c.get("artifact")}
     latest = {a["id"] for a in latest_results(graph)}
     documents = documents or []
+    presentation = presentation or {}
     release = next(
         (str(d["params"]["release"]) for d in documents if d.get("params", {}).get("release")),
-        "1.1",
+        presentation.get("release", "1.1"),
     )
-    presentation = presentation or {}
     rules = presentation.get("rules", [])
     titles = presentation.get("document_titles", {})
     document_rows = []
@@ -177,6 +177,8 @@ def explorer_payload(
         "chains": {a["id"]: trace_chain(graph, a["id"]) for a in graph["artifacts"]},
         "links": confirmed_links(graph),
         "findings": findings,
+        "not_assessable": presentation.get("not_assessable", []),
+        "product": presentation.get("product", {}),
         "stale_sections": stale,
         "notice": "Read-only evidence snapshot; human review required.",
     }
@@ -196,19 +198,36 @@ def create_explorer(
 ) -> str:
     import yaml
 
+    from dhf.config import setting
     from dhf.graph.reviews import risk_gaps
     from dhf.impact import impact
+    from dhf.trace import evaluate_rules, unassessable_rules
     from dhf.trace.consistency import consistency
 
-    findings = gaps(graph) + consistency(graph, documents) + risk_gaps(graph)
+    rules = {
+        path.stem: yaml.safe_load(path.read_text()).get("rules", [])
+        for path in sorted(Path("specs/rules").glob("*.yaml"))
+    }
+    blind = unassessable_rules(graph, rules["gaps"])
+    findings = [f for f in gaps(graph) if f["rule"] not in blind]
+    # Document-baseline checks apply to evidence imported from existing documents only.
+    imported = {a["id"] for a in graph["artifacts"] if a["source"]["system"] == "file"}
+    findings += [
+        f for f in evaluate_rules(graph, rules["document_baseline"]) if f["artifact_id"] in imported
+    ]
+    findings += consistency(graph, documents) + risk_gaps(graph)
     findings += [{**f, "scope": "baseline"} for f in consistency(graph, baselines or [])]
     reports = reports if reports is not None else [impact(graph, d) for d in documents]
+    synthetic = all(a["attributes"].get("synthetic") for a in graph["artifacts"])
     presentation = {
-        "rules": [
-            rule
-            for path in sorted(Path("specs/rules").glob("*.yaml"))
-            for rule in yaml.safe_load(path.read_text()).get("rules", [])
-        ],
+        "release": setting("DHF_RELEASE", "1.1"),
+        "not_assessable": blind,
+        "product": {
+            "name": setting("DHF_PRODUCT_NAME", "Kestrel"),
+            "subject": setting("DHF_PRODUCT_SUBJECT", "Infusion Controller"),
+            "evidence": "Synthetic evidence" if synthetic else "Confidential evidence, local only",
+        },
+        "rules": [rule for group in rules.values() for rule in group],
         "document_titles": {
             path.stem: yaml.safe_load(path.read_text()).get("title")
             for path in sorted(Path("specs/documents").glob("*.yaml"))

@@ -38,6 +38,10 @@ The owner supplied the hackathon dataset (`Hackathon_2026/`, gitignored, company
 **R-062 [non-blocking] M17 — Generated documents use generic IEC 62304 section structures, not the owner's DHF template structure**
 - The owner's SAD, SDD, SSTR and design-review documents follow their own headings and tables.
 - A template set mirroring those headings, mapped to existing queries, would make drafts directly comparable to the documents reviewers know.
+- Resolved in the template-set commit (`DHF_TEMPLATE_SET=bd`, ADR-042): the SAD, SDD and SSTR follow the owner's headings, grouping and order, with software items and units nested as in the owner's documents.
+  - Shared sections keep the default IDs, queries, prompts and validators, so their content is identical to the default drafts.
+  - Owner-only headings that need records outside the evidence graph (readiness reviews, tools analysis, version history and so on) are human sections.
+  - Regeneration uses the template recorded in the manifest.
 
 **Item format:** `R-NNN [blocking|non-blocking] M<N> — finding (file:line) — expected fix`
 

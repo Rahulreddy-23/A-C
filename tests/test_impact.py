@@ -38,7 +38,7 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
         from dhf.review import DocsReview
 
         for doc, result in baseline.items():
-            review = DocsReview(ado)
+            review = DocsReview(ado, tmp_path / "docs-clone")
             published = review.publish(result)
             result["markdown"] = resolved_markdown(result)
             (review.root / (doc + ".md")).write_text(result["markdown"])
@@ -114,7 +114,9 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
                 assert s["status"] != "ai_unavailable"
             if doc == "sstr":
                 assert "Owner draft retained." in new["markdown"]
-            review = __import__("dhf.review", fromlist=["DocsReview"]).DocsReview(ado)
+            review = __import__("dhf.review", fromlist=["DocsReview"]).DocsReview(
+                ado, tmp_path / "docs-clone"
+            )
             published = review.publish(new, changed_sections=sorted(stale))
             assert published["pr_id"] >= 9
             main = git_command(["show", "origin/main:" + doc + ".md"], review.root)

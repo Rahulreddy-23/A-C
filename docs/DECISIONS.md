@@ -248,3 +248,14 @@ They are reported for document-sourced artifacts only. This is the "after-the-fa
 2026-11-03 · Accepted
 
 A missing-link rule whose link class never occurs anywhere in the ingested evidence cannot distinguish "nothing is linked" from "this source cannot carry the link" (documents have no ADO Tested By links). Listing every artifact as a gap produced thousands of misleading findings on the first real import. `unassessable_rules` names such rules. Gap Markdown, CLI totals and the explorer report them once as not assessable, and coverage shows "not assessable" instead of 0%. Gap JSON keeps every raw finding for audit. On the synthetic project every rule remains assessable, so demo metrics are unchanged.
+
+
+## ADR-042 — Template sets for the owner's document structure
+2026-11-03 · Accepted (R-062)
+
+Reviewers judge drafts against the documents they already use. `DHF_TEMPLATE_SET=<name>` selects `specs/documents/<name>/<doc>.yaml` when it exists and falls back to the default spec otherwise. The `bd` set re-arranges the SAD, SDD and SSTR under the owner's headings, grouping and order.
+- **Shared sections are copied unchanged.** They keep the same IDs, queries, prompts, allowed kinds and rules, so validation, impact and selective regeneration behave identically and their content matches the default drafts.
+- **Owner-only headings are human sections.** These are headings whose content needs records outside the evidence graph (readiness reviews, tools analysis, data and UI design, version history).
+- **Repeated groups can nest.** They take `heading_level` and `group_level` (defaults 3 and 2 preserve existing output).
+- **The manifest records the template path, and regeneration reloads it.** A document keeps its structure even if the environment's set changes, and impact detection hashes the recorded template. Recorded paths and set names are validated against the specs folder.
+

@@ -21,14 +21,14 @@ Current milestone: M17 real-data readiness (Claude as engineer since 2026-11-03)
 | M14 | done | m14-done | 275c62c | Verified offline rehearsal and frozen demo pack |
 | M15 | done | m15-done | 5a88eb9 | Day-1 kit and sandbox guardrails; tenant validation pending |
 | M16 | done offline | m16-done | a4963c4 | Copilot HTTP/folder transport and credit guard; tenant execution pending |
-| M17 | in progress | — | 6449ab5, e9ab449, 75c4c3f | Read-only scoped real-org ingest, document-baseline import, not-assessable reporting; live ADO trial blocked on PAT |
+| M17 | in progress | — | 6449ab5, e9ab449, 75c4c3f, c0bab04 + template sets | Read-only scoped real-org ingest, document-baseline import, not-assessable reporting, owner-structured SAD/SDD/SSTR; live ADO trial blocked on PAT |
 ## Now / Next
 - Done: the real dataset imports locally (documents + CSV) with D01–D05 findings and a real-data explorer. Live ADO ingest is ready but unverified on the real project.
 - Blocked on the owner:
   - a new read-only PAT (R-058);
   - a decision on company evidence and the BD tenant drafting path (R-059);
   - a decision on code evidence (R-061).
-- Next: run scoped discovery and ingest on the real project, write the reviewed mapping profile (R-060), then build a template set that follows the owner's DHF document structure (R-062).
+- Next: run scoped discovery and ingest on the real project, then write the reviewed mapping profile (R-060). The owner-structured templates (R-062) are done: `DHF_TEMPLATE_SET=bd`.
 
 
 ## Acceptance evidence
@@ -367,4 +367,9 @@ Dataset-specific results are local only (`out/real-docs/`, gitignored). This sec
 - **Known issues**
   - Live ADO ingest, the real mapping profile and drafting from company evidence are unverified (R-058, R-059, R-060).
   - The RTM is specification-centric, so on a document baseline its rows show allocation only through requirements.
+- **Template sets (R-062)**
+  - `DHF_TEMPLATE_SET=bd` generates the SAD, SDD and SSTR in the owner's heading structure, with items and units nested. Shared sections are byte-identical to the default drafts apart from headings.
+  - Regeneration keeps the recorded template.
+  - The watch test's docs clone moved into its temporary folder: reused mock ports were colliding with stale clones in `out/`, which was the real cause of its intermittent failures.
+  - Verification: `uv run pytest -q` → `142 passed in 129.04s`; ruff check and format clean. The owner's curl request (GET work item, Bearer PAT) was re-run on request: still HTTP 401 "The Personal Access Token used has expired."
 

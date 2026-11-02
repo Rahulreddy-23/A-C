@@ -1,0 +1,199 @@
+# SSTR in the owner's DHF structure (DHF_TEMPLATE_SET=bd). Shared sections keep the default
+# template's IDs, queries, prompts and validation rules; headings, grouping and order follow
+# the owner's report, and sections that need records outside the evidence graph are human.
+id: sstr
+title: Software System Test Report (SSTR)
+spec_version: 5
+template_set: bd
+standard_refs:
+- IEC 62304 5.7
+- IEC 62304 5.8
+params:
+  release:
+    type: string
+    required: true
+sections:
+- id: purpose_scope
+  title: Introduction/Purpose
+  mode: ai
+  query: purpose_scope
+  prompt: sstr.purpose@2
+  output_schema: claims.v1
+  allowed_kinds:
+  - sourced
+  - inferred
+  rules:
+  - no_unknown_ids
+  - numbers_match_facts
+  max_claims: 4
+  synthesis: true
+  heading_level: 2
+- id: references
+  title: Scope
+  mode: deterministic
+  query: references
+  render: table
+  columns:
+    id: Requirement
+    revision: Revision
+    title: Title
+  group_title: Plan Execution Summary
+  heading_level: 3
+- id: readiness_reviews
+  title: Readiness Reviews
+  mode: human
+  heading_level: 3
+- id: test_environment
+  title: Test Environments
+  mode: deterministic
+  query: test_environment
+  render: table
+  columns:
+    environment: Environment
+  heading_level: 3
+- id: test_types
+  title: Software System Test Types Used
+  mode: human
+  heading_level: 3
+- id: tools_analysis
+  title: Tools Analysis
+  mode: human
+  heading_level: 3
+- id: results_by_requirement
+  title: Traceability
+  mode: deterministic
+  query: results_by_requirement
+  render: table
+  columns:
+    requirement: Requirement
+    revision: Rev
+    components: Components
+    units: Software units
+    changes: Changes
+    tests: Test cases
+    results: Latest results
+  group_title: Deliverables
+  heading_level: 3
+- id: deliverable_documents
+  title: Documents
+  mode: human
+  heading_level: 3
+- id: results_summary
+  title: Software System Test Case Results
+  mode: deterministic
+  query: test_results_summary
+  render: table
+  standard_refs:
+  - IEC 62304 5.7.5
+  columns:
+    release: Release
+    total: Total
+    passed: Passed
+    failed: Failed
+    blocked: Blocked
+    not_run: Not run
+  group_title: Test Execution Summary
+  heading_level: 3
+- id: anomaly_assessment
+  title: Failed Tests and Anomaly Assessment
+  mode: ai
+  query: failed_results_with_defects
+  columns:
+    result: Result
+    case: Test case
+    outcome: Outcome
+    requirements: Requirements
+    defects: Linked defect
+  prompt: sstr.anomaly_assessment@2
+  output_schema: claims.v1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  rules:
+  - no_unknown_ids
+  - numbers_match_facts
+  max_claims: 6
+  heading_level: 3
+- id: retest_results
+  title: Multiple Test Executions
+  mode: deterministic
+  query: retest_results
+  render: table
+  columns:
+    case: Test case
+    result: Latest result
+    outcome: Outcome
+  heading_level: 3
+- id: summary_by_build
+  title: Summary by Build
+  mode: human
+  heading_level: 3
+- id: security_testing
+  title: Third Party For Security Testing
+  mode: human
+  heading_level: 3
+- id: non_requirement_testing
+  title: Non-Requirement Testing
+  mode: human
+  heading_level: 3
+- id: residual_anomalies
+  title: Known Residual Anomalies
+  mode: ai
+  query: residual_anomalies
+  prompt: sstr.residual@2
+  output_schema: claims.v1
+  allowed_kinds:
+  - suggested
+  rules:
+  - no_unknown_ids
+  - numbers_match_facts
+  standard_refs:
+  - IEC 62304 5.8
+  max_claims: 6
+  heading_level: 3
+- id: verification_gaps
+  title: Verification Coverage Gaps
+  mode: deterministic
+  query: verification_gaps
+  render: table
+  columns:
+    rule: Rule
+    artifact_id: Artifact
+    revision: Rev
+    message: Finding
+    action: Recommended action
+  heading_level: 3
+- id: release_conclusion
+  title: Conclusion
+  mode: ai
+  query: release_readiness_facts
+  prompt: sstr.conclusion@3
+  output_schema: claims.v1
+  allowed_kinds:
+  - suggested
+  rules:
+  - no_unknown_ids
+  - numbers_match_facts
+  max_claims: 6
+  synthesis: true
+  model_tier: analytical
+  heading_level: 2
+- id: evidence_index
+  title: Evidence Index
+  mode: deterministic
+  query: evidence_index
+  render: table
+  columns:
+    id: Artifact
+    revision: Rev
+    hash: Content hash
+  heading_level: 2
+- id: version_history
+  title: Version History
+  mode: human
+  heading_level: 2
+- id: approvals
+  title: Approvals
+  mode: human
+  heading_level: 2

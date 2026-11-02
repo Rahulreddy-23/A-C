@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import subprocess
 import time
 from collections import Counter
@@ -29,10 +30,27 @@ def sha(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def load_spec(doc: str) -> dict:
+RECORDED_TEMPLATE = re.compile(r"specs/documents/(?:[a-z0-9_-]+/)?([a-z0-9_]+)\.yaml")
+
+
+def template_path(doc: str, template: str | None = None) -> Path:
+    """Recorded template (regeneration), else the DHF_TEMPLATE_SET variant, else the default."""
     if not doc.replace("_", "").isalnum():
         raise ValueError("Invalid document ID")
-    spec = yaml.safe_load(Path(f"specs/documents/{doc}.yaml").read_text())
+    if template:
+        match = RECORDED_TEMPLATE.fullmatch(template)
+        if not match or match[1] != doc:
+            raise ValueError("Invalid recorded template")
+        return Path(template)
+    chosen = setting("DHF_TEMPLATE_SET", "").strip()
+    if chosen and not re.fullmatch(r"[a-z0-9_-]+", chosen):
+        raise ValueError("Invalid template set")
+    variant = Path("specs/documents", chosen, f"{doc}.yaml")
+    return variant if chosen and variant.exists() else Path("specs/documents", f"{doc}.yaml")
+
+
+def load_spec(doc: str, template: str | None = None) -> dict:
+    spec = yaml.safe_load(template_path(doc, template).read_text())
     if spec["id"] != doc or len({s["id"] for s in spec["sections"]}) != len(spec["sections"]):
         raise ValueError("Invalid or duplicate spec identifiers")
     return spec
@@ -78,7 +96,7 @@ def expand_sections(spec: dict, graph: dict) -> list[dict]:
                             **section,
                             "id": section["id"] + "." + artifact["id"],
                             "title": section["title"],
-                            "heading_level": 3,
+                            "heading_level": section.get("heading_level", 3),
                             "group_title": artifact["id"] + ": " + artifact["title"]
                             if group_index == 0
                             else None,
@@ -437,6 +455,7 @@ def assemble(spec: dict, graph: dict, params: dict, sections: list[dict], contex
             "id": spec["id"],
             "version": spec["spec_version"],
             "sha256": context["template_sha256"],
+            "path": context.get("template", f"specs/documents/{spec['id']}.yaml"),
         },
         "prompts": list(prompts.values()),
         "model": context["model"],
@@ -534,7 +553,8 @@ def generate_document(
         "doc_version": 1,
         "generated_at": datetime.now(UTC).isoformat(),
         "generator_version": version,
-        "template_sha256": sha(Path(f"specs/documents/{doc}.yaml").read_text()),
+        "template": template_path(doc).as_posix(),
+        "template_sha256": sha(template_path(doc).read_text()),
         "model": {
             "provider": llm.provider,
             "name": llm.last_model or llm.model,

@@ -7,7 +7,14 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from dhf.generate import assemble, expand_sections, generate_section, load_spec, sha
+from dhf.generate import (
+    assemble,
+    expand_sections,
+    generate_section,
+    load_spec,
+    sha,
+    template_path,
+)
 from dhf.graph.queries import query
 from dhf.llm import LLM, canonical
 from dhf.models.values import ID_PATTERN
@@ -35,7 +42,12 @@ def impact(graph: dict, manifest: dict, previous: dict | None = None) -> dict:
         for source, target in ((e["src"], e["dst"]), (e["dst"], e["src"])):
             if source in changed:
                 neighbors.setdefault(target, set()).add(source)
-    specs = {s["id"]: s for s in expand_sections(load_spec(manifest["doc_id"]), graph)}
+    specs = {
+        s["id"]: s
+        for s in expand_sections(
+            load_spec(manifest["doc_id"], manifest["template_spec"].get("path")), graph
+        )
+    }
     sections = []
     for section in manifest["sections"]:
         if section["mode"] == "human":
@@ -135,7 +147,9 @@ def regenerate(
     if set(old) - actual.keys():
         raise ValueError("Missing section boundaries; repair edited Markdown before regeneration")
     sections = []
-    for definition in expand_sections(load_spec(manifest["doc_id"]), graph):
+    for definition in expand_sections(
+        load_spec(manifest["doc_id"], manifest["template_spec"].get("path")), graph
+    ):
         id = definition["id"]
         if id in stale or id not in old:
             sections.append(generate_section(definition, graph, manifest["params"], llm))
@@ -148,7 +162,12 @@ def regenerate(
         **manifest,
         "doc_version": manifest["doc_version"] + 1,
         "generated_at": datetime.now(UTC).isoformat(),
-        "template_sha256": sha(Path(f"specs/documents/{manifest['doc_id']}.yaml").read_text()),
+        "template": template_path(
+            manifest["doc_id"], manifest["template_spec"].get("path")
+        ).as_posix(),
+        "template_sha256": sha(
+            template_path(manifest["doc_id"], manifest["template_spec"].get("path")).read_text()
+        ),
         "llm_cost_usd": 0 if llm.provider == "copilotstudio" else llm.run_spend - cost,
         **({"copilot_credits": llm.run_spend - cost} if llm.provider == "copilotstudio" else {}),
         "telemetry": {
@@ -157,7 +176,13 @@ def regenerate(
             "calls": llm.calls - calls,
         },
     }
-    result = assemble(load_spec(manifest["doc_id"]), graph, manifest["params"], sections, context)
+    result = assemble(
+        load_spec(manifest["doc_id"], manifest["template_spec"].get("path")),
+        graph,
+        manifest["params"],
+        sections,
+        context,
+    )
     result["manifest"]["impact"] = report
     result["manifest"]["changed_sections"] = sorted(stale)
     from dhf.render import render_docx

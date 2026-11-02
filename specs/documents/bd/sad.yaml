@@ -1,0 +1,258 @@
+# SAD in the owner's DHF structure (DHF_TEMPLATE_SET=bd). Shared sections keep the
+# default template's IDs, queries, prompts and validation rules; headings, grouping and order
+# follow the owner's document. Sections needing records outside the evidence graph are human.
+id: sad
+title: Software Architecture
+spec_version: 2
+template_set: bd
+params:
+  release:
+    type: string
+    required: true
+sections:
+- id: purpose
+  title: Purpose, Scope and References
+  mode: ai
+  query: design_scope
+  prompt: design.scope@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+  group_title: Introduction
+- id: definitions
+  mode: human
+  title: Definitions / Acronyms
+  heading_level: 3
+- id: context
+  title: System Overview
+  mode: ai
+  query: system_context
+  prompt: design.context@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+  group_title: Architecture Overview
+- id: classification
+  title: Design Considerations
+  mode: deterministic
+  query: components
+  columns:
+    id: Component
+    name: Name
+    safety_class: Source safety class
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+- id: decisions
+  title: Architecture Decisions
+  mode: deterministic
+  query: architectural_decisions
+  columns:
+    id: Decision record
+    decision: Source decision
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+- id: architecture
+  title: Architecture Diagram(s)
+  mode: deterministic
+  query: architecture_diagram
+  columns: {}
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+  group_title: Software Architecture Description
+- id: architecture_overview
+  title: Architecture Views
+  mode: ai
+  query: runtime_view
+  prompt: design.architecture@2
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+  synthesis: true
+  heading_level: 3
+- id: runtime
+  title: Deployment View
+  mode: ai
+  query: runtime_view
+  prompt: design.runtime@2
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+  synthesis: true
+  heading_level: 3
+- id: data_design
+  mode: human
+  title: Data Design
+  heading_level: 3
+- id: ui_design
+  mode: human
+  title: User Interface Design
+  heading_level: 3
+- id: alternate_architecture
+  mode: human
+  title: Alternate Architecture
+  heading_level: 3
+- id: risk_controls
+  title: Risk, Error and Safety Handling
+  mode: deterministic
+  query: architecture_risks
+  columns:
+    hazard: Hazard
+    hazard_name: Name
+    severity: Source severity
+    controls: Existing controls and names
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+- id: interfaces
+  title: Protocol
+  mode: deterministic
+  query: interfaces
+  columns:
+    unit: Unit
+    component: Component
+    signatures: Signatures
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+- id: interface_context
+  title: Interface Context
+  mode: ai
+  query: system_context
+  prompt: design.context@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+- id: size_performance
+  mode: human
+  title: Size and Performance
+  heading_level: 3
+- id: soup
+  title: Architecturally Significant COTS
+  mode: deterministic
+  query: soup_inventory
+  columns:
+    id: SOUP
+    name: Name
+    version: Pinned version
+    requirements: Recorded requirements
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+- id: soup_purpose
+  title: COTS Purpose and Constraints
+  mode: ai
+  query: soup_purpose
+  prompt: design.soup@1
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+- id: components
+  title: Software Items
+  mode: deterministic
+  query: components
+  columns:
+    id: Component
+    name: Name
+    responsibility: Responsibility
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 3
+  group_title: Software Item Design
+- id: component_responsibility
+  title: Responsibilities and Collaborators
+  mode: ai
+  query: component_design
+  prompt: design.component@2
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  repeat: component
+  synthesis: true
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 4
+  group_level: 3
+- id: component_allocation
+  title: Allocated Requirements
+  mode: deterministic
+  query: component_allocation
+  columns:
+    requirement: Requirement
+    revision: Rev
+    title: Title
+  repeat: component
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 4
+  group_level: 3
+- id: environment
+  mode: human
+  title: End-User Environment
+  heading_level: 3
+  group_title: Hardware or Software Environment
+- id: allocation_matrix
+  title: Requirements Matrix
+  mode: deterministic
+  query: architecture_matrix
+  columns:
+    requirement: Requirement
+    revision: Rev
+    components: Components
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 2
+- id: gaps
+  title: Open Design and Verification Gaps
+  mode: deterministic
+  query: design_gaps
+  columns:
+    rule: Rule
+    artifact_id: Artifact
+    message: Finding
+    action: Action
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 2
+- id: open_issues
+  title: Additional Open Issues and Dispositions
+  mode: human
+  standard_refs:
+  - IEC 62304 5.3
+  heading_level: 2
+- id: version_history
+  mode: human
+  title: Version History
+  heading_level: 2

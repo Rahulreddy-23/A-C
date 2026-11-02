@@ -1,0 +1,156 @@
+# SDD in the owner's DHF structure (DHF_TEMPLATE_SET=bd). Shared sections keep the
+# default template's IDs, queries, prompts and validation rules; headings, grouping and order
+# follow the owner's document. Units nest under Detailed Design.
+id: sdd
+title: Software Design Description
+spec_version: 2
+template_set: bd
+params:
+  release:
+    type: string
+    required: true
+sections:
+- id: conventions
+  title: Purpose & Scope
+  mode: ai
+  query: runtime_view
+  prompt: design.conventions@2
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  standard_refs:
+  - IEC 62304 5.4
+  synthesis: true
+  heading_level: 2
+- id: definitions
+  mode: human
+  title: Definitions / Acronyms
+  heading_level: 2
+- id: unit_trace
+  title: Software Unit Traceability
+  mode: deterministic
+  query: unit_trace
+  columns:
+    unit: Unit
+    component: Component
+    requirements: Requirements
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 3
+  group_title: Detailed Design
+- id: identity
+  title: Unit Identification
+  mode: deterministic
+  query: unit_identity
+  columns:
+    unit: Unit
+    component: Parent component
+    path: Source path
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 4
+  group_level: 3
+- id: purpose
+  title: Software Unit Description
+  mode: ai
+  query: unit_purpose
+  prompt: design.unit_purpose@2
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  repeat: software_unit
+  synthesis: true
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 4
+  group_level: 3
+- id: interfaces
+  title: Interface
+  mode: deterministic
+  query: unit_interfaces
+  columns:
+    signature: Signature
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 4
+  group_level: 3
+- id: structures
+  title: Internal Structure
+  mode: deterministic
+  query: unit_structures
+  columns:
+    name: Name
+    bases: Kind / bases
+    fields: Fields
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 4
+  group_level: 3
+- id: behavior
+  title: Processing Logic
+  mode: ai
+  query: unit_behavior
+  prompt: design.unit_behavior@2
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  repeat: software_unit
+  synthesis: true
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 4
+  group_level: 3
+- id: errors
+  title: Error Handling
+  mode: ai
+  query: unit_errors
+  prompt: design.unit_errors@2
+  allowed_kinds:
+  - sourced
+  - inferred
+  - suggested
+  max_claims: 4
+  repeat: software_unit
+  synthesis: true
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 4
+  group_level: 3
+- id: allocation
+  title: Allocated Requirements and Risk Controls
+  mode: deterministic
+  query: unit_allocation
+  columns:
+    requirement: Requirement
+    revision: Rev
+    controls: Risk controls
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 4
+  group_level: 3
+- id: tests
+  title: Unit Tests
+  mode: deterministic
+  query: unit_tests
+  columns:
+    test: Test case
+    title: Title
+  repeat: software_unit
+  standard_refs:
+  - IEC 62304 5.4
+  heading_level: 4
+  group_level: 3
+- id: version_history
+  mode: human
+  title: Version History
+  heading_level: 2

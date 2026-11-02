@@ -44,7 +44,8 @@ DHF_PRODUCT_NAME="<product>" DHF_RELEASE=<release> uv run dhf explore \
    - relation directions;
    - area-path components.
 6. **Ingest.** Run `uv run dhf ingest --source ado --db out/real/evidence.sqlite`. It prints the read-only mode, the scope and every skipped class (unmapped types, out-of-scope results or bugs, unavailable IDs). Then run `dhf gaps`, `dhf rtm` and `dhf explore` against that database with `--output-dir out/real`.
-7. **Draft locally.** `uv run dhf generate sstr --release <release> --db out/real/evidence.sqlite --documents out/real/docs` uses the mock provider. Opening PRs requires a docs repository the owner controls and `ADO_READ_ONLY=0` for that run only. Human approvals remain in the eQMS.
+7. **Draft locally.** Set `DHF_TEMPLATE_SET=bd` for drafts in the owner's SAD/SDD/SSTR structure.
+   Then: `uv run dhf generate sstr --release <release> --db out/real/evidence.sqlite --documents out/real/docs` uses the mock provider. Opening PRs requires a docs repository the owner controls and `ADO_READ_ONLY=0` for that run only. Human approvals remain in the eQMS.
 
 ## Seed the synthetic sandbox
 

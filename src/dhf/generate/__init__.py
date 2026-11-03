@@ -132,13 +132,31 @@ def expand_sections(spec: dict, graph: dict) -> list[dict]:
         group = [first]
         while pending and pending[0].get("repeat") == first["repeat"]:
             group.append(pending.pop(0))
+        classes = {
+            a["id"]: a["attributes"].get("safety_class")
+            for a in graph["artifacts"]
+            if a["type"] == "component"
+        }
+        if first.get("repeat_class"):
+            # A safety-class filter fails closed: an unknown class must never drop an item
+            # from a safety analysis without anyone noticing.
+            unknown = sorted(
+                a["id"]
+                for a in graph["artifacts"]
+                if a["type"] == first["repeat"]
+                and classes.get(a["attributes"].get("component")) is None
+            )
+            if unknown:
+                raise ValueError(
+                    f"{spec['id']} needs a recorded safety class for every {first['repeat']}; "
+                    "none is recorded for "
+                    + ", ".join(unknown[:10])
+                    + (" …" if unknown[10:] else "")
+                )
         for artifact in sorted(graph["artifacts"], key=lambda a: a["id"]):
             if artifact["type"] == first["repeat"] and (
                 not first.get("repeat_class")
-                or next(
-                    a for a in graph["artifacts"] if a["id"] == artifact["attributes"]["component"]
-                )["attributes"]["safety_class"]
-                == first["repeat_class"]
+                or classes.get(artifact["attributes"].get("component")) == first["repeat_class"]
             ):
                 for group_index, section in enumerate(group):
                     sections.append(

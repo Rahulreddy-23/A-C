@@ -406,3 +406,77 @@ Dataset-specific results are local only (`out/real-docs/`, gitignored). This sec
     - A seeded scope declares only the link types it follows, so Related pairs, which are not followed by default, no longer produce false G06 gaps.
     - A rule with no subjects is not assessable when no source can read its link, or what it `requires` (G11 needs results). A scope without test plans now reads "not assessable" for G05 and G11 instead of zero.
     - `uv run pytest -q` → `173 passed in 160.24s`.
+- **End-to-end flow (2026-11-03; owner: no source-code evidence for the hackathon; AI drafting runs in the Copilot agents; ChatGPT/Claude keys for development)**
+  - **SAD and SDD without code (ADR-044, closes R-061).**
+    - Design queries read code-derived or document-derived items. Missing facts read "Not recorded in the source", or name the document section.
+    - A real-project scope can name `documents:`. Every ADO ingest then adds software items, units and allocations from the SAD/SDDs.
+    - The component diagram lays out any inventory; the synthetic PNG is byte-identical.
+  - **Change tracking:** adding `documents:` changed every ADO artifact's declared link classes, so the real merged ingest reported 454 "changed". An attempt to leave `link_classes` out of the content hash was reverted in review (see below). The ingest report now says how many changes are configuration-only, and drafts citing them are re-flagged, because assessability can change with the scope.
+  - **Other fixes:**
+    - The offline drafter quotes the opening sentence of bodies over 1,000 characters (synthetic maximum 706, so synthetic drafts are unchanged).
+    - `dhf check --documents`.
+    - `copilot-request` applies the data guard before any section work.
+  - **Verification on the final tree:**
+    - `uv run pytest -q` → `174 passed in 145.00s`
+    - `uv run ruff check .` → `All checks passed!`
+    - `uv run ruff format --check .` → `196 files already formatted`
+    - `./scripts/demo.sh` → exit 0 in 35 s; unknown IDs 0; baseline gaps P/R 1.00 (21); change_1 impact P/R 1.00 (75 records).
+  - **Live OpenAI demo** (`DHF_LIVE_PROVIDER=openai ./scripts/demo.sh --live`, synthetic data, before the last three small fixes above, which don't touch the live path):
+    - The first, cold pass reached the $0.25 per-run cap in the sFMEA/DRR sections ($0.20 spent). Those sections became placeholders, and the review step correctly refused "ready".
+    - The second pass ($0.20) completed every stage up to the final impact assertion, whose change_1 key records the offline drafter's citations.
+    - The third pass, after the live-mode impact check: exit 0, 0 drafting failures, all 40 directly stale sections detected, $0.07 (DRR and proposal inputs carry run-specific review state).
+    - Cumulative OpenAI spend: $1.10 of the $4.00 hard cap.
+  - **Live Anthropic demo** (Claude Haiku 5.5, $0.12):
+    - SSTR, SAD, SDD and sFMEA were drafted, but the model's safety classifier declined `residual_anomalies` and `release_conclusion`.
+    - Two DRR sections returned suggested claims without confidence and were rejected by the claim validator.
+    - The review step therefore stops at "not ready", as designed. OpenAI stays the live default (R-045).
+    - Cumulative Anthropic spend: $0.12 of the $2.50 hard cap.
+  - **Copilot folder transport rehearsal** (synthetic): `dhf generate sstr|sad --provider copilotstudio` with `DHF_COPILOT_MODE=folder` and a scratch ledger and cache.
+    - A local stand-in for the tenant flow answered with the offline drafter, reporting zero tokens.
+    - SSTR: one request file carried 4 AI sections; SAD: one file carried 11. 0 sections unavailable.
+    - Credits settled at 0 and the manifests record the answering model. No tenant execution is claimed.
+  - **Real project, local and read-only** (offline drafter only; outputs under `out/real/`):
+    - The scoped live ingest with `documents:` ran in 8 m 47 s and read 21 design documents. It added 18 software items, 129 units and 119 allocation links; 136 matrix rows name requirements outside the scope.
+    - `dhf gaps`: 91 gaps, 2 rules not assessable. `dhf rtm`: 33 rows.
+    - SSTR (20 sections), SAD (59) and SDD (1,036) in the owner's template set, with 0 validation rejections.
+    - Explorer: 601 artifacts. Audit pack: 20 verified files. Impact right after generation: 0 stale. `dhf check sstr`: not ready (human sections pending).
+    - `copilot-request` refuses the company evidence (R-059).
+  - **Deviations:** with a live drafter, the demo checks change_1 impact exactly for deterministic sections only. AI sections cite what their claims cite, while the key records the offline drafter's citations. The offline demo keeps the exact check over every section.
+  - **Known issues:**
+    - **Prompt budget:** on the owner's 129-unit architecture, the three architecture-wide AI sections (SAD overview and runtime, SDD purpose) exceed the prompt budget. They are marked for manual authoring; per-component fact summaries are a follow-up.
+    - **Cold live demo cost:** about $0.40, above the $0.25 per-run cap, so a cold cache needs two passes.
+- **PR #3 fresh-perspective review fixes (2026-11-03)**
+  - **Content hash rule reverted.** Leaving `link_classes` out of the hash made `dhf audit-pack` refuse earlier manifests. It also changed document revisions on re-import, and made reading old snapshots depend on today's model. The ingest report now marks configuration-only changes instead.
+  - **Merged documents:**
+    - Every `import-docs` warning reaches the ingest report.
+    - The folder and profile are checked when an ingest starts (not in every `ADO()`, and not after the ADO read).
+    - Only `allocated_to` links merge.
+    - The import report schema is unchanged.
+  - **SAD/SDD:**
+    - Allocation tables list allocated system requirements.
+    - Notices name the heading path, not the versioned file, so a re-issue stales nothing.
+    - "Responsibility" skips labels and table rows, and long quotes are cut between words.
+    - `#` in file names is kept.
+    - A missing Severity reads "Not recorded".
+  - **Fail closed:**
+    - A dangling unit→component reference raises again.
+    - The sFMEA safety-class filter raises when a class is unknown, instead of dropping the item.
+  - **Diagram:**
+    - Only component-to-component edges are dependencies, so a reviewer's unit edge no longer breaks the DOCX.
+    - Boxes list up to ten units; unallocated units are counted on the figure.
+    - The DOCX figure fits the page.
+    - Labels keep a distinctive end.
+  - **Demo:** with a live drafter, deterministic sections are scored exactly against change_1; the offline run still scores every section exactly.
+  - **Verification:**
+    - `uv run pytest -q` → `179 passed in 179.63s`; ruff check and format clean.
+    - `./scripts/demo.sh` → exit 0 in 40 s; unknown IDs 0; gaps P/R 1.00 (21); deterministic impact exact (51 records); change_1 impact P/R 1.00 (75).
+    - `DHF_LIVE_PROVIDER=openai ./scripts/demo.sh --live` → exit 0, 0 drafting failures, deterministic impact exact (51), $0.066 (cumulative OpenAI $1.17 of $4.00).
+    - Real project, local, from the stored read-only snapshot:
+      - SSTR/SAD/SDD in the owner's format with 0 rejections.
+      - SAD allocation tables now show 23 allocation rows (0 before), and the matrix lists the 6 allocated system requirements.
+      - 0 of 129 SDD notices name a file. Audit pack 20 verified files; impact 0 stale.
+  - **Gap sweep follow-up:**
+    - SDD units keep their design-section text and a digest of it, so an edit to processing logic or error handling is a tracked change. The first re-import of an existing baseline therefore reports its units changed once.
+    - Documented software items reach hazards and risk controls through their SAD allocations.
+    - Orphan-code proposals (L02) skip units from documents.
+    - `uv run pytest -q` → `182 passed in 172.72s`; ruff clean; `./scripts/demo.sh` → exit 0, gaps P/R 1.00, deterministic impact exact (51), change_1 impact P/R 1.00 (75). Real baseline re-import: 129 of 129 units carry design text.

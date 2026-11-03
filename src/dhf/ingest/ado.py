@@ -115,6 +115,17 @@ def load_scope(path: str = "") -> dict:
     if release is not None and not isinstance(release, str):
         # YAML reads `release: 1.10` as the number 1.1; a label must stay as written.
         raise ValueError(f'ADO_SCOPE release must be quoted text, e.g. release: "{release}"')
+    documents = scope.get("documents")
+    if documents:  # design documents that supply the architecture ADO does not hold
+        spec: dict = {"folder": documents} if isinstance(documents, str) else dict(documents)
+        spec["folder"] = str(Path(path).parent / spec["folder"])
+        spec["profile"] = (
+            str(Path(path).parent / spec["profile"])
+            if spec.get("profile")
+            else "specs/doc_import/dhf_documents.yaml"
+        )
+        spec.setdefault("types", ["component", "software_unit"])
+        scope["documents"] = spec  # existence is checked when an ingest starts
     return {**scope, "seed_ids": sorted(ids), "unparsed_seed_lines": unparsed}
 
 
@@ -369,6 +380,12 @@ class ADO:
         ]
 
     def ingest(self, clone_root: Path = Path("out/clones")) -> dict:
+        documents = self.scope.get("documents")
+        if documents:  # fail before the (long) ADO read, never after it
+            if not Path(documents["folder"]).is_dir():
+                raise ValueError(f"ADO_SCOPE documents folder not found: {documents['folder']}")
+            if not Path(documents["profile"]).is_file():
+                raise ValueError(f"ADO_SCOPE documents profile not found: {documents['profile']}")
         retrieved = datetime.now(UTC).isoformat()
         items = self.workitems()
         mapping = self.mapping
@@ -533,7 +550,7 @@ class ADO:
             for pair in mapping.get("related_pairs", []):  # typed: a shared name, a given peer
                 if readable("System.LinkTypes.Related"):
                     classes |= {f"{pair['type']}:{pair['src']}", f"{pair['type']}:{pair['dst']}"}
-            if mapping.get("area_components") or repo_name:
+            if mapping.get("area_components") or repo_name or documents:
                 classes.add("allocated_to")
             if repo_name:
                 classes.add("implements")
@@ -541,7 +558,31 @@ class ADO:
                 classes |= {"executes", "reports_defect"}
             for artifact in artifacts:
                 artifact["attributes"]["link_classes"] = sorted(classes)
-        return validate_graph({"artifacts": artifacts, "links": links})
+        graph = {"artifacts": artifacts, "links": links}
+        if documents:
+            graph = self.merge_documents(graph, documents)
+        return validate_graph(graph)
+
+    def merge_documents(self, graph: dict, spec: dict) -> dict:
+        """Add the architecture the scope's design documents record (ADR-044): software
+        items, units and their allocations, read locally. ADO stays the source for every
+        requirement, specification and test it holds."""
+        from dhf.ingest.documents import import_folder, merge_baseline
+
+        held = frozenset(a["id"] for a in graph["artifacts"])
+        baseline, summary = import_folder(Path(spec["folder"]), Path(spec["profile"]), held)
+        merged, report = merge_baseline(
+            graph, baseline, spec["types"], summary.get("external_links", [])
+        )
+        # Everything `dhf import-docs` would report, so incomplete or wrong-issue design
+        # evidence (unreadable files, duplicates, older issues) is never silent here.
+        self.report["design documents read"] += len(summary["imported_files"])
+        self.report["design documents: older issues not read"] += len(summary["older_issues"])
+        self.report["design documents: duplicate IDs ignored"] += len(summary["duplicates_ignored"])
+        for note, count in summary["notes"].items():
+            self.report["design documents: " + note] += count
+        self.report.update(report)
+        return merged
 
     def code_evidence(
         self,

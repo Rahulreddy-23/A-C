@@ -154,8 +154,12 @@ def family(name: str) -> str:
 
 
 def document_of(artifact: dict) -> str:
-    """The file an imported artifact came from (kept in its source URL, not its content)."""
-    return artifact["source"]["url"].removeprefix("file:").split("?", 1)[0].split("#", 1)[0]
+    """The file an imported artifact came from (kept in its source URL, not its content).
+
+    Names keep "#" and "?" (issue markers such as "PRD #2"), so the URL is split at its
+    own "?sha256=" query rather than at the first "?" or "#"."""
+    rest = artifact["source"]["url"].removeprefix("file:")
+    return rest.rsplit("?sha256=", 1)[0] if "?sha256=" in rest else rest.split("#", 1)[0]
 
 
 def content_revision(artifact: dict) -> str:
@@ -341,6 +345,15 @@ def extract_document(blocks: list[dict], rule: dict, source: dict) -> dict:
                         "software_item": parent,
                         "design_sections": words,
                         "missing_sections": missing,
+                        # Processing logic, error handling and the other sections are evidence
+                        # too: drafts read them and impact sees any edit (the digest covers the
+                        # full text, the stored text is bounded like a body).
+                        "design_text": {
+                            k: "\n".join(t for t in v if t)[:BODY_LIMIT]
+                            for k, v in parts.items()
+                            if norm(k) != norm(spec["marker"]) and any(v)
+                        },
+                        "design_sha256": hashlib.sha256(canonical(parts).encode()).hexdigest()[:16],
                     },
                     source,
                 )
@@ -386,33 +399,39 @@ def component_resolver(artifacts: list[dict]):
     return resolve
 
 
-def resolve_links(artifacts: list[dict], pending: list[dict]) -> tuple[list[dict], Counter]:
-    """Matrix rows and unit → software-item names become links to imported components."""
+def resolve_links(
+    artifacts: list[dict], pending: list[dict], known: frozenset[str] = frozenset()
+) -> tuple[list[dict], Counter]:
+    """Matrix rows and unit → software-item names become links to imported components.
+
+    `known` holds requirement IDs another source (ADO) supplies: their matrix rows still
+    link, and their artifacts, owned by that source, are never annotated here."""
     report: Counter = Counter()
     by_id = {a["id"]: a for a in artifacts}
     component = component_resolver(artifacts)
     links = []
     for row in pending:
         source = by_id.get(row["src_id"])
-        if source is None:
+        if source is None and row["src_id"] not in known:
             report["matrix rows for unknown requirements"] += 1
             continue
+        notes = source["attributes"] if source is not None else {}
         names = [n.strip() for n in re.split(r"[,;\n]", row["names"]) if n.strip()]
         if not names:  # an empty cell states no allocation; it is not an explicit N/A
             report["matrix rows without software items"] += 1
             continue
         none = {v.strip().upper() for v in row["none_values"]}
         if all(n.rstrip(".").strip().upper() in none for n in names):
-            source["attributes"]["allocation"] = "N/A"
+            notes["allocation"] = "N/A"
             report["requirements allocated N/A"] += 1
             continue
         for name in names:
             target = component(name)
             if target is None:
-                source["attributes"].setdefault("unresolved_allocations", []).append(name)
+                notes.setdefault("unresolved_allocations", []).append(name)
                 report["unresolved allocation names"] += 1
             else:
-                links.append(edge(source["id"], target, row["link"], row["document"]))
+                links.append(edge(row["src_id"], target, row["link"], row["document"]))
     for unit in (a for a in artifacts if a["type"] == "software_unit"):
         target = component(unit["attributes"].get("software_item", ""))
         if target is None:
@@ -465,8 +484,12 @@ def csv_artifacts(rows: list[dict], spec: dict, source: dict) -> list[dict]:
     return found
 
 
-def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
-    """Every matching document under `folder` → validated graph plus an import report."""
+def import_folder(
+    folder: Path, profile: Path, known: frozenset[str] = frozenset()
+) -> tuple[dict, dict]:
+    """Every matching document under `folder` → validated graph plus an import report.
+
+    Links may end at `known` IDs held by another source; see merge_baseline."""
     rules = yaml.safe_load(profile.read_text())
     retrieved = datetime.now(UTC).isoformat()
     files = sorted(
@@ -539,11 +562,12 @@ def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
             duplicates.append(f"{a['id']} ({document_of(a)})")
         else:
             unique[a["id"]] = a
-    links, link_report = resolve_links(list(unique.values()), pending)
+    links, link_report = resolve_links(list(unique.values()), pending, known)
     report.update(link_report)
     for a in unique.values():
         a["source"]["revision"] = content_revision(a)
-    graph = validate_graph({"artifacts": list(unique.values()), "links": links})
+    inside = [e for e in links if e["src"] in unique]  # the rest start at `known` IDs
+    graph = validate_graph({"artifacts": list(unique.values()), "links": inside})
     skipped = set(used) | set(older)
     summary = {
         "imported_files": used,
@@ -555,4 +579,43 @@ def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
         "notes": {k: v for k, v in sorted(report.items()) if v},
         "duplicates_ignored": duplicates,
     }
+    if known:  # links starting at another source's artifacts, for merge_baseline
+        summary["external_links"] = [e for e in links if e["src"] not in unique]
     return graph, summary
+
+
+def merge_baseline(
+    graph: dict, baseline: dict, types: list[str], external: list[dict]
+) -> tuple[dict, Counter]:
+    """ADO evidence plus the architecture only the design documents record (ADR-044).
+
+    ADO stays the source for every artifact it holds. The baseline adds its artifacts of
+    `types` (by default software items and units) and every allocation link whose two ends
+    the merged graph holds, including matrix rows for ADO requirements (`external`)."""
+    report: Counter = Counter()
+    held = {a["id"] for a in graph["artifacts"]}
+    added = []
+    for a in baseline["artifacts"]:
+        if a["type"] not in types:
+            continue
+        if a["id"] in held:
+            report[f"document {a['type']} IDs already held by ADO"] += 1
+        else:
+            added.append(a)
+            report[f"document {a['type']} added"] += 1
+    ids = held | {a["id"] for a in added}
+    links = list(graph["links"])
+    seen = {(e["src"], e["dst"], e["type"]) for e in links}
+    for e in [*baseline["links"], *external]:
+        key = (e["src"], e["dst"], e["type"])
+        if key in seen:
+            continue
+        if e["type"] != "allocated_to":  # ADO stays the source of every trace link
+            report["document trace links not merged"] += 1
+        elif e["src"] in ids and e["dst"] in ids:
+            seen.add(key)
+            links.append(e)
+            report["document allocation links added"] += 1
+        else:
+            report["document links to items outside the scope"] += 1
+    return {"artifacts": [*graph["artifacts"], *added], "links": links}, report

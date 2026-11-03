@@ -60,7 +60,8 @@ def verify_document(graph: dict, manifest: dict, llm: LLM, sample: int = 5) -> d
                 "body": a["body"],
                 "title": a["title"],
                 "revision": a["source"]["revision"],
-                "attributes": a["attributes"],
+                # What a source can read is configuration, not evidence (as in prompt packs).
+                "attributes": {k: v for k, v in a["attributes"].items() if k != "link_classes"},
             }
             for a in job["evidence"]
         ]

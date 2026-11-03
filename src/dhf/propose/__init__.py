@@ -28,10 +28,12 @@ def proposal_jobs(graph: dict, documents: list[dict]) -> list[dict]:
                 )
             ]
         elif rule["op"] == "orphan_requirement":
+            # Only units whose source can record implementing links (code, not documents).
             subjects = [
                 a
                 for a in nodes.values()
                 if a["type"] == "software_unit"
+                and "implements" in a["attributes"].get("link_classes", ["implements"])
                 and not any(e["src"] == a["id"] and e["type"] == "implements" for e in edges)
             ]
         elif rule["op"] == "design_contradiction":
@@ -44,7 +46,7 @@ def proposal_jobs(graph: dict, documents: list[dict]) -> list[dict]:
                 for a in nodes.values()
                 if a["type"] == "software_unit"
                 and (
-                    a["attributes"]["component"] == subject["id"]
+                    a["attributes"].get("component") == subject["id"]
                     or any(
                         e["src"] == a["id"]
                         and e["dst"] == subject["id"]

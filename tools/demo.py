@@ -322,9 +322,39 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
         metrics = json.loads(Path("out/metrics.json").read_text())
         assert metrics["unknown_id_count"] == 0
         assert metrics["gap_detection"]["precision"] == metrics["gap_detection"]["recall"] == 1
-        assert (
-            metrics["impact_detection"]["precision"] == metrics["impact_detection"]["recall"] == 1
-        )
+        # Deterministic sections cite fixed evidence, so their change_1 impact must match the
+        # key exactly with any drafter. AI sections cite what their claims cite: the key
+        # records the offline drafter's citations, so all sections match exactly only offline.
+        import yaml
+
+        from dhf.evaluation import impact_score
+        from dhf.generate import load_spec
+
+        expected = yaml.safe_load(Path("data/synthetic/scenarios/change_1.yaml").read_text())[
+            "expected_sections"
+        ]
+        modes = {doc: {s["id"]: s["mode"] for s in load_spec(doc)["sections"]} for doc in expected}
+
+        def deterministic(doc: str, id: str) -> bool:
+            return modes.get(doc, {}).get(id.split(".", 1)[0]) == "deterministic"
+
+        reports = [
+            r | {"sections": [s for s in r["sections"] if deterministic(r["document"], s["id"])]}
+            for r in json.loads(saved.read_text())
+        ]
+        key = {
+            doc: {id: s for id, s in rows.items() if deterministic(doc, id)}
+            for doc, rows in expected.items()
+        }
+        fixed = impact_score(reports, key)
+        assert fixed["precision"] == fixed["recall"] == 1, fixed
+        print(f"Deterministic impact: exact ({fixed['true_positive']} records)", flush=True)
+        if not live:
+            assert (
+                metrics["impact_detection"]["precision"]
+                == metrics["impact_detection"]["recall"]
+                == 1
+            )
         assert all(not d["ai_unavailable"] for d in metrics["documents"])
         command(
             [

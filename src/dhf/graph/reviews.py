@@ -36,7 +36,7 @@ def risk_rows(graph: dict, hazard: str | None = None) -> list[dict]:
             {
                 "hazard": h["id"],
                 "hazard_name": h["title"],
-                "severity": h["attributes"]["severity"],
+                "severity": h["attributes"].get("severity", "Not recorded in the source"),
                 "components": sorted(components),
                 "units": sorted(units),
                 "function": "; ".join(

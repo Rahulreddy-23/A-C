@@ -100,6 +100,7 @@ The owner supplied the hackathon dataset (`Hackathon_2026/`, gitignored, company
 - `LLM.generate` refuses non-synthetic evidence for every provider except `mock`, including `copilotstudio`. So the official BD tenant path cannot draft from the real dataset today; deterministic import, gaps and the explorer work locally.
 - Relaxing the guard was attempted and correctly blocked as a safety weakening, so it stays strict.
 - **Proposed design if the owner and BD clear the dataset for the sandbox (SANDBOX_QUESTIONS 4.1):** an explicit clearance reference (e.g. `DHF_REAL_DATA_APPROVAL`) that unlocks the BD tenant transport only and is recorded in every manifest. Personal OpenAI/Anthropic keys never receive company evidence.
+- **Owner (2026-11-03):** AI drafting for the official path runs in the Copilot agents, and the ChatGPT/Claude keys serve development. The folder-exchange path was rehearsed end to end on synthetic data with a local stand-in for the tenant flow. Whether this dataset is cleared for the tenant transport is still open, so the guard is unchanged.
 
 **R-060 [open] M17 — Real mapping profile pending discovery**
 - The documents show the human IDs and custom properties (feature, spec type, release, requirement type) that the mapping must name.
@@ -110,6 +111,8 @@ The owner supplied the hackathon dataset (`Hackathon_2026/`, gitignored, company
 **R-061 [owner decision] M17 — Code evidence for the SDD**
 - The real designs describe .NET and web units; the code extractor handles Python only, and source repositories are out of the trial scope.
 - Code-derived SDD content needs the owner's approval to read a source repository, plus a C#/TypeScript extractor.
+- **Owner decision (2026-11-03):** no source-code evidence is needed for the hackathon.
+- Resolved in c94bdcb (ADR-044): SAD and SDD draft from the design documents, which a real-project scope names with `documents:`; ADO stays the source for requirements and tests.
 
 **R-062 [non-blocking] M17 — Generated documents use generic IEC 62304 section structures, not the owner's DHF template structure**
 - The owner's SAD, SDD, SSTR and design-review documents follow their own headings and tables.

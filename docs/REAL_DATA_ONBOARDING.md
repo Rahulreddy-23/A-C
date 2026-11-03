@@ -55,9 +55,9 @@ DHF_PRODUCT_NAME="<product>" DHF_RELEASE=<release> uv run dhf explore \
    - relation directions;
    - area-path components.
 6. **Ingest.** Run `uv run dhf ingest --source ado --db out/real/evidence.sqlite`. It prints the read-only mode, the scope and every skipped class (unmapped types, out-of-scope results or bugs, unavailable IDs). Then run `dhf gaps --db out/real/evidence.sqlite --output-dir out/real`, `dhf rtm` with the same options, and `dhf explore --db out/real/evidence.sqlite --output out/real/explorer.html`.
-7. **Draft locally.** From a document baseline only the SSTR can be drafted. SAD and SDD drafts need code-derived architecture evidence (a repository in scope, REVIEW R-061).
-   **Templates:** Set `DHF_TEMPLATE_SET=bd` for drafts in the owner's SAD/SDD/SSTR structure.
-   Then: `uv run dhf generate sstr --release <release> --db out/real/evidence.sqlite --documents out/real/docs` uses the mock provider. Opening PRs requires a docs repository the owner controls and `ADO_READ_ONLY=0` for that run only. Human approvals remain in the eQMS.
+7. **Architecture without code.** Add `documents: <folder of DHF documents>` to the scope (ADR-044). Every ingest then reads the SAD's software items and allocation matrix and the SDDs' units locally, and adds them to the ADO evidence. ADO stays the source for requirements, specifications and tests; matrix rows for ADO requirements link even when no document lists the requirement. The ingest report counts the documents read, the items added and the matrix rows outside the scope, plus everything `dhf import-docs` would report (unreadable files, duplicate IDs, older issues). The folder and profile are checked before any ADO read. Adding the folder changes what the ADO artifacts can be assessed for, so the first ingest after it reports their changes as configuration-only and re-flags drafts for review.
+8. **Draft locally.** Set `DHF_TEMPLATE_SET=bd` for drafts in the owner's SAD/SDD/SSTR structure.
+   Then run `uv run dhf generate <sstr|sad|sdd> --release <release> --db out/real/evidence.sqlite --documents out/real/docs`. It uses the mock provider. In the SAD and SDD, signatures, structures and safety class read "not recorded" with the source section named, because no code is in scope. Opening PRs requires a docs repository the owner controls and `ADO_READ_ONLY=0` for that run only. Human approvals remain in the eQMS.
 
 ## Seed the synthetic sandbox
 

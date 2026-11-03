@@ -35,3 +35,26 @@ def fact_numbers(value: object) -> set[str]:
     if isinstance(value, bool) or value is None:
         return set()
     return numbers(str(value))
+
+
+def cut_at_word(text: str, limit: int) -> str:
+    """At most `limit` characters, cut between words so no number or ID is split."""
+    if len(text) <= limit:
+        return text
+    head = text[: limit - 1]
+    return (head.rsplit(None, 1)[0] if " " in head else head).rstrip() + "…"
+
+
+def opening_sentence(text: str) -> str:
+    """First sentence of a documented description. Heading labels ("Description",
+    "Description:") and table rows are skipped, and an abbreviation such as "e.g." ends a
+    sentence only when a capitalised word follows."""
+    line = next(
+        (
+            s.strip()
+            for s in text.splitlines()
+            if " | " not in s and (s.strip().endswith((".", "!", "?")) or len(s.split()) >= 6)
+        ),
+        "",
+    )
+    return cut_at_word(re.split(r"(?<=[.!?])\s+(?=[A-Z])", line, maxsplit=1)[0], 300)

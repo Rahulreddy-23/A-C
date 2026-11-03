@@ -10,30 +10,69 @@ import yaml
 
 from dhf.config import setting
 
+LABEL_CHARS = 22  # glyphs that fit one component box line at scale 3
+UNITS_SHOWN = 10  # unit lines per box; the rest are counted, keeping the figure bounded
+
+
+def fit(label: str) -> str:
+    """Shorten to one box line. Dotted identifiers abbreviate leading segments to initials
+    (Ks.FleetMonitorService.Api → K.F.Api); names without spaces keep their distinctive
+    end, and titles keep their start."""
+    if len(label) <= LABEL_CHARS:
+        return label
+    parts = label.split(".")
+    if len(parts) > 1 and all(re.fullmatch(r"[A-Za-z_]\w*", part) for part in parts):
+        for index in range(len(parts) - 1):
+            if len(".".join(parts)) <= LABEL_CHARS:
+                break
+            parts[index] = parts[index][:1]
+        label = ".".join(parts)
+    if len(label) <= LABEL_CHARS:
+        return label
+    if " " in label:
+        return label[: LABEL_CHARS - 3] + "..."
+    return "..." + label[3 - LABEL_CHARS :]
+
 
 def diagram_layout(source: str) -> dict:
+    """Mermaid source → grid layout. Units are allocation sources (or UNIT_ nodes),
+    interfaces are EXT_ nodes and every other node is a component; boxes grow to fit the
+    largest unit list, so documented architectures of any size lay out."""
     nodes = dict(re.findall(r'^\s+(\w+)\["([^"]+)"\]', source, re.M))
-    allocations = re.findall(r"(UNIT_\w+) -->\|allocated to\| (COMP_\d+)", source)
-    components = sorted(id for id in nodes if id.startswith("COMP_"))
-    if not components or len(components) > 12:
+    allocations = re.findall(r"^\s+(\w+) -->\|allocated to\| (\w+)", source, re.M)
+    units = {u for u, _ in allocations} | {id for id in nodes if id.startswith("UNIT_")}
+    components = sorted(id for id in nodes if id not in units and not id.startswith("EXT_"))
+    if not components:
         raise ValueError("Unsupported component diagram inventory")
+    listed = {}
+    for id in components:
+        names = sorted(fit(nodes.get(u, u).rsplit(": ", 1)[-1]) for u, c in allocations if c == id)
+        if len(names) > UNITS_SHOWN:
+            names = names[: UNITS_SHOWN - 1] + [f"AND {len(names) - UNITS_SHOWN + 1} MORE"]
+        listed[id] = names
+    allocated = {u for u, c in allocations if c in components}
+    # Unit lines start 83 px down, 27 px apart, 21 px tall; keep a 20 px bottom margin.
+    box = max(235, 97 + max(len(v) for v in listed.values()) * 27)
     return {
         "width": 1600,
-        "height": 300 + ((len(components) + 2) // 3) * 270,
+        "height": 300 + ((len(components) + 2) // 3) * (box + 35),
+        "box_height": box,
         "components": [
             {
                 "id": id,
                 "label": nodes[id],
-                "units": sorted(nodes[u].split(": ", 1)[1] for u, c in allocations if c == id),
+                "units": listed[id],
                 "x": 70 + (i % 3) * 500,
-                "y": 150 + (i // 3) * 270,
+                "y": 150 + (i // 3) * (box + 35),
             }
             for i, id in enumerate(components)
         ],
         "external": [label for id, label in nodes.items() if id.startswith("EXT_")],
+        "unplaced": len(units - allocated),  # units without a software item, never silent
         "dependencies": [
             {"from": a, "to": b, "call": label}
-            for a, label, b in re.findall(r"(COMP_\d+) -->\|([^|]+)\| (COMP_\d+)", source)
+            for a, label, b in re.findall(r"^\s+(\w+) -->\|([^|]+)\| (\w+)", source, re.M)
+            if a in components and b in components
         ],
     }
 
@@ -66,21 +105,31 @@ def diagram_image(layout: dict) -> dict:
                         )
 
     text(70, 35, setting("DHF_PRODUCT_NAME", "Kestrel") + " - SOFTWARE COMPONENTS AND UNITS", 4)
-    text(70, 90, "SOURCE ALLOCATIONS - CALL ARROWS FROM EXTRACTED CODE", 3)
+    text(
+        70,
+        90,
+        "SOURCE ALLOCATIONS - CALL ARROWS FROM EXTRACTED CODE"
+        if layout["dependencies"]
+        else "SOURCE ALLOCATIONS",
+        3,
+    )
+    if layout["unplaced"]:
+        text(70, 118, f"{layout['unplaced']} UNITS NOT ALLOCATED TO A SOFTWARE ITEM", 3)
     positions = {c["id"]: c for c in layout["components"]}
+    tall = layout["box_height"]
     for c in layout["components"]:
         x, y = c["x"], c["y"]
-        box(x, y, 440, 235, (37, 75, 98))
-        box(x + 3, y + 3, 434, 229, (246, 249, 251))
+        box(x, y, 440, tall, (37, 75, 98))
+        box(x + 3, y + 3, 434, tall - 6, (246, 249, 251))
         box(x + 3, y + 3, 434, 58, (219, 232, 240))
-        text(x + 16, y + 15, c["label"].split(": ", 1)[0], 3)
-        text(x + 16, y + 40, c["label"].split(": ", 1)[1], 3)
+        text(x + 16, y + 15, fit(c["label"].split(": ", 1)[0]), 3)
+        text(x + 16, y + 40, fit(c["label"].split(": ", 1)[-1]), 3)
         for i, unit in enumerate(c["units"]):
             text(x + 16, y + 83 + i * 27, unit, 3)
     # Orthogonal arrow path with a separately listed exact call label.
     for edge in layout["dependencies"]:
         a, b = positions[edge["from"]], positions[edge["to"]]
-        x, y = a["x"] + 220, a["y"] + 235
+        x, y = a["x"] + 220, a["y"] + tall
         tx, ty = b["x"] + 220, b["y"]
         mid = y + 15
         box(x, y, 3, mid - y, (45, 118, 126))

@@ -136,7 +136,7 @@ def test_manifests_without_a_recorded_template_keep_the_default(tmp_path, monkey
     assert again["manifest"]["template_spec"]["path"] == "specs/documents/sstr.yaml"
 
 
-def test_template_sets_may_only_re_present_shared_sections(tmp_path, monkeypatch):
+def test_template_sets_may_only_re_present_shared_sections():
     from dhf.generate import overlay
 
     base = {"id": "sstr", "sections": [{"id": "results_summary", "mode": "deterministic"}]}

@@ -52,7 +52,7 @@ def test_fixture_http_graph_parity_and_exact_changes(ado_server, tmp_path: Path)
         ado.close()
 
 
-def test_source_write_rejected_without_http(tmp_path: Path) -> None:
+def test_source_write_rejected_without_http() -> None:
     ado = ADO(token="mock-app-token")
     with pytest.raises(ValueError, match="forbids"):
         ado.request("PATCH", "/_apis/wit/workitems/1", {})

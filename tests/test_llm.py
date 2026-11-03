@@ -319,7 +319,7 @@ def test_ledger_tokens_accumulate_across_distinct_calls(tmp_path: Path) -> None:
     assert entry["input_tokens"] == 20 and entry["output_tokens"] == 40
 
 
-def test_sdk_error_is_sanitized_in_section_cli(monkeypatch, capsys) -> None:
+def test_sdk_error_is_sanitized_in_section_cli(capsys) -> None:
     from dhf.cli import report_drafting_failures
     from dhf.llm.errors import DraftingUnavailable, provider_error
 

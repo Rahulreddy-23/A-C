@@ -1,7 +1,7 @@
 # DHF Automation — Product Brief & Build Plan
 
-Owner: repo owner (product) · PM/reviewer: Claude · Engineer: Codex
-Dev window: **2026-10-12 → 2026-10-23** · Demo to review board: **2026-10-27**
+Owner: Rahul
+Contributors: Dhyaneshwar, Ravi Teja, Sanjeevini
 
 ---
 

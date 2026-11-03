@@ -14,16 +14,17 @@ seed_files: []
 # Follow links outward from the seeds (ADO shows each link on both ends).
 follow:
   depth: 1
-  relations:
-    - System.LinkTypes.Hierarchy-Forward
-    - System.LinkTypes.Hierarchy-Reverse
-    - Microsoft.VSTS.Common.TestedBy-Forward
-    - Microsoft.VSTS.Common.TestedBy-Reverse
+  # relations: leave unset for the default, which follows Parent/Child, Tested By and both
+  # ends of every link type the mapping traces (e.g. Dependency between requirements and
+  # specifications). List link reference names only to override that; [] reads the seeds alone.
 
 max_items: 2000
 # Revision history per item powers change tracking; one extra request per work item.
 history: true
 # Test runs and results come only from these test plans; results for out-of-scope cases are skipped.
 test_plans: []
+# Quoted release label for runs of these plans whose names carry no "Release x.y". Every
+# such run of the listed plans is attributed to it, so list only plans run for that release.
+# release: "1.0"
 # Source repository to clone read-only for code evidence; empty skips code evidence.
 repository: ""

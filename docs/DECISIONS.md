@@ -271,3 +271,13 @@ A set is an overlay (`extends: <doc>`):
 - **Group headings render one level above their section.** No separate `group_level` setting is needed.
 
 Each manifest records the template path, and impact and regeneration reload it. A manifest written before template sets has no path and keeps the default spec. The template hash covers the overlay together with its base, so a change to a shared base section still marks overlay documents stale. Recorded paths and set names are validated against the specs folder.
+
+
+## ADR-043 — Live ADO trial: scoped ADO ingests declare what they could read
+2026-11-03 · Accepted (first live read-only ingest of the owner's project)
+
+The live trial ingested the hackathon scope read-only: 43 seed items, their direct links and three test plans. It showed three gaps between configuration and evidence.
+
+- **Partially configured ingests declare their link classes.** A scope without a repository, or without test plans, cannot see code links or results. Its artifacts now carry `link_classes`: the mapping's trace links as `link:peer` pairs for its work-item types (a work-item link never reaches a code change or a result), Related pairs typed the same way, plus `implements`/`allocated_to` with a repository and `executes`/`reports_defect` with test runs. G02 then reads "not assessable", not 33 gaps. A seeded scope declares only the link types its expansion follows, so Related pairs (never followed by default) are not assessable there. A rule with no subjects is not assessable when no source can read its link, or what it `requires` (G11 requires results), so a scope without test plans reads "not assessable" for result rules rather than zero. A fully configured ingest declares nothing and is assessed in full, as in ADR-041.
+- **Scope expansion follows the mapping's own trace links by default.** That is Parent/Child and Tested By, plus both ends of every mapped link type except the overly broad Related. An explicit `relations` list replaces the default, and `[]` follows no links. The owner's project traces requirements to specifications with Dependency links, and parent requirements were otherwise reported missing (G09).
+- **In a seeded scope, runs are evidence only through in-scope results.** A run with none is not stored: the active automation plan has hundreds of runs, most for other test cases. A whole-project read keeps every run, including empty or aborted ones. When run names carry no "Release x.y", the scope's quoted `release` labels the runs of its test plans, and only those; the ingest report counts them, because every such run of a listed plan is attributed to that release.

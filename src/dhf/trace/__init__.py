@@ -124,14 +124,19 @@ def rule_subjects(rule: dict, artifacts: list[dict]) -> list[dict]:
     ]
 
 
-def can_carry(artifact: dict, link: str) -> bool:
-    """Whether the artifact's source can hold `link` at all.
+def can_carry(artifact: dict, rule: dict) -> bool:
+    """Whether the artifact's source can hold the rule's link to its peer types at all.
 
-    Sources that declare their link classes (document baselines) cannot fail rules on any
-    other link; ADO, git and fixture evidence can carry every class, so an absent link there
-    is a real gap, even when nothing at all is linked."""
+    Sources that declare their link classes (document baselines, partially configured ADO
+    ingests) list plain link types or `link:peer_type` entries; undeclared sources (fully
+    configured ADO, git, fixtures) carry every class, so an absent link there is a real gap,
+    even when nothing at all is linked."""
     classes = artifact["attributes"].get("link_classes")
-    return classes is None or link in classes
+    return (
+        classes is None
+        or rule["link"] in classes
+        or any(f"{rule['link']}:{peer}" in classes for peer in rule["peer_types"])
+    )
 
 
 def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
@@ -142,7 +147,7 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
         for a in rule_subjects(rule, graph["artifacts"]):
             attrs = a["attributes"]
             operation = rule["op"]
-            if operation == "missing_link" and not can_carry(a, rule["link"]):
+            if operation == "missing_link" and not can_carry(a, rule):
                 continue  # not assessable for this artifact's source; never a gap
             if operation == "missing_link":
                 anchor, peer = ("dst", "src") if rule["direction"] == "in" else ("src", "dst")
@@ -214,14 +219,31 @@ def unassessable_rules(graph: dict, rules: list[dict]) -> list[str]:
     """Missing-link rules none of whose subjects come from a source able to carry the link.
 
     Decided by what each source declares (document imports list their link classes), not by
-    which links happen to exist, so 'nothing is linked' in ADO stays a reported gap."""
-    return [
-        rule["id"]
-        for rule in rules
-        if rule["op"] == "missing_link"
-        and (subjects := rule_subjects(rule, graph["artifacts"]))
-        and not any(can_carry(a, rule["link"]) for a in subjects)
-    ]
+    which links happen to exist, so 'nothing is linked' in ADO stays a reported gap. When
+    every source declares its classes and none can read a rule's link (or what a non-link
+    rule `requires`, such as results), a rule with no subjects is not assessable either:
+    zero findings there means nothing was read, not that nothing is missing."""
+    artifacts = graph["artifacts"]
+    declared = bool(artifacts) and all("link_classes" in a["attributes"] for a in artifacts)
+
+    def readable(link: str) -> bool:
+        return not declared or any(
+            c == link or c.startswith(link + ":")
+            for a in artifacts
+            for c in a["attributes"]["link_classes"]
+        )
+
+    blind = []
+    for rule in rules:
+        if rule["op"] == "missing_link":
+            subjects = rule_subjects(rule, artifacts)
+            if (subjects and not any(can_carry(a, rule) for a in subjects)) or (
+                not subjects and not readable(rule["link"])
+            ):
+                blind.append(rule["id"])
+        elif not all(readable(link) for link in rule.get("requires", [])):
+            blind.append(rule["id"])
+    return blind
 
 
 def gaps(graph: dict, rules_path: Path = Path("specs/rules/gaps.yaml")) -> list[dict]:

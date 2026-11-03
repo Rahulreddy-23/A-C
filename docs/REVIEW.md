@@ -94,6 +94,7 @@ The owner supplied the hackathon dataset (`Hackathon_2026/`, gitignored, company
 - ADO answered 401 with "The Personal Access Token used has expired." No request reached project data.
 - **Needed:** a new PAT with **Work Items (Read)** and **Test Management (Read)** only. Add **Code (Read)** only if R-061 is approved.
 - If the organization enforces conditional access, a valid PAT may still be refused off-network; the error text will say so.
+- Resolved 2026-11-03 by the owner (no code change): a new read-only PAT was issued and the live trial ran read-only (ADR-043).
 
 **R-059 [owner decision] M17 — Company evidence and the BD-approved drafting path**
 - `LLM.generate` refuses non-synthetic evidence for every provider except `mock`, including `copilotstudio`. So the official BD tenant path cannot draft from the real dataset today; deterministic import, gaps and the explorer work locally.
@@ -104,6 +105,7 @@ The owner supplied the hackathon dataset (`Hackathon_2026/`, gitignored, company
 - The documents show the human IDs and custom properties (feature, spec type, release, requirement type) that the mapping must name.
 - One sample work item's text appears in the specification under a different document ID than its ADO ID. The document ID therefore lives in a field, which `id_fields` supports and discovery's `id_field_candidates` will find.
 - Run `dhf discover` with the trial scope once R-058 is resolved.
+- In progress (2026-11-03): discovery found the document-ID field automatically; a reviewed mapping profile is kept locally under `out/real/`.
 
 **R-061 [owner decision] M17 — Code evidence for the SDD**
 - The real designs describe .NET and web units; the code extractor handles Python only, and source repositories are out of the trial scope.

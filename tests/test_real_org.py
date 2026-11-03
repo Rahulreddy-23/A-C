@@ -456,3 +456,174 @@ def test_mappings_cannot_overwrite_reserved_attributes() -> None:
     item = {"id": 5, "rev": 1, "fields": fields, "_links": {"html": {"href": "https://x/5"}}}
     with pytest.raises(ValueError, match="reserved attribute 'synthetic'"):
         normalize_workitem(item, [item], mapping, "now")
+
+
+def test_scope_follows_the_mappings_trace_links_by_default(tmp_path, monkeypatch) -> None:
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    mapping["relations"]["derives_from"] = "System.LinkTypes.Dependency-Reverse"
+    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping))
+    monkeypatch.setenv("ADO_MAPPING", str(tmp_path / "mapping.yaml"))
+    follow = ADO(REAL, "P", "x", scope={}).follow_default()
+    assert {"System.LinkTypes.Dependency-Forward", "System.LinkTypes.Dependency-Reverse"} <= follow
+    assert "System.LinkTypes.Related" not in follow
+
+
+def test_sources_the_scope_never_read_make_rules_not_assessable(ado_server, tmp_path) -> None:
+    from dhf.trace import gaps, unassessable_rules
+    from dhf.trace.reports import gap_rules
+
+    ids = read_state(ado_server.root)["ids"]
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    scope = {"seed_ids": [ids["SRS-001"]], "follow": {"depth": 1}, "history": False}
+    ado = ADO(base, "Kestrel", "mock-app-token", scope=scope)
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    blind = unassessable_rules(graph, gap_rules())
+    assert "G02" in blind and not [f for f in gaps(graph) if f["rule"] == "G02"]
+    assert "G01" not in blind and "G09" not in blind  # Tested By and Parent links were read
+
+
+def test_scope_release_labels_runs_whose_names_carry_none(ado_server, tmp_path) -> None:
+    from mock_ado.state import write_state
+
+    from dhf.trace import results_summary
+
+    state = read_state(ado_server.root)
+    state["runs"][0]["name"] = "Bench Rig (Manual)"
+    write_state(ado_server.root, state)
+    ids = state["ids"]
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    scope = {"seed_ids": [ids["TC-001"]], "follow": {"depth": 0}, "test_plans": ["1"]}
+    ado = ADO(base, "Kestrel", "mock-app-token", scope=scope | {"history": False, "release": "1.0"})
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    runs = {
+        a["title"]: a["attributes"]["release"]
+        for a in graph["artifacts"]
+        if a["type"] == "test_run"
+    }
+    assert runs["Bench Rig (Manual)"] == "1.0"
+    assert results_summary(graph, "1.0")["total"] == 1
+
+
+def test_runs_without_in_scope_results_are_not_evidence(ado_server, tmp_path) -> None:
+    ids = read_state(ado_server.root)["ids"]
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    scope = {"seed_ids": [ids["TC-001"]], "follow": {"depth": 0}, "test_plans": ["1"]}
+    ado = ADO(base, "Kestrel", "mock-app-token", scope=scope | {"history": False})
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    runs = [a for a in graph["artifacts"] if a["type"] == "test_run"]
+    results = [a for a in graph["artifacts"] if a["type"] == "test_result"]
+    assert {r["attributes"]["run"] for r in results} == {r["id"] for r in runs}
+
+
+def test_scope_release_must_be_quoted_text(tmp_path: Path) -> None:
+    scope_file = tmp_path / "scope.yaml"
+    scope_file.write_text("seed_ids: [1]\nrelease: 1.10\n")  # YAML reads the number 1.1
+    with pytest.raises(ValueError, match='quoted text, e.g. release: "1.1"'):
+        load_scope(str(scope_file))
+    scope_file.write_text('seed_ids: [1]\nrelease: "1.10"\n')
+    assert load_scope(str(scope_file))["release"] == "1.10"
+    scope_file.write_text("seed_ids: [1]\nrelease:\n")  # blank: no release, never "None"
+    assert load_scope(str(scope_file))["release"] is None
+
+
+def test_empty_relations_follow_no_links_and_every_link_type_has_two_ends(ado_server, tmp_path):
+    from dhf.ingest.ado import reciprocal
+
+    ids = read_state(ado_server.root)["ids"]
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    counts = {}
+    for name, follow in (("default", {"depth": 1}), ("none", {"depth": 1, "relations": []})):
+        ado = ADO(base, "Kestrel", "mock-app-token", scope={"seed_ids": [ids["SRS-001"]]})
+        try:
+            counts[name] = len(ado.expand({ids["SRS-001"]}, follow, 100))
+        finally:
+            ado.close()
+    assert counts["none"] == 1 < counts["default"]
+    assert reciprocal("Microsoft.VSTS.Common.Affects-Reverse") == (
+        "Microsoft.VSTS.Common.Affects-Forward"
+    )
+    assert reciprocal("System.LinkTypes.Related") == "System.LinkTypes.Related"
+
+
+def test_mapped_work_item_links_never_make_code_rules_assessable(
+    ado_server, tmp_path, monkeypatch
+) -> None:
+    from dhf.trace import gaps, unassessable_rules
+    from dhf.trace.reports import gap_rules
+
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    mapping["relations"]["implements"] = "System.LinkTypes.Dependency-Forward"
+    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping))
+    monkeypatch.setenv("ADO_MAPPING", str(tmp_path / "mapping.yaml"))
+    ids = read_state(ado_server.root)["ids"]
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    scope = {"seed_ids": [ids["SRS-001"]], "follow": {"depth": 1}, "history": False}
+    ado = ADO(base, "Kestrel", "mock-app-token", scope=scope | {"repository": ""})
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    assert "G02" in unassessable_rules(graph, gap_rules())  # no repository: no code changes
+    assert not [f for f in gaps(graph) if f["rule"] == "G02"]
+
+
+def test_scope_release_labels_only_its_test_plans_and_whole_reads_keep_empty_runs(
+    ado_server, tmp_path
+) -> None:
+    from mock_ado.state import write_state
+
+    state = read_state(ado_server.root)
+    state["runs"][0]["name"] = "Bench Rig (Manual)"
+    state["runs"].append(
+        {
+            "id": 99,
+            "name": "Release 1.1 aborted run",
+            "state": "Aborted",
+            "plan": {"id": "1", "name": "Kestrel system verification"},
+            "completedDate": "2026-10-01T00:00:00Z",
+            "buildConfiguration": {"platform": "Bench"},
+            "comment": "Aborted before any result",
+            "results": [],
+        }
+    )
+    write_state(ado_server.root, state)
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    ado = ADO(base, "Kestrel", "mock-app-token", scope={"release": "9.9", "history": False})
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    runs = {
+        a["id"]: a["attributes"]["release"] for a in graph["artifacts"] if a["type"] == "test_run"
+    }
+    assert "9.9" not in runs.values()  # no test_plans: the scope release labels nothing
+    assert ado.report["scope release ignored (no test_plans)"] == 1
+    assert runs["RUN-99"] == "1.1"  # a whole-project read keeps a run without results
+
+
+def test_seeded_scopes_only_assess_what_they_follow_and_read(ado_server, tmp_path) -> None:
+    from dhf.trace import gaps, unassessable_rules
+    from dhf.trace.reports import gap_rules
+
+    ids = read_state(ado_server.root)["ids"]
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    # Related links (risk control → requirement) are never followed by default, and no
+    # test plans means no results: those rules must read "not assessable", not zero or gaps.
+    scope = {"seed_ids": [ids["RC-01"]], "follow": {"depth": 1}, "history": False}
+    ado = ADO(base, "Kestrel", "mock-app-token", scope=scope | {"repository": ""})
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    blind = unassessable_rules(graph, gap_rules())
+    assert {"G05", "G06", "G11"} <= set(blind)
+    assert not [f for f in gaps(graph) if f["rule"] == "G06"]

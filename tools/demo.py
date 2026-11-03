@@ -416,4 +416,4 @@ if __name__ == "__main__":
     try:
         run_demo(live=args.live, pause_before_change=args.pause_before_change)
     except (ValueError, RuntimeError) as error:
-        raise SystemExit(str(error) + "; use data/demo/fallback artifacts") from None
+        raise SystemExit(str(error)) from None

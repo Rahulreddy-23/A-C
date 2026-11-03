@@ -1,9 +1,5 @@
 # A-C
 
-New to the project? Start with the [plain-language project and local demo guide](docs/LOCAL_DEMO_GUIDE.md).
-
-For inputs, outputs, current import limits and how to present the complete flow, see the [input-to-output walkthrough](docs/INPUT_OUTPUT_DEMO.md).
-
 ## 60-second quick start
 
 With Python 3.12 and uv installed:
@@ -15,9 +11,9 @@ uv sync --locked
 ./scripts/demo.sh
 ```
 
-The offline demo owns a fresh native ADO mock and mock LLM config. No keys or .env changes are needed. Read `out/demo-latest.json` for generated Word drafts, explorers, tracked redline and audit ZIP. Use [the timed demo script](docs/DEMO_SCRIPT.md) and [judging map](docs/JUDGING_MAP.md); [checked-in fallbacks](data/demo/fallback/README.md) work before a demo run.
+The offline demo owns a fresh native ADO mock and mock LLM config. No keys or .env changes are needed. Read `out/demo-latest.json` for generated Word drafts, explorers, tracked redline and audit ZIP.
 
-`./scripts/demo.sh --pause-before-change` pauses for the on-stage update. For the official AI path, configure the BD tenant's [generic prompt runner](port/copilot_studio/day1/generic_prompt.md), set `DHF_COPILOT_MODE=http` with a signed `DHF_COPILOT_FLOW_URL` in ignored `.env`, and run `DHF_LIVE_PROVIDER=copilotstudio ./scripts/demo.sh --live`. If HTTP is DLP-blocked, set `DHF_COPILOT_MODE=folder` and `DHF_COPILOT_EXCHANGE_DIR` for the [OneDrive document exchange](port/copilot_studio/day1/onedrive_prompt_flow.md). Preview one exact section payload with `uv run dhf copilot-request sstr anomaly_assessment --db out/evidence.sqlite` after ingest. Token usage defaults to strict `DHF_COPILOT_USAGE=reported`. If Run a prompt exposes no counts, omit them in the flow response and set `DHF_COPILOT_USAGE=estimated`; valid reported counts are preferred, and missing counts receive a labelled local estimate. Ledger/manifests/metrics preserve `usage_source`. Local credits are estimated under a 400-credit cap; check actual usage in tenant Monitor. Neither tenant mode has been run by this repo. If both modes fail, use the native Copilot Studio MVP and label other AI text as development output. Personal OpenAI/Anthropic `--live` runs remain development rehearsals only.
+`./scripts/demo.sh --pause-before-change` pauses for the on-stage update. For the official AI path, configure the BD tenant's generic prompt runner, set `DHF_COPILOT_MODE=http` with a signed `DHF_COPILOT_FLOW_URL` in ignored `.env`, and run `DHF_LIVE_PROVIDER=copilotstudio ./scripts/demo.sh --live`. If HTTP is DLP-blocked, set `DHF_COPILOT_MODE=folder` and `DHF_COPILOT_EXCHANGE_DIR` for the OneDrive document exchange. Preview one exact section payload with `uv run dhf copilot-request sstr anomaly_assessment --db out/evidence.sqlite` after ingest. Token usage defaults to strict `DHF_COPILOT_USAGE=reported`. If Run a prompt exposes no counts, omit them in the flow response and set `DHF_COPILOT_USAGE=estimated`; valid reported counts are preferred, and missing counts receive a labelled local estimate. Ledger/manifests/metrics preserve `usage_source`. Local credits are estimated under a 400-credit cap; check actual usage in tenant Monitor. Neither tenant mode has been run by this repo. If both modes fail, use the native Copilot Studio MVP and label other AI text as development output. Personal OpenAI/Anthropic `--live` runs remain development rehearsals only.
 
 ## DHF Automation — How to run
 
@@ -190,8 +186,6 @@ uv run dhf propose
 
 DRR identity comes from your JSON input (`type`, `date`, `baseline`, `participants`); `--since` selects the previous ingested snapshot for its deterministic scope diff. Discussion, decisions, new actions and approvals remain human fields. Supply `--impact-file <saved-report>` explicitly to include impact findings; reports from unrelated runs are never loaded implicitly. sFMEA keeps source severity/controls/verification separate from the suggested analysis cells and human residual-risk assessment. Proposed failure modes do not close F03 until confirmed by a reviewer. L01–L03 proposal files are local suggestions with citations/confidence; they never update ADO. SAD/SDD use grouped navigation headings, readable structure columns and named hazards/controls. G12 identifies missing SOUP requirements or known-anomaly evaluation; the synthetic baseline now has 21 deterministic gaps.
 
-The [Copilot Studio port pack](port/copilot_studio/README.md) maps the reference to Dataverse, prompt tools and seven Power Automate flows. Run `uv run python tools/check_port.py` to verify exact prompt/contract coverage. Tenant deployment and parity remain pending capability verification.
-
 
 Run the complete offline synthetic demo after `uv sync`:
 
@@ -212,14 +206,12 @@ Use `--db` and `--documents` to select a demo run's saved evidence/drafts. For i
 
 To switch to a real ADO organization, the owner sets `ADO_BASE_URL`, `ADO_PROJECT`, `ADO_DEVICE_REPO`, `ADO_DOCS_REPO`, source-read/docs-write `APP_ADO_PAT` and `ADO_REQUIRED_REVIEWERS` in the ignored `.env`. Review `specs/ado_mapping.yaml` against the organization's process first. Keep seeder credentials separate; the optional M11 seeder/live contract run is pending a real org. Real company evidence is forbidden from external LLM providers. The latest owner budget instruction imposes a cumulative hard caps of **$2.50 for Anthropic / $4.00 for OpenAI**, actual plus reserved, with Codex's $1.50 build cap and $0.25 run cap; legacy $5 configuration cannot raise those hard caps. Owner `.env` is preserved.
 
-The [sandbox build plan](port/copilot_studio/BUILD_PLAN.md) has three capability tiers, estimates, a cut line and the native/offline demo split. [Sandbox questions](docs/SANDBOX_QUESTIONS.md) select the tier. Tenant execution and native parity still require those capabilities and a recorded test run.
-
 
 Sections select `model_tier: default|analytical` as YAML data. OpenAI defaults to GPT-4.1 mini, with GPT-5.4 mini for risk modes, SSTR conclusion, DRR suggestions and L01–L03. Set `DHF_MODEL_OPENAI_ANALYTICAL` to change that tier. Per-model prices live in `specs/llm/prices.yaml` and accept model-specific overrides (e.g. `DHF_OPENAI_GPT_5_4_MINI_OUTPUT_PER_MILLION`); unknown models require explicit prices. GPT-5 calls omit temperature, use `DHF_OPENAI_REASONING_EFFORT=low` and reserve the visible cap plus `DHF_OPENAI_REASONING_TOKENS=4000` inclusive completion allowance. Each section records model ID and tier; cache identity includes model/tier/reasoning settings. Paid command output shows cumulative headroom. No nano models are enabled. [Official GPT-5.4 mini pricing](https://developers.openai.com/api/docs/models/gpt-5.4-mini), [reasoning token billing](https://developers.openai.com/api/docs/guides/reasoning).
 
 For Phase 2 onboarding, run `uv run dhf discover` to inspect native fields/types/tags/links and create a mapping draft, then follow [REAL_DATA_ONBOARDING.md](docs/REAL_DATA_ONBOARDING.md). `uv run seed-ado --confirm-org kestrel-org --dry-run` previews the synthetic seeder. Only the separate seed identity can create source work items, test evidence and source Git history; `dhf` remains read-only outside the docs repo.
 
-If the sandbox has no ADO connector, `uv run dhf export-snapshot --db out/evidence.sqlite --output-dir out/snapshot-export` writes a local canonical graph JSON, Artifact/TraceLink CSV and SHA256 index for a **reviewed synthetic import**. The post-`change_1` graph can be exported the same way for the impact demonstration. This command does not upload or modify ADO. Follow the [M15 day-1 kit](port/copilot_studio/day1/README.md) and [Tier C-prime path](port/copilot_studio/BUILD_PLAN.md#tier-c-prime-no-ado-connector); tenant execution remains pending.
+If the sandbox has no ADO connector, `uv run dhf export-snapshot --db out/evidence.sqlite --output-dir out/snapshot-export` writes a local canonical graph JSON, Artifact/TraceLink CSV and SHA256 index for a **reviewed synthetic import**. The post-`change_1` graph can be exported the same way for the impact demonstration. This command does not upload or modify ADO.
 
 Claim-support review is a second, advisory pass:
 

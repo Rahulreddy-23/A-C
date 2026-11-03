@@ -21,3 +21,18 @@ Hackathon_2026/
 
 # local browser-tool output
 .playwright-mcp/
+
+# owner's local-only docs and demo material (untracked 2026-11-03; git history keeps them)
+/PRODUCT.md
+/DESIGN.md
+.impeccable/
+docs/KICKOFF.md
+docs/EXPLORER_DESIGN.md
+docs/LOCAL_DEMO_GUIDE.md
+docs/INPUT_OUTPUT_DEMO.md
+docs/DEMO_SCRIPT.md
+docs/JUDGING_MAP.md
+docs/SANDBOX_QUESTIONS.md
+data/synthetic/risk_file.md
+data/demo/
+port/

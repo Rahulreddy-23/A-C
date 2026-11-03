@@ -49,11 +49,61 @@ def template_path(doc: str, template: str | None = None) -> Path:
     return variant if chosen and variant.exists() else Path("specs/documents", f"{doc}.yaml")
 
 
+PRESENTATION = {"id", "title", "heading_level", "group_title"}
+
+
+def overlay(layout: dict, base: dict) -> dict:
+    """A template set re-presents a base spec: base sections are referenced by ID and may
+    change only presentation, so queries, prompts and validators stay identical by
+    construction; sections the base lacks must be human-authored."""
+    if layout["extends"] != base["id"]:
+        raise ValueError("A template set must extend the same document")
+    shared = {s["id"]: s for s in base["sections"]}
+    sections = []
+    for entry in layout["sections"]:
+        if entry["id"] in shared:
+            if set(entry) - PRESENTATION:
+                raise ValueError(f"Template set may only re-present section {entry['id']}")
+            sections.append({**shared[entry["id"]], **entry})
+        elif entry.get("mode") == "human":
+            sections.append(entry)
+        else:
+            raise ValueError(f"Section {entry['id']} is neither in {base['id']} nor human")
+    extra = {k: v for k, v in layout.items() if k not in ("extends", "sections")}
+    return {**base, **extra, "sections": sections}
+
+
+def template_digest(template: str | Path) -> str:
+    """Hash of everything a template's sections come from (an overlay plus its base)."""
+    text = Path(template).read_text()
+    base = yaml.safe_load(text).get("extends")
+    return (
+        sha(text) if not base else sha(Path("specs/documents", f"{base}.yaml").read_text() + text)
+    )
+
+
 def load_spec(doc: str, template: str | None = None) -> dict:
     spec = yaml.safe_load(template_path(doc, template).read_text())
+    if "extends" in spec:
+        spec = overlay(spec, yaml.safe_load(Path("specs/documents", f"{doc}.yaml").read_text()))
     if spec["id"] != doc or len({s["id"] for s in spec["sections"]}) != len(spec["sections"]):
         raise ValueError("Invalid or duplicate spec identifiers")
     return spec
+
+
+def manifest_template(manifest: dict) -> str:
+    """The template a document was generated from; manifests that predate template sets
+    recorded no path and always used the default spec."""
+    return manifest["template_spec"].get("path") or f"specs/documents/{manifest['doc_id']}.yaml"
+
+
+def require_synthetic(graph: dict, llm: LLM) -> None:
+    """External providers draft only from fully synthetic evidence. Facts derive from the
+    whole graph, so a pack with no evidence items must not slip past the per-item check."""
+    if llm.provider != "mock" and not all(
+        a["attributes"].get("synthetic") is True for a in graph["artifacts"]
+    ):
+        raise ValueError("External APIs require exclusively synthetic evidence")
 
 
 def load_prompt(reference: str) -> dict:
@@ -377,6 +427,8 @@ def prepare_ai(section: dict, pack: dict) -> tuple[dict, list[dict], dict]:
 
 
 def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict:
+    if section["mode"] == "ai":
+        require_synthetic(graph, llm)
     pack = section_pack(section, graph, params)
     responses = []
     prompts = []
@@ -455,7 +507,7 @@ def assemble(spec: dict, graph: dict, params: dict, sections: list[dict], contex
             "id": spec["id"],
             "version": spec["spec_version"],
             "sha256": context["template_sha256"],
-            "path": context.get("template", f"specs/documents/{spec['id']}.yaml"),
+            "path": context["template"],
         },
         "prompts": list(prompts.values()),
         "model": context["model"],
@@ -515,11 +567,13 @@ def generate_document(
     out: Path = Path("out/documents"),
     llm: LLM | None = None,
 ) -> dict:
-    spec = load_spec(doc)
+    template = template_path(doc).as_posix()
+    spec = load_spec(doc, template)
     for key, definition in spec.get("params", {}).items():
         if definition.get("required") and not params.get(key):
             raise ValueError("Missing required parameter: " + key)
     llm = llm or LLM(provider)
+    require_synthetic(graph, llm)  # before any folder hand-off writes request files
     start = time.monotonic()
     initial_cost, initial_hits, initial_calls = llm.run_spend, llm.hits, llm.calls
     expanded = expand_sections(spec, graph)
@@ -553,8 +607,8 @@ def generate_document(
         "doc_version": 1,
         "generated_at": datetime.now(UTC).isoformat(),
         "generator_version": version,
-        "template": template_path(doc).as_posix(),
-        "template_sha256": sha(template_path(doc).read_text()),
+        "template": template,
+        "template_sha256": template_digest(template),
         "model": {
             "provider": llm.provider,
             "name": llm.last_model or llm.model,

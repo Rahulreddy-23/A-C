@@ -372,4 +372,9 @@ Dataset-specific results are local only (`out/real-docs/`, gitignored). This sec
   - Regeneration keeps the recorded template.
   - The watch test's docs clone moved into its temporary folder: reused mock ports were colliding with stale clones in `out/`, which was the real cause of its intermittent failures.
   - Verification: `uv run pytest -q` → `142 passed in 129.04s`; ruff check and format clean. The owner's curl request (GET work item, Bearer PAT) was re-run on request: still HTTP 401 "The Personal Access Token used has expired."
+- **PR #1 fresh-perspective review fixes (2026-11-03; details in REVIEW.md)**
+  - `uv run pytest -q` → `159 passed in 180.78s`; ruff check and format clean.
+  - `./scripts/demo.sh` → exit 0, unknown IDs 0, baseline gaps P/R 1.00 (21), change_1 impact P/R 1.00 (75).
+  - Real baseline, run locally: same 112 consistency findings. `dhf gaps` names the 6 ADO-link rules as not assessable.
+  - `node tools/check_explorer.cjs` passes on the demo explorer; it is a demo-specific harness, so not run against real data.
 

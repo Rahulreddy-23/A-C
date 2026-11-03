@@ -1,5 +1,5 @@
 <!-- section:{{ section.id }} -->
-{% if section.get("group_title") %}{{ "#" * section.get("group_level", 2) }} {{ section.group_title }}
+{% if section.get("group_title") %}{{ "#" * (section.get("heading_level", 2) - 1) }} {{ section.group_title }}
 
 {% endif %}{{ "#" * section.get("heading_level", 2) }} {{ section.title }}
 

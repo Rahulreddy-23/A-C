@@ -175,3 +175,216 @@ def test_discovery_accepts_reciprocal_links_and_suggests_document_id_fields() ->
     assert report["inventory"]["id_field_candidates"] == {"Requirement": ["Custom.SpecID"]}
     assert report["inventory"]["custom_fields"] == ["Custom.SpecID"]
     assert not [u for u in report["unknowns"] if u["kind"] == "relation"]
+
+
+def test_seed_files_accept_every_ado_url_form_and_never_silently_widen(tmp_path: Path) -> None:
+    (tmp_path / "seeds.txt").write_text(
+        "https://dev.azure.example/org/P/_workitems/edit/101/\n"
+        "https://dev.azure.example/org/P/_workitems/edit/102?src=WorkItemMention\n"
+        "103 - Pump shall alarm on occlusion\n"
+        "https://dev.azure.example/org/P/_apis/wit/workItems/104\n"
+        "https://dev.azure.example/org/P/_boards/board?workitem=105\n"
+        "# comment\nnot an id\n"
+    )
+    (tmp_path / "scope.yaml").write_text("seed_files: [seeds.txt]\n")
+    scope = load_scope(str(tmp_path / "scope.yaml"))
+    assert scope["seed_ids"] == [101, 102, 103, 104, 105] and scope["unparsed_seed_lines"] == 1
+    assert ADO(REAL, "P", "x", scope=scope).report["seed lines without a work-item ID"] == 1
+    (tmp_path / "empty.txt").write_text("nothing here\n")
+    (tmp_path / "broken.yaml").write_text("seed_files: [empty.txt]\nhistory: false\n")
+    with pytest.raises(ValueError, match="none could be read"):
+        load_scope(str(tmp_path / "broken.yaml"))
+
+
+def test_run_selection_follows_the_scope_kind(ado_server) -> None:
+    ids = read_state(ado_server.root)["ids"]
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    whole = ADO(base, "Kestrel", "mock-app-token", scope={"max_items": 10000, "seed_ids": []})
+    seeded = ADO(base, "Kestrel", "mock-app-token", scope={"seed_ids": [ids["TC-001"]]})
+    planned = ADO(base, "Kestrel", "mock-app-token", scope={"seed_ids": [1], "test_plans": ["1"]})
+    try:
+        assert not whole.seeded and len(whole.test_runs()) == 2
+        assert (
+            seeded.test_runs() == []
+            and seeded.report["test runs not read (no test_plans in scope)"]
+        )
+        assert len(planned.test_runs()) == 2
+    finally:
+        for ado in (whole, seeded, planned):
+            ado.close()
+
+
+def test_scoped_ingest_with_a_repository_keeps_only_in_scope_code_links(ado_server, tmp_path):
+    ids = read_state(ado_server.root)["ids"]
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    scope = {
+        "seed_ids": [ids["SRS-001"]],
+        "follow": {"depth": 1},
+        "history": False,
+        "repository": "kestrel-device-sw",
+    }
+    ado = ADO(base, "Kestrel", "mock-app-token", scope=scope)
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    ids_in = {a["id"] for a in graph["artifacts"]}
+    assert all(e["src"] in ids_in and e["dst"] in ids_in for e in graph["links"])
+    assert ado.report["code links to items outside scope"] > 0
+    assert ("UNIT-infusion_bounds", "SRS-001") in {
+        (e["src"], e["dst"]) for e in graph["links"] if e["type"] == "implements"
+    }
+
+
+def test_results_without_cases_and_duplicate_document_ids_do_not_abort(
+    ado_server, tmp_path, monkeypatch
+):
+    from mock_ado.state import write_state
+
+    state = read_state(ado_server.root)
+    ids = state["ids"]
+    first, second = (state["items"][str(ids[i])]["current"] for i in ("SRS-001", "SRS-002"))
+    for item in (first, second):
+        item["fields"]["Custom.SpecID"] = "SPEC-KS-17"  # a copied work item keeps its Spec ID
+    state["runs"][0]["results"].append(
+        {
+            "id": 999,
+            "testCase": {"name": "Pipeline test"},
+            "outcome": "Passed",
+            "testRun": {"id": "1"},
+        }
+    )
+    write_state(ado_server.root, state)
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    mapping["id_tag_prefix"] = "NONE:"
+    mapping["id_fields"] = {"software_req": "Custom.SpecID"}
+    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping))
+    monkeypatch.setenv("ADO_MAPPING", str(tmp_path / "mapping.yaml"))
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    scope = {"seed_ids": [ids["SRS-001"], ids["SRS-002"]], "follow": {"depth": 0}}
+    ado = ADO(
+        base, "Kestrel", "mock-app-token", scope=scope | {"history": False, "test_plans": ["1"]}
+    )
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    reqs = sorted(a["id"] for a in graph["artifacts"] if a["type"] == "software_req")
+    assert reqs == ["ADO-" + str(ids["SRS-002"]), "SPEC-KS-17"]
+    assert ado.report["duplicate document IDs (kept as ADO-<id>)"] == 1
+    assert ado.report["test results without a test case"] == 1
+
+
+def test_discovery_accepts_a_minimal_mapping_profile() -> None:
+    mapping = {
+        "work_item_types": {"Specification": "software_req"},
+        "fields": {"title": "System.Title", "state": "System.State", "changed_at": "X"},
+    }
+    item = {"id": 1, "fields": {"System.WorkItemType": "Specification", "System.Tags": "A"}}
+    report = discovery_report([item], [], [], [], [], mapping)
+    assert report["inventory"]["work_item_types"] == {"Specification": 1}
+
+
+def test_git_channel_refuses_pushes_to_read_only_orgs_and_ignores_credential_helpers(
+    tmp_path, monkeypatch
+) -> None:
+    import subprocess
+
+    from dhf.ingest.ado import git_command, subcommand
+
+    assert subcommand(["-c", "user.name=x", "-c", "user.email=y", "push", "origin"]) == "push"
+    subprocess.run(["git", "init", "-q", str(tmp_path / "repo")], check=True)
+    remote = "https://dev.azure.example/example-org/P/_git/docs"
+    subprocess.run(["git", "-C", str(tmp_path / "repo"), "remote", "add", "origin", remote])
+    with pytest.raises(ReadOnlyViolation):
+        git_command(["push", "origin", "refs/tags/sstr-v1"], tmp_path / "repo", "placeholder")
+    seen = []
+    real_run = subprocess.run
+
+    def record(args, **kwargs):
+        seen.append((args, kwargs["env"].get("GCM_INTERACTIVE")))
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", record)
+    git_command(["status", "--short"], tmp_path / "repo")
+    assert seen[-1] == (["git", "-c", "credential.helper=", "status", "--short"], "never")
+
+
+def test_docs_review_refuses_baselines_in_read_only_mode() -> None:
+    ado = ADO(REAL, "Project", "placeholder", scope={})
+    sent = offline(ado, lambda request: httpx.Response(200, json={"status": "completed"}))
+    review = DocsReview.__new__(DocsReview)
+    review.ado = ado
+    with pytest.raises(ReadOnlyViolation):
+        review.create_baseline("sstr", 7)
+    with pytest.raises(ReadOnlyViolation):
+        review.push("refs/tags/sstr-v1")
+    assert sent == []
+
+
+def test_rich_text_edge_cases_and_literal_angle_brackets_in_steps() -> None:
+    from dhf.ingest.native import html_text
+
+    assert html_text("<table><tr><td>Serial<td>Pump serial<tr><td>Model<td>K1</table>") == (
+        "Serial | Pump serial\nModel | K1"
+    )
+    nested = (
+        "<table><tr><td>Outer<table><tr><td>Inner</td></tr></table>after</td>"
+        "<td>B</td></tr></table>"
+    )
+    assert html_text(nested) == "Outer Inner after | B"
+    assert html_text("<ul><li><p>Alarm sounds</p></li><li><div>Light</div></li></ul>") == (
+        "- Alarm sounds\n- Light"
+    )
+    steps = parse_steps(
+        '<steps id="0" last="2"><step id="2" type="ActionStep"><parameterizedString '
+        'isformatted="true">&lt;P&gt;Press &amp;lt;Enter&amp;gt; and type &amp;lt;user&amp;gt;'
+        '&lt;/P&gt;</parameterizedString><parameterizedString isformatted="true">'
+        "Value x&amp;lt;limit &amp;amp; shown</parameterizedString></step></steps>"
+    )
+    assert steps == [
+        {"action": "Press <Enter> and type <user>", "expected": "Value x<limit & shown"}
+    ]
+
+
+def test_synthetic_tag_counts_only_when_the_mapping_names_one() -> None:
+    from dhf.ingest.native import synthetic_marker
+
+    assert not synthetic_marker("", ["Synthetic"], {"fields": {}})
+    assert synthetic_marker("", ["Synthetic"], {"tags": {"synthetic": "Synthetic"}})
+
+
+def test_real_project_ids_are_recognised_and_invented_ones_rejected() -> None:
+    from dhf.generate.validator import validate_claims
+    from dhf.models.values import ID_PATTERN
+
+    text = "PREQ-KS-1670 maps to SI-Fleet-Service, UNIT-Fleet.Ks.Fleet.Core, SPEC-KS-17, ADO-4."
+    assert ID_PATTERN.findall(text) == [
+        "PREQ-KS-1670",
+        "SI-Fleet-Service",
+        "UNIT-Fleet.Ks.Fleet.Core",
+        "SPEC-KS-17",
+        "ADO-4",
+    ]
+    assert not ID_PATTERN.findall("IEC 62304, UTF-8 and SHA-256")
+    pack = {"facts": {}, "evidence": [{"id": "SPEC-KS-17", "body": "", "attributes": {}}]}
+    claims = [
+        {"text": "SPEC-KS-17 is verified.", "kind": "sourced", "citations": ["SPEC-KS-17"]},
+        {"text": "SI-Ghost-Service also implements it.", "kind": "sourced", "citations": []},
+    ]
+    result = validate_claims({"claims": claims}, pack, ["sourced", "inferred"], 5)
+    assert [c["text"] for c in result["claims"]] == ["SPEC-KS-17 is verified."]
+    assert result["validation"]["rejected"] == [
+        {"claim_index": 1, "reason": "unknown_ids", "ids": ["SI-Ghost-Service"]}
+    ]
+
+
+def test_outdated_verification_ignores_results_without_a_date() -> None:
+    from dhf.ingest.fixtures import ingest_fixtures
+    from dhf.trace import gaps
+
+    graph = ingest_fixtures()
+    for artifact in graph["artifacts"]:
+        if artifact["type"] == "test_result":
+            artifact["attributes"]["completed_at"] = ""
+    assert not [f for f in gaps(graph) if f["rule"] == "G11"]

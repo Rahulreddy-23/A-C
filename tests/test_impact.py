@@ -65,9 +65,11 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
 
         real_sleep = time.sleep
         applied: list[dict] = []
+        waits: list[float] = []
 
         def between_cycles(seconds: float) -> None:
             # Apply the source change exactly between watch cycles (no timing race).
+            waits.append(seconds)
             if applied:
                 real_sleep(seconds)
             else:
@@ -89,6 +91,9 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
             ],
         )
         assert applied and run.exit_code == 0, run.output
+        assert waits == [3.0]  # one --interval wait, between the two polls
+        unchanged, changed = run.output.find("Evidence unchanged"), run.output.find("2 changed")
+        assert 0 <= unchanged < changed, run.output  # cycle 1 unchanged; cycle 2 sees change_1
         assert "2 changed, 3 added" in run.output
         graph = store.graph()
         expected = yaml.safe_load(Path("data/synthetic/scenarios/change_1.yaml").read_text())[

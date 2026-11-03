@@ -11,62 +11,104 @@ HTML_TAG = re.compile(
 
 
 class HTMLText(HTMLParser):
-    """Readable text from ADO rich-text fields: blocks become lines, table rows 'a | b'."""
+    """Readable text from ADO rich-text fields: blocks become lines, table rows 'a | b'.
 
-    BLOCKS = {"p", "div", "ul", "ol", "table", "pre", "blockquote", "hr"} | {
-        f"h{n}" for n in range(1, 7)
-    }
+    Tolerates omitted </td> and </tr>; a nested table is flattened into its outer cell."""
+
+    BLOCKS = {"p", "div", "ul", "ol", "pre", "blockquote", "hr"} | {f"h{n}" for n in range(1, 7)}
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.lines: list[str] = []
         self.current: list[str] = []
-        self.row: list[str] | None = None
-        self.cell: list[str] | None = None
+        self.tables: list[dict] = []  # innermost last: {"row": [...] | None, "cell": [...] | None}
+        self.bullet = False
         self.skip = 0
 
+    @staticmethod
+    def squash(parts: list[str]) -> str:
+        return re.sub(r"\s+", " ", "".join(parts)).strip()
+
+    def sink(self, depth: int | None = None) -> list[str]:
+        """Innermost open cell (within the first `depth` tables), else the current line."""
+        for table in reversed(self.tables[:depth]):
+            if table["cell"] is not None:
+                return table["cell"]
+        return self.current
+
     def end_line(self) -> None:
-        line = re.sub(r"\s+", " ", "".join(self.current)).strip()
+        line = self.squash(self.current)
         if line:
-            self.lines.append(line)
+            self.lines.append(("- " if self.bullet else "") + line)
+            self.bullet = False
         self.current = []
 
-    def boundary(self, bullet: bool = False) -> None:
-        if self.cell is not None:
-            self.cell.append(" ")
-        else:
-            self.end_line()
-            if bullet:
-                self.current.append("- ")
+    def close_cell(self) -> None:
+        table = self.tables[-1]
+        if table["cell"] is not None:
+            table["row"] = (table["row"] or []) + [self.squash(table["cell"])]
+            table["cell"] = None
+
+    def close_row(self) -> None:
+        self.close_cell()
+        table = self.tables[-1]
+        if table["row"] and any(table["row"]):
+            text = " | ".join(table["row"])
+            if len(self.tables) > 1:
+                self.sink(-1).append(f" {text} ")
+            else:
+                self.lines.append(text)
+        table["row"] = None
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         if tag in ("script", "style"):
             self.skip += 1
+        elif tag == "table" or (tag in ("tr", "td", "th") and not self.tables):
+            if not self.tables:
+                self.end_line()
+            self.tables.append({"row": None, "cell": None})
+            if tag != "table":
+                self.handle_starttag(tag, attrs)
         elif tag == "tr":
-            self.end_line()
-            self.row = []
+            self.close_row()
+            self.tables[-1]["row"] = []
         elif tag in ("td", "th"):
-            self.cell = []
+            self.close_cell()
+            self.tables[-1]["cell"] = []
         elif tag in self.BLOCKS or tag in ("br", "li"):
-            self.boundary(bullet=tag == "li")
+            if self.sink() is not self.current:
+                self.sink().append(" ")
+            else:
+                self.end_line()
+                self.bullet = self.bullet or tag == "li"
 
     def handle_endtag(self, tag: str) -> None:
         if tag in ("script", "style"):
             self.skip = max(0, self.skip - 1)
-        elif tag in ("td", "th") and self.cell is not None:
-            if self.row is not None:
-                self.row.append(re.sub(r"\s+", " ", "".join(self.cell)).strip())
-            self.cell = None
-        elif tag == "tr" and self.row is not None:
-            if any(self.row):
-                self.lines.append(" | ".join(self.row))
-            self.row = None
+        elif not self.tables:
+            if tag in self.BLOCKS or tag == "li":
+                self.end_line()
+        elif tag in ("td", "th"):
+            self.close_cell()
+        elif tag == "tr":
+            self.close_row()
+        elif tag == "table":
+            self.close_row()
+            self.tables.pop()
         elif tag in self.BLOCKS or tag == "li":
-            self.boundary()
+            self.sink().append(" ")
 
     def handle_data(self, data: str) -> None:
         if not self.skip:
-            (self.cell if self.cell is not None else self.current).append(data)
+            self.sink().append(data)
+
+    def finish(self) -> list[str]:
+        self.close()
+        while self.tables:
+            self.close_row()
+            self.tables.pop()
+        self.end_line()
+        return self.lines
 
 
 def html_text(value: str) -> str:
@@ -75,14 +117,14 @@ def html_text(value: str) -> str:
         return value
     parser = HTMLText()
     parser.feed(value)
-    parser.close()
-    parser.end_line()
-    return "\n".join(parser.lines)
+    return "\n".join(parser.finish())
 
 
 # The optional synthetic marker is the only permitted fixture metadata input.
 def synthetic_marker(text: str, tags: list[str], mapping: dict) -> bool:
-    return mapping.get("tags", {}).get("synthetic", "Synthetic") in tags or bool(
+    """Fail closed: a tag counts only when the mapping names one explicitly."""
+    marker = mapping.get("tags", {}).get("synthetic")
+    return bool(marker and marker in tags) or bool(
         re.search(r'DHF-META:\s*\{\s*"synthetic"\s*:\s*true\s*\}', text)
     )
 
@@ -168,9 +210,10 @@ def parse_steps(text: str) -> list[dict]:
         return []
     steps = []
     for step in ET.fromstring(text).iter("step"):
-        parts = [
-            html_text(unescape("".join(p.itertext()))) for p in step.findall("parameterizedString")
-        ]
+        # ElementTree already removed the XML layer: HTML is decoded once more, by html_text;
+        # only plain text still needs its entities unescaped.
+        raw = ["".join(p.itertext()) for p in step.findall("parameterizedString")]
+        parts = [html_text(r) if HTML_TAG.search(r) else unescape(r) for r in raw]
         steps.append({"action": (parts + [""])[0], "expected": (parts + ["", ""])[1]})
     return steps
 

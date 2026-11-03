@@ -5,7 +5,7 @@ import time
 from collections import Counter
 from datetime import UTC, datetime
 
-from dhf.generate import load_prompt
+from dhf.generate import load_prompt, require_synthetic
 from dhf.generate.validator import validate_claims
 from dhf.llm import LLM, canonical
 from dhf.llm.tokens import estimate_tokens
@@ -44,6 +44,7 @@ def support_jobs(graph: dict, manifest: dict, sample: int) -> list[dict]:
 
 
 def verify_document(graph: dict, manifest: dict, llm: LLM, sample: int = 5) -> dict:
+    require_synthetic(graph, llm)  # claim text derives from the graph even without citations
     output = copy.deepcopy(manifest)
     prompt = load_prompt("verify.support@1")
     start, cost = time.monotonic(), llm.run_spend

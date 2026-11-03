@@ -109,7 +109,10 @@ class DocsReview:
         if not root.exists():
             root.parent.mkdir(parents=True, exist_ok=True)
             git_command(["clone", repo["remoteUrl"], str(root.resolve())], root.parent, ado.token)
-        git_command(["fetch", "origin", "--tags"], root, ado.token)
+        # Mirror the remote's tags exactly so a recreated remote never leaves stale baselines.
+        git_command(
+            ["fetch", "origin", "--prune", "--prune-tags", "--force", "--tags"], root, ado.token
+        )
         self.main = repo.get("defaultBranch", "refs/heads/main").removeprefix("refs/heads/")
 
     def baseline(self, doc: str) -> tuple[str, str]:
@@ -118,6 +121,12 @@ class DocsReview:
             if re.fullmatch(re.escape(doc) + r"-v\d+", tag):
                 return tag, git_command(["show", tag + ":" + doc + ".md"], self.root, strip=False)
         return "", ""
+
+    def push(self, refspec: str) -> None:
+        """The only way this class writes to the docs remote; read-only mode refuses it."""
+        if self.ado.read_only:
+            raise ReadOnlyViolation("Read-only mode: refusing to push to the docs repository")
+        git_command(["push", "origin", refspec], self.root, self.ado.token)
 
     def commit(self, branch: str, doc: str, markdown: str, manifest: dict, previous: str) -> None:
         if self.ado.read_only:
@@ -166,7 +175,7 @@ class DocsReview:
                 ],
                 self.root,
             )
-        git_command(["push", "origin", "HEAD:refs/heads/" + branch], self.root, self.ado.token)
+        self.push("HEAD:refs/heads/" + branch)
 
     def status(self, pr_id: int, check: dict) -> dict:
         return self.ado.request(
@@ -286,6 +295,8 @@ class DocsReview:
         return check
 
     def create_baseline(self, doc: str, pr_id: int) -> str:
+        if self.ado.read_only:
+            raise ReadOnlyViolation("Read-only mode: refusing to tag the docs repository")
         pr = self.ado.request("GET", self.api + f"/{pr_id}")
         if pr["status"] != "completed":
             raise ValueError("Only a human-merged completed PR may become a baseline")
@@ -302,5 +313,9 @@ class DocsReview:
         version = int(latest.rsplit("-v", 1)[1]) + 1 if latest else 1
         tag = f"{doc}-v{version}"
         git_command(["tag", tag, "origin/" + self.main], self.root)
-        git_command(["push", "origin", "refs/tags/" + tag], self.root, self.ado.token)
+        try:
+            self.push("refs/tags/" + tag)
+        except Exception:
+            git_command(["tag", "--delete", tag], self.root)  # no local-only "approved" baseline
+            raise
         return tag

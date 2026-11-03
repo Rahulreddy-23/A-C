@@ -1,7 +1,11 @@
 # Existing DHF documents and ADO CSV exports → evidence graph (local, deterministic, no LLM).
 # Files are matched by glob; content by table headers and heading structure. Header and heading
 # comparisons ignore case, spaces and punctuation. Nothing here is product-specific.
+# Link classes these documents can carry. Rules that need other links (ADO Tested By,
+# Parent/Child, code) are reported as not assessable for imported artifacts, not as gaps.
+provides_links: [allocated_to]
 exclude:
+  - "~$*"          # Office owner/lock files
   - "*redline*"
   - "(REF)*"
   - "REF *"
@@ -35,7 +39,7 @@ documents:
         type: component
         id_prefix: "SI-"
     matrices:
-      - header: [Req. ID, Software Items]
+      - header: [Req. ID, Software Items]   # required headers; src/dst name the columns
         link: allocated_to
         src: Req. ID
         dst: Software Items           # names, comma separated, resolved against components

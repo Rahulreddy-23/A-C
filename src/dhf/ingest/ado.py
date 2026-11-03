@@ -16,17 +16,34 @@ import yaml
 
 from dhf.config import setting
 from dhf.ingest.code import PythonExtractor
-from dhf.ingest.native import native_record, normalize_result, normalize_run, normalize_workitem
+from dhf.ingest.native import (
+    native_record,
+    normalize_result,
+    normalize_run,
+    normalize_workitem,
+    workitem_kind,
+)
 from dhf.models.evidence import validate_graph
 
 READ_POSTS = ("/_apis/wit/wiql", "/_apis/wit/workitemsbatch")
 WORKITEM_URL = re.compile(r"/_apis/wit/workItems/(\d+)$", re.I)
+SEED_ID = re.compile(r"(?:_workitems/edit/|/workitems/|[?&]workitem=)(\d+)", re.I)
 DEFAULT_FOLLOW = (
     "System.LinkTypes.Hierarchy-Forward",
     "System.LinkTypes.Hierarchy-Reverse",
     "Microsoft.VSTS.Common.TestedBy-Forward",
     "Microsoft.VSTS.Common.TestedBy-Reverse",
 )
+# ADO shows every work-item link on both ends under these paired reference names.
+RECIPROCAL = {
+    "System.LinkTypes.Hierarchy-Forward": "System.LinkTypes.Hierarchy-Reverse",
+    "System.LinkTypes.Hierarchy-Reverse": "System.LinkTypes.Hierarchy-Forward",
+    "Microsoft.VSTS.Common.TestedBy-Forward": "Microsoft.VSTS.Common.TestedBy-Reverse",
+    "Microsoft.VSTS.Common.TestedBy-Reverse": "Microsoft.VSTS.Common.TestedBy-Forward",
+    "System.LinkTypes.Dependency-Forward": "System.LinkTypes.Dependency-Reverse",
+    "System.LinkTypes.Dependency-Reverse": "System.LinkTypes.Dependency-Forward",
+    "System.LinkTypes.Related": "System.LinkTypes.Related",
+}
 
 
 class ReadOnlyViolation(PermissionError):
@@ -34,7 +51,8 @@ class ReadOnlyViolation(PermissionError):
 
 
 def is_loopback_host(host: str) -> bool:
-    if host == "localhost" or host.endswith(".localhost"):
+    """Only names that cannot resolve elsewhere: 'localhost' and loopback addresses."""
+    if host == "localhost":
         return True
     try:
         return ipaddress.ip_address(host).is_loopback
@@ -52,24 +70,68 @@ def read_only_mode(base: str) -> bool:
     return not is_loopback_host(urlsplit(base).hostname or "")
 
 
+def remote_is_read_only(url: str) -> bool:
+    """Git remotes follow the organization rule; local paths (the mock) are not remote."""
+    parts = urlsplit(url)
+    if parts.scheme in ("", "file") or not parts.hostname:
+        return False
+    return read_only_mode(url)
+
+
+def seed_ids(text: str) -> tuple[set[int], int]:
+    """Work-item IDs from a seed file: ADO URLs in any form, or a leading ID per line.
+
+    Returns the IDs and the number of non-blank, non-comment lines that held none."""
+    ids, unparsed = set(), 0
+    for line in (raw.strip() for raw in text.splitlines()):
+        if not line or line.startswith("#"):
+            continue
+        found = SEED_ID.findall(line) or re.findall(r"^(\d+)\b", line)
+        ids.update(int(i) for i in found)
+        unparsed += not found
+    return ids, unparsed
+
+
 def load_scope(path: str = "") -> dict:
     """Optional ingest scope (ADO_SCOPE YAML); without one the whole project is read.
 
     seed_files hold ADO work-item URLs or bare IDs, one per line, resolved relative to
-    the scope file."""
+    the scope file. A scope that names seeds but yields none is an error, never a silent
+    whole-project read."""
     path = path or setting("ADO_SCOPE", "")
     if not path:
         return {}
     scope = yaml.safe_load(Path(path).read_text()) or {}
-    ids = {int(i) for i in scope.get("seed_ids", [])}
-    for name in scope.get("seed_files", []):
-        text = (Path(path).parent / name).read_text()
-        ids |= {int(m) for m in re.findall(r"(?m)(?:_workitems/edit/|^\s*)(\d+)\s*$", text)}
-    return {**scope, "seed_ids": sorted(ids)}
+    ids = {int(i) for i in scope.get("seed_ids") or []}
+    unparsed = 0
+    for name in scope.get("seed_files") or []:
+        found, missed = seed_ids((Path(path).parent / name).read_text())
+        ids |= found
+        unparsed += missed
+    declared = "seed_ids" in scope or "seed_files" in scope
+    if declared and not ids and not scope.get("wiql"):
+        raise ValueError(f"ADO_SCOPE {path} names seeds but none could be read")
+    return {**scope, "seed_ids": sorted(ids), "unparsed_seed_lines": unparsed}
+
+
+def subcommand(args: list[str]) -> str:
+    """The git subcommand after any leading `-c name=value` options."""
+    index = 0
+    while index < len(args) and args[index].startswith("-"):
+        index += 2 if args[index] == "-c" else 1
+    return args[index] if index < len(args) else ""
 
 
 def git_command(args: list[str], cwd: Path, token: str = "", strip: bool = True) -> str:
-    """Git auth stays in environment/askpass, never remote URL or command arguments."""
+    """Git auth stays in environment/askpass, never remote URL or command arguments.
+
+    Configured credential helpers are disabled so git neither uses a stored (possibly
+    write-capable) credential nor saves the PAT, and pushes to a read-only organization
+    are refused here, whatever code path asks for them."""
+    if subcommand(args) == "push" and remote_is_read_only(
+        git_command(["remote", "get-url", "origin"], cwd)
+    ):
+        raise ReadOnlyViolation("Read-only mode: refusing git push to this organization")
     helper = Path("out/git-askpass.sh").resolve()
     helper.parent.mkdir(parents=True, exist_ok=True)
     helper.write_text(
@@ -83,8 +145,15 @@ def git_command(args: list[str], cwd: Path, token: str = "", strip: bool = True)
         GIT_TERMINAL_PROMPT="0",
         DHF_GIT_PAT=token,
         DHF_GIT_ROLE="app",
+        GCM_INTERACTIVE="never",
     )
-    result = subprocess.run(["git", *args], cwd=cwd, env=env, capture_output=True, text=True)
+    result = subprocess.run(
+        ["git", "-c", "credential.helper=", *args],
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
     if result.returncode:
         raise RuntimeError("Git operation failed; check repository access and branch configuration")
     return result.stdout.strip() if strip else result.stdout
@@ -116,6 +185,8 @@ class ADO:
         self.read_only = read_only_mode(self.base)
         self.scope = load_scope() if scope is None else scope
         self.report: Counter = Counter()
+        if self.scope.get("unparsed_seed_lines"):
+            self.report["seed lines without a work-item ID"] = self.scope["unparsed_seed_lines"]
         self.client = httpx.Client(
             base_url=self.url,
             auth=("", self.token),
@@ -128,6 +199,11 @@ class ADO:
 
     def close(self) -> None:
         self.client.close()
+
+    @property
+    def seeded(self) -> bool:
+        """A scope with seeds or WIQL reads only those items; any other scope reads all."""
+        return bool(self.scope.get("seed_ids") or self.scope.get("wiql"))
 
     def guard(self, request: httpx.Request) -> None:
         """Transport-level last line of defence: read-only mode sends reads only."""
@@ -180,7 +256,7 @@ class ADO:
 
     def workitems(self, since: str | None = None) -> list[dict]:
         limit = int(self.scope.get("max_items", setting("ADO_MAX_ITEMS", "5000")))
-        if self.scope.get("seed_ids") or self.scope.get("wiql"):
+        if self.seeded:
             seeds = set(self.scope.get("seed_ids", []))
             if self.scope.get("wiql"):
                 seeds |= set(self.query_ids(self.scope["wiql"], limit))
@@ -250,13 +326,16 @@ class ADO:
         return [items[i] for i in sorted(items)]
 
     def test_runs(self) -> list[dict]:
-        """All runs without a scope; with one, only runs of the listed test plans."""
-        if not self.scope:
-            return self.collection("/_apis/test/runs")
+        """Runs of the scope's test plans; every run for a whole-project read; none for a
+        seeded scope without plans (reported, since a real project can hold thousands)."""
+        plans = self.scope.get("test_plans")
+        if plans is None:
+            if not self.seeded:
+                return self.collection("/_apis/test/runs")
+            self.report["test runs not read (no test_plans in scope)"] += 1
+            return []
         return [
-            run
-            for plan in self.scope.get("test_plans", [])
-            for run in self.collection("/_apis/test/runs", {"planId": plan})
+            run for plan in plans for run in self.collection("/_apis/test/runs", {"planId": plan})
         ]
 
     def ingest(self, clone_root: Path = Path("out/clones")) -> dict:
@@ -268,15 +347,21 @@ class ADO:
         item_kinds = {}
         history_enabled = self.scope.get("history", True)
         for item in items:
+            # Only requirement history feeds change tracking; other kinds skip the request.
+            needs_history = workitem_kind(item["fields"], mapping) == "software_req"
             history = (
                 self.collection(f"/_apis/wit/workitems/{item['id']}/revisions")
-                if history_enabled
+                if history_enabled and needs_history and item.get("rev", 1) > 1
                 else [item]
             )
             artifact = normalize_workitem(item, history, mapping, retrieved)
             if artifact is None:
                 self.report["unmapped " + item["fields"].get("System.WorkItemType", "?")] += 1
                 continue
+            if artifact["id"] in native_ids.values():  # e.g. a copied item keeps its Spec ID
+                artifact["attributes"]["duplicate_document_id"] = artifact["id"]
+                artifact["id"] = f"ADO-{item['id']}"
+                self.report["duplicate document IDs (kept as ADO-<id>)"] += 1
             artifacts.append(artifact)
             native_ids[str(item["id"])] = artifact["id"]
             item_kinds[str(item["id"])] = artifact["type"]
@@ -313,7 +398,11 @@ class ADO:
             run = normalize_run(raw_run, mapping, retrieved, self.url)
             artifacts.append(run)
             for result in self.collection(f"/_apis/test/runs/{raw_run['id']}/results"):
-                if str(result["testCase"]["id"]) not in native_ids:
+                case = (result.get("testCase") or {}).get("id")
+                if case is None:
+                    self.report["test results without a test case"] += 1
+                    continue
+                if str(case) not in native_ids:
                     self.report["test results outside scope"] += 1
                     continue
                 artifact = normalize_result(result, run, native_ids, retrieved, self.url)
@@ -405,8 +494,12 @@ class ADO:
                     self.url + "/_git/" + repo_name + "?path=/" + path + "&version=GC" + commit
                 )
         artifacts.extend(extracted["artifacts"])
-        links.extend(extracted["links"])
         by_id = {a["id"]: a for a in artifacts}
+        inside = [e for e in extracted["links"] if e["src"] in by_id and e["dst"] in by_id]
+        outside = len(extracted["links"]) - len(inside)
+        if outside:
+            self.report["code links to items outside scope"] += outside
+        links.extend(inside)
         for pr in self.collection(
             f"/_apis/git/repositories/{repo['id']}/pullrequests", {"searchCriteria.status": "all"}
         ):

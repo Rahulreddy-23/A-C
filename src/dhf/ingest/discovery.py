@@ -4,16 +4,8 @@ import copy
 import re
 from collections import Counter, defaultdict
 
-from dhf.ingest.ado import ADO
+from dhf.ingest.ado import ADO, RECIPROCAL
 
-RECIPROCAL = {
-    "System.LinkTypes.Hierarchy-Forward": "System.LinkTypes.Hierarchy-Reverse",
-    "System.LinkTypes.Hierarchy-Reverse": "System.LinkTypes.Hierarchy-Forward",
-    "Microsoft.VSTS.Common.TestedBy-Forward": "Microsoft.VSTS.Common.TestedBy-Reverse",
-    "Microsoft.VSTS.Common.TestedBy-Reverse": "Microsoft.VSTS.Common.TestedBy-Forward",
-    "System.LinkTypes.Dependency-Forward": "System.LinkTypes.Dependency-Reverse",
-    "System.LinkTypes.Dependency-Reverse": "System.LinkTypes.Dependency-Forward",
-}
 DOCUMENT_ID = re.compile(r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+$")
 
 
@@ -64,8 +56,10 @@ def discovery_report(
                 "action": "Confirm semantic meaning and reference name before ingest.",
             }
         )
+    names = mapping.get("fields", {})
+    area_field, tags_field = names.get("area", "System.AreaPath"), names.get("tags", "System.Tags")
     types = Counter(item["fields"].get("System.WorkItemType", "unknown") for item in items)
-    for typ in sorted(types.keys() - mapping["work_item_types"].keys()):
+    for typ in sorted(types.keys() - mapping.get("work_item_types", {}).keys()):
         unknowns.append(
             {
                 "kind": "work_item_type",
@@ -73,15 +67,9 @@ def discovery_report(
                 "action": "Choose canonical type/tag discriminator; no automatic classification.",
             }
         )
-    areas = sorted(
-        {
-            item["fields"][mapping["fields"]["area"]]
-            for item in items
-            if mapping["fields"]["area"] in item["fields"]
-        }
-    )
+    areas = sorted({item["fields"][area_field] for item in items if area_field in item["fields"]})
     for area in areas:
-        if area not in mapping["area_components"]:
+        if area not in mapping.get("area_components", {}):
             unknowns.append(
                 {"kind": "area_path", "name": area, "action": "Confirm component allocation."}
             )
@@ -89,7 +77,7 @@ def discovery_report(
         {r["referenceName"] for r in links}
         | {r["rel"] for item in items for r in item.get("relations", [])}
     )
-    mapped = set(mapping["relations"].values())
+    mapped = set(mapping.get("relations", {}).values())
     for rel in sorted(set(relation_types) - mapped):
         if RECIPROCAL.get(rel) in mapped:
             continue  # ADO shows each link on both ends; the mapped end is enough
@@ -103,15 +91,16 @@ def discovery_report(
     tags = Counter(
         t.strip()
         for item in items
-        for t in item["fields"].get(mapping["fields"]["tags"], "").split(";")
+        for t in item["fields"].get(tags_field, "").split(";")
         if t.strip()
     )
-    known_tags = set(mapping["tags"].values()) | {"Unit-Test"}
+    known_tags = set(mapping.get("tags", {}).values()) | {"Unit-Test"}
     known_tags.update(
-        t for v in mapping["work_item_types"].values() if isinstance(v, dict) for t in v
+        t for v in mapping.get("work_item_types", {}).values() if isinstance(v, dict) for t in v
     )
+    prefix = mapping.get("id_tag_prefix")
     for tag in tags:
-        if tag not in known_tags and not tag.startswith(mapping["id_tag_prefix"]):
+        if tag not in known_tags and not (prefix and tag.startswith(prefix)):
             unknowns.append(
                 {
                     "kind": "tag",

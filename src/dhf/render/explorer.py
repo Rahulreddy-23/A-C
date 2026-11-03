@@ -199,6 +199,7 @@ def create_explorer(
     import yaml
 
     from dhf.config import setting
+    from dhf.generate import load_spec, manifest_template
     from dhf.graph.reviews import risk_gaps
     from dhf.impact import impact
     from dhf.trace import evaluate_rules, unassessable_rules
@@ -209,12 +210,8 @@ def create_explorer(
         for path in sorted(Path("specs/rules").glob("*.yaml"))
     }
     blind = unassessable_rules(graph, rules["gaps"])
-    findings = [f for f in gaps(graph) if f["rule"] not in blind]
-    # Document-baseline checks apply to evidence imported from existing documents only.
-    imported = {a["id"] for a in graph["artifacts"] if a["source"]["system"] == "file"}
-    findings += [
-        f for f in evaluate_rules(graph, rules["document_baseline"]) if f["artifact_id"] in imported
-    ]
+    # Rules scope themselves (document-baseline rules declare `sources: [file]`).
+    findings = gaps(graph) + evaluate_rules(graph, rules["document_baseline"])
     findings += consistency(graph, documents) + risk_gaps(graph)
     findings += [{**f, "scope": "baseline"} for f in consistency(graph, baselines or [])]
     reports = reports if reports is not None else [impact(graph, d) for d in documents]
@@ -229,8 +226,15 @@ def create_explorer(
         },
         "rules": [rule for group in rules.values() for rule in group],
         "document_titles": {
-            path.stem: yaml.safe_load(path.read_text()).get("title")
-            for path in sorted(Path("specs/documents").glob("*.yaml"))
+            **{
+                path.stem: yaml.safe_load(path.read_text()).get("title")
+                for path in sorted(Path("specs/documents").glob("*.yaml"))
+            },
+            # Each draft keeps the title of the template set it was generated from.
+            **{
+                d["doc_id"]: load_spec(d["doc_id"], manifest_template(d))["title"]
+                for d in documents
+            },
         },
     }
     return render_explorer(

@@ -122,3 +122,42 @@ def test_owner_sad_and_sdd_nest_items_and_units_like_the_owner_documents(tmp_pat
         "#### Processing Logic",
         "#### Error Handling",
     ]
+
+
+def test_manifests_without_a_recorded_template_keep_the_default(tmp_path, monkeypatch):
+    graph = ingest_fixtures()
+    llm = LLM(root=tmp_path / "llm")
+    legacy = generate_document("sstr", graph, {"release": "1.1"}, out=tmp_path, llm=llm)
+    del legacy["manifest"]["template_spec"]["path"]  # written before template sets existed
+    monkeypatch.setenv("DHF_TEMPLATE_SET", "bd")
+    report = impact(graph, legacy["manifest"], graph)
+    assert not [s for s in report["sections"] if s["status"] == "stale"]
+    again = regenerate(graph, legacy["manifest"], legacy["markdown"], report, tmp_path, llm)
+    assert again["manifest"]["template_spec"]["path"] == "specs/documents/sstr.yaml"
+
+
+def test_template_sets_may_only_re_present_shared_sections(tmp_path, monkeypatch):
+    from dhf.generate import overlay
+
+    base = {"id": "sstr", "sections": [{"id": "results_summary", "mode": "deterministic"}]}
+    with pytest.raises(ValueError, match="only re-present"):
+        overlay(
+            {
+                "id": "sstr",
+                "extends": "sstr",
+                "sections": [{"id": "results_summary", "query": "x"}],
+            },
+            base,
+        )
+    with pytest.raises(ValueError, match="neither"):
+        overlay({"id": "sstr", "extends": "sstr", "sections": [{"id": "new", "mode": "ai"}]}, base)
+    merged = overlay(
+        {
+            "id": "sstr",
+            "extends": "sstr",
+            "title": "T",
+            "sections": [{"id": "results_summary", "title": "R"}],
+        },
+        base,
+    )
+    assert merged["sections"] == [{"id": "results_summary", "mode": "deterministic", "title": "R"}]

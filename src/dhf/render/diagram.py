@@ -8,6 +8,8 @@ from pathlib import Path
 
 import yaml
 
+from dhf.config import setting
+
 
 def diagram_layout(source: str) -> dict:
     nodes = dict(re.findall(r'^\s+(\w+)\["([^"]+)"\]', source, re.M))
@@ -63,7 +65,7 @@ def diagram_image(layout: dict) -> dict:
                             (25, 48, 64),
                         )
 
-    text(70, 35, "KESTREL - SOFTWARE COMPONENTS AND UNITS", 4)
+    text(70, 35, setting("DHF_PRODUCT_NAME", "Kestrel") + " - SOFTWARE COMPONENTS AND UNITS", 4)
     text(70, 90, "SOURCE ALLOCATIONS - CALL ARROWS FROM EXTRACTED CODE", 3)
     positions = {c["id"]: c for c in layout["components"]}
     for c in layout["components"]:

@@ -96,8 +96,9 @@ def gaps_command(db: str = "out/evidence.sqlite", output_dir: str = "out") -> No
         store.close()
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence first")
+    rules = gap_rules()
     findings = gaps(graph)
-    blind = unassessable_rules(graph, gap_rules())
+    blind = unassessable_rules(graph, rules)
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / "gaps.json").write_text(
@@ -105,10 +106,9 @@ def gaps_command(db: str = "out/evidence.sqlite", output_dir: str = "out") -> No
             {"findings": findings, "coverage": coverage(graph), "not_assessable": blind}, indent=2
         )
     )
-    (out / "gaps.md").write_text(gaps_markdown(findings, gap_rules(), blind))
-    shown = sum(f["rule"] not in blind for f in findings)
+    (out / "gaps.md").write_text(gaps_markdown(findings, rules, blind))
     typer.echo(
-        f"{shown} deterministic gaps"
+        f"{len(findings)} deterministic gaps"
         + (f" ({len(blind)} rules not assessable from these sources)" if blind else "")
         + f" → {out / 'gaps.md'} + {out / 'gaps.json'}"
     )
@@ -129,7 +129,7 @@ def import_docs_command(
 
     from dhf.graph import Store
     from dhf.ingest.documents import import_folder
-    from dhf.trace import evaluate_rules
+    from dhf.trace import evaluate_rules, unassessable_rules
     from dhf.trace.reports import import_markdown
 
     graph, summary = import_folder(Path(folder), Path(profile))
@@ -146,7 +146,8 @@ def import_docs_command(
     (out / "import-report.json").write_text(
         json.dumps({"summary": summary, "findings": findings}, indent=2)
     )
-    (out / "import-report.md").write_text(import_markdown(summary, findings, rules, graph))
+    blind = unassessable_rules(graph, rules)
+    (out / "import-report.md").write_text(import_markdown(summary, findings, rules, graph, blind))
     typer.echo(
         f"Snapshot {result['snapshot']}: "
         + ", ".join(f"{k}={v}" for k, v in summary["artifact_counts"].items())
@@ -276,7 +277,7 @@ def copilot_request(
     import json
     from pathlib import Path
 
-    from dhf.generate import expand_sections, load_spec, prepare_ai, section_pack
+    from dhf.generate import expand_sections, load_spec, prepare_ai, require_synthetic, section_pack
     from dhf.graph import Store
     from dhf.llm import LLM
 
@@ -301,6 +302,7 @@ def copilot_request(
             "Section needs multiple evidence chunks; choose a single-chunk section"
         )
     llm = LLM("copilotstudio")
+    require_synthetic(graph, llm)
     typer.echo(
         json.dumps(
             llm.copilot_request(

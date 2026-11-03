@@ -20,13 +20,18 @@ DHF_PRODUCT_NAME="<product>" DHF_RELEASE=<release> uv run dhf explore \
   - latest issue only; redlines and reference copies are excluded;
   - personal CSV columns are dropped before rows are read.
 - **What it reports:** `import-report.md` lists imported, excluded and unread files, then the D01–D05 consistency findings.
-- **Rules it can't assess:** rules that need ADO links (Tested By, Parent/Child) show as **not assessable** rather than as thousands of gaps.
+- **Rules it can't assess:** imported artifacts declare the only link class documents carry (`provides_links: [allocated_to]`). Rules that need ADO links (Tested By, Parent/Child) therefore show as **not assessable** for them, not as thousands of gaps.
+  - ADO evidence is always assessed, so an ADO project with nothing linked still reports every gap.
+- **Reading Word files:** tracked insertions are read as accepted and deletions are dropped. Content controls are read, and cells keep one line per paragraph. Office lock files (`~$…`) and redlines are excluded whatever their case.
 
 ## B. The live ADO project (read-only)
 
 1. **Credentials.** Use a PAT with **Work Items (Read)** and **Test Management (Read)**. Add Code (Read) only when the owner approves code evidence. Keep the PAT out of the repo; pass `APP_ADO_PAT` in the environment for the run.
 2. **Settings.** Put `ADO_BASE_URL`, `ADO_PROJECT` and `ADO_SCOPE` in an untracked env file (`DHF_ENV_FILE`).
-   - A non-local organization is read-only automatically (`ADO_READ_ONLY=auto`). Only GET and the WIQL/batch read POSTs leave the process, enforced at the transport. Docs-repo PRs and pushes are refused.
+   - A non-local organization is read-only automatically (`ADO_READ_ONLY=auto`).
+     - **HTTP:** only GET and the WIQL/batch read POSTs leave the process, enforced at the transport.
+     - **git:** pushes and tags to the organization are refused in the git channel itself.
+     - **Credentials:** git ignores stored credential helpers, so the read-only PAT is the only credential used and it is never saved to a keychain.
 3. **Scope.** Copy `specs/ado_scope.example.yaml` outside git and set:
    - seed files or IDs (for example the provided requirement and specification URL lists);
    - link-follow depth and relation types;
@@ -35,6 +40,9 @@ DHF_PRODUCT_NAME="<product>" DHF_RELEASE=<release> uv run dhf explore \
    - an optional repository.
 
    Without a scope, a project larger than `ADO_MAX_ITEMS` is refused.
+   - **Seeded scope** (seeds or WIQL): reads only those items. It reads no test runs unless `test_plans` is set, and the ingest report says so.
+   - **Other scopes** (for example only `max_items`): read the whole project and all runs.
+   - **Seed lines:** ADO URLs in any form, or a leading ID. Lines that hold no ID are counted. A scope whose seeds yield no IDs is an error, never a silent whole-project read.
 4. **Discover.** `uv run dhf discover` reads the scoped items, field and relation metadata, plan-filtered runs and the repository list. It writes a draft mapping and `.discovery.json`.
    - Check `id_field_candidates` (the field holding document IDs such as specification IDs).
    - Check `custom_fields`, work-item types, area paths and unknowns.
@@ -43,8 +51,9 @@ DHF_PRODUCT_NAME="<product>" DHF_RELEASE=<release> uv run dhf explore \
    - `id_fields` and `attribute_fields`;
    - relation directions;
    - area-path components.
-6. **Ingest.** Run `uv run dhf ingest --source ado --db out/real/evidence.sqlite`. It prints the read-only mode, the scope and every skipped class (unmapped types, out-of-scope results or bugs, unavailable IDs). Then run `dhf gaps`, `dhf rtm` and `dhf explore` against that database with `--output-dir out/real`.
-7. **Draft locally.** Set `DHF_TEMPLATE_SET=bd` for drafts in the owner's SAD/SDD/SSTR structure.
+6. **Ingest.** Run `uv run dhf ingest --source ado --db out/real/evidence.sqlite`. It prints the read-only mode, the scope and every skipped class (unmapped types, out-of-scope results or bugs, unavailable IDs). Then run `dhf gaps --db out/real/evidence.sqlite --output-dir out/real`, `dhf rtm` with the same options, and `dhf explore --db out/real/evidence.sqlite --output out/real/explorer.html`.
+7. **Draft locally.** From a document baseline only the SSTR can be drafted. SAD and SDD drafts need code-derived architecture evidence (a repository in scope, REVIEW R-061).
+   **Templates:** Set `DHF_TEMPLATE_SET=bd` for drafts in the owner's SAD/SDD/SSTR structure.
    Then: `uv run dhf generate sstr --release <release> --db out/real/evidence.sqlite --documents out/real/docs` uses the mock provider. Opening PRs requires a docs repository the owner controls and `ADO_READ_ONLY=0` for that run only. Human approvals remain in the eQMS.
 
 ## Seed the synthetic sandbox

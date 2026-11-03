@@ -188,3 +188,154 @@ def test_explorer_is_product_neutral_and_honest_about_document_baselines(tmp_pat
     demo = payload(create_explorer(ingest_fixtures(), []))
     assert demo["not_assessable"] == [] and demo["product"]["evidence"] == "Synthetic evidence"
     assert not [f for f in demo["findings"] if f["rule"].startswith("D")]
+
+
+def test_import_handles_word_features_and_matrix_edge_cases(tmp_path) -> None:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    def tracked_insert(paragraph, text: str) -> None:
+        ins = OxmlElement("w:ins")
+        for key, value in (
+            ("w:id", "9"),
+            ("w:author", "reviewer"),
+            ("w:date", "2026-01-01T00:00:00Z"),
+        ):
+            ins.set(qn(key), value)
+        run, t = OxmlElement("w:r"), OxmlElement("w:t")
+        t.text = text
+        run.append(t)
+        ins.append(run)
+        paragraph._p.append(ins)
+
+    header = ["Req ID", "Short Text", "Requirement Text", "Release", "Req Type"]
+    document = Document()
+    document.add_heading("Functional Requirements", 1)
+    table(document, [header] + [[f"PREQ-KS-{n}", "Need", "Shall.", "R1", "F"] for n in range(1, 6)])
+    grid = document.tables[0]
+    row = grid.add_row()
+    tracked_insert(row.cells[0].paragraphs[0], "PREQ-KS-7")  # added with Track Changes on
+    row.cells[1].text = "Inserted need"
+    table(document, [header, ["PREQ-KS-8", "Controlled", "Shall.", "R1", "F"]])
+    controlled = document.tables[1]._tbl
+    sdt, content = OxmlElement("w:sdt"), OxmlElement("w:sdtContent")
+    controlled.addprevious(sdt)
+    sdt.append(content)
+    content.append(controlled)  # requirements table inside a content control
+    document.save(tmp_path / "Kestrel PRD v1.10.docx")
+    prd(tmp_path / "Kestrel PRD v1.9.docx", ["PREQ-KS-90"])
+    prd(tmp_path / "Kestrel PRD v1.11 Redlines.DOCX", ["PREQ-KS-91"])
+    (tmp_path / "~$strel PRD v1.10.docx").write_bytes(b"owner file")
+
+    sad = Document()
+    sad.add_heading("Software Item Design", 1)
+    for item in ("UI", "Fleet Service", "Audit Store"):
+        sad.add_heading(item, 2)
+    sad.add_heading("Requirements Matrix", 1)
+    table(
+        sad,
+        [
+            ["Req. ID", "Software Items"],
+            ["PREQ-KS-1", "Fleet Service"],
+            ["PREQ-KS-2", ""],
+            ["PREQ-KS-3", "-"],
+            ["PREQ-KS-4", "Guidance Engine"],
+            ["PREQ-KS-5", "?"],
+        ],
+    )
+    sad.tables[0].rows[1].cells[1].add_paragraph("Audit Store")  # one item per line
+    sad.save(tmp_path / "Kestrel Software Architecture Document_v02.docx")
+
+    sdd = Document()
+    sdd.add_heading("Detailed Design", 1)
+    sdd.add_heading("Fleet", 2)
+    sdd.add_heading("Ks.Fleet.Api", 3)
+    sdd.add_paragraph("Preamble before the first design section.")
+    sdd.add_heading("Software Unit Description", 4)
+    sdd.add_paragraph("HTTP API.")
+    sdd.save(tmp_path / "Kestrel SDD - Fleet Service_v01.docx")
+
+    graph, summary = import_folder(tmp_path, PROFILE)
+    nodes = {a["id"]: a for a in graph["artifacts"]}
+    assert "Kestrel PRD v1.10.docx" in summary["imported_files"]
+    assert {"Kestrel PRD v1.11 Redlines.DOCX", "~$strel PRD v1.10.docx"} <= set(
+        summary["excluded_files"]
+    )
+    assert {"PREQ-KS-7", "PREQ-KS-8"} <= nodes.keys() and "PREQ-KS-90" not in nodes
+    assert summary["notes"]["documents with tracked changes (read as accepted)"] == 1
+    assert summary["notes"]["content controls read"] == 1
+    edges = {(e["src"], e["dst"]) for e in graph["links"]}
+    assert {("PREQ-KS-1", "SI-Fleet-Service"), ("PREQ-KS-1", "SI-Audit-Store")} <= edges
+    assert not [e for e in edges if e[1] == "SI-UI"]
+    assert "allocation" not in nodes["PREQ-KS-2"]["attributes"]
+    assert summary["notes"]["matrix rows without software items"] == 1
+    assert nodes["PREQ-KS-3"]["attributes"]["allocation"] == "N/A"
+    assert nodes["PREQ-KS-4"]["attributes"]["unresolved_allocations"] == ["Guidance Engine"]
+    assert nodes["PREQ-KS-5"]["attributes"]["unresolved_allocations"] == ["?"]
+    assert "" not in nodes["UNIT-Fleet.Ks.Fleet.Api"]["attributes"]["design_sections"]
+    rules = yaml.safe_load(Path("specs/rules/document_baseline.yaml").read_text())["rules"]
+    unallocated = {f["artifact_id"] for f in evaluate_rules(graph, rules) if f["rule"] == "D01"}
+    assert {"PREQ-KS-2", "PREQ-KS-4", "PREQ-KS-5"} <= unallocated
+
+
+def test_assessability_is_declared_by_sources_not_guessed_from_links(tmp_path) -> None:
+    from dhf.ingest.fixtures import ingest_fixtures
+    from dhf.trace import gaps
+
+    ado = ingest_fixtures()
+    ado["links"] = [e for e in ado["links"] if e["type"] != "verifies"]  # nothing verified
+    findings = gaps(ado)
+    srs = {a["id"] for a in ado["artifacts"] if a["type"] == "software_req"}
+    assert {f["artifact_id"] for f in findings if f["rule"] == "G01"} == srs
+    assert "G01" not in unassessable_rules(ado, gap_rules())
+    build(tmp_path)
+    baseline, _ = import_folder(tmp_path, PROFILE)
+    assert {"G01", "G04", "G08"} <= set(unassessable_rules(baseline, gap_rules()))
+    assert not [f for f in gaps(baseline) if f["rule"] in ("G01", "G04", "G08")]
+
+
+def test_external_providers_never_draft_from_company_evidence(tmp_path) -> None:
+    import pytest
+
+    from dhf.generate import generate_document
+    from dhf.llm import LLM
+
+    class Recorder:
+        calls = 0
+
+        def complete(self, *args, **kwargs):
+            Recorder.calls += 1
+            raise AssertionError("company evidence reached the provider")
+
+    (tmp_path / "docs").mkdir()
+    build(tmp_path / "docs")
+    (tmp_path / "docs" / "Test_Cases.csv").unlink()  # facts-only packs: no evidence items
+    graph, _ = import_folder(tmp_path / "docs", PROFILE)
+    llm = LLM("copilotstudio", tmp_path / "llm", Recorder())
+    with pytest.raises(ValueError, match="exclusively synthetic"):
+        generate_document("sstr", graph, {"release": "1"}, out=tmp_path / "out", llm=llm)
+    assert Recorder.calls == 0
+
+
+def test_explorer_meets_the_dom_harness_contract(tmp_path) -> None:
+    import shutil
+    import subprocess
+
+    import pytest
+
+    from dhf.ingest.fixtures import ingest_fixtures
+    from dhf.render.explorer import create_explorer
+    from dhf.trace.consistency import legacy_design
+
+    baseline = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    html = create_explorer(ingest_fixtures(), [], baselines=[baseline])
+    assert "querySelector" not in Path("specs/render/explorer.html").read_text()
+    if not shutil.which("node"):
+        pytest.skip("node is not installed; the static contract above still applies")
+    (tmp_path / "explorer.html").write_text(html)
+    check = subprocess.run(
+        ["node", "tools/check_explorer.cjs", str(tmp_path / "explorer.html")],
+        capture_output=True,
+        text=True,
+    )
+    assert check.returncode == 0, check.stdout + check.stderr

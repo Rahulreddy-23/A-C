@@ -1,7 +1,10 @@
 # Consistency checks over an imported document baseline (dhf import-docs). Deterministic.
+# `sources: [file]` limits each rule to evidence imported from documents.
 rules:
 - id: D01
   title: System requirement not allocated to any software item
+  sources:
+  - file
   types:
   - system_req
   not_attrs:
@@ -15,6 +18,8 @@ rules:
     realization.
 - id: D02
   title: Allocation names a software item the architecture does not describe
+  sources:
+  - file
   types:
   - system_req
   op: attr_present
@@ -22,6 +27,8 @@ rules:
   action: Correct the matrix entry or add the software item to the architecture.
 - id: D03
   title: Software item has no documented software units
+  sources:
+  - file
   types:
   - component
   op: missing_link
@@ -32,6 +39,8 @@ rules:
   action: Provide the detailed design for the software item or justify its absence.
 - id: D04
   title: Software unit not traced to an architecture software item
+  sources:
+  - file
   types:
   - software_unit
   op: missing_link
@@ -43,6 +52,8 @@ rules:
     or correct the item name in the design.
 - id: D05
   title: Software unit design lacks template sections
+  sources:
+  - file
   types:
   - software_unit
   op: attr_present

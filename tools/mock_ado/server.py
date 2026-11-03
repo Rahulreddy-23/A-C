@@ -8,15 +8,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from dhf.config import setting
+from dhf.ingest.ado import RECIPROCAL
 from mock_ado.state import ROOT, apply_scenario, auth_token, init, read_state, write_state
-
-RECIPROCAL = {
-    "System.LinkTypes.Hierarchy-Forward": "System.LinkTypes.Hierarchy-Reverse",
-    "System.LinkTypes.Hierarchy-Reverse": "System.LinkTypes.Hierarchy-Forward",
-    "Microsoft.VSTS.Common.TestedBy-Forward": "Microsoft.VSTS.Common.TestedBy-Reverse",
-    "Microsoft.VSTS.Common.TestedBy-Reverse": "Microsoft.VSTS.Common.TestedBy-Forward",
-    "System.LinkTypes.Related": "System.LinkTypes.Related",
-}
 
 
 class Server(ThreadingHTTPServer):
@@ -96,7 +89,7 @@ class Handler(BaseHTTPRequestHandler):
                         {"rel": RECIPROCAL[relation["rel"]], "url": f"_apis/wit/workitems/{source}"}
                     )
 
-        def item_url(item: dict, expanded: bool = False) -> dict:
+        def item_url(item: dict, expanded: bool = False, current: bool = True) -> dict:
             value = copy.deepcopy(item)
             value["url"] = f"{base}/_apis/wit/workitems/{value['id']}"
             value["_links"] = {
@@ -105,7 +98,7 @@ class Handler(BaseHTTPRequestHandler):
             known = {(r["rel"], r["url"].rsplit("/", 1)[-1]) for r in value["relations"]}
             value["relations"] += [
                 r
-                for r in incoming.get(str(value["id"]), [])
+                for r in incoming.get(str(value["id"]) if current else "", [])
                 if (r["rel"], r["url"].rsplit("/", 1)[-1]) not in known
             ]
             for relation in value["relations"]:
@@ -181,14 +174,17 @@ class Handler(BaseHTTPRequestHandler):
             if entry is None:
                 return self.respond({"message": "Work item not found"}, 404)
             expanded = query.get("$expand", [""])[0].lower() in ("relations", "all")
+            latest = entry["current"]["rev"]
             if match[2] and not match[3]:
-                return collection([item_url(v, expanded) for v in entry["history"]])
+                return collection(
+                    [item_url(v, expanded, v["rev"] == latest) for v in entry["history"]]
+                )
             value = (
                 next(v for v in entry["history"] if v["rev"] == int(match[3]))
                 if match[3]
                 else entry["current"]
             )
-            return self.respond(item_url(value, expanded))
+            return self.respond(item_url(value, expanded, value["rev"] == latest))
         if "/_workitems/edit/" in path:
             native = path.rsplit("/", 1)[1]
             entry = state["items"].get(native)
@@ -200,7 +196,11 @@ class Handler(BaseHTTPRequestHandler):
                 "<h1>"
                 + html.escape(item["fields"]["System.Title"])
                 + "</h1><pre>"
-                + html.escape(json.dumps(item_url(item, True), indent=2))
+                + html.escape(
+                    json.dumps(
+                        item_url(item, True, item["rev"] == entry["current"]["rev"]), indent=2
+                    )
+                )
                 + "</pre><h2>Revision history</h2>"
                 + "".join(f'<a href="?rev={v["rev"]}">r{v["rev"]}</a> ' for v in entry["history"]),
                 is_html=True,

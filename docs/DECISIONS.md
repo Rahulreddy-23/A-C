@@ -244,18 +244,30 @@ Baseline rules D01–D05 check internal consistency of the documents themselves:
 
 They are reported for document-sourced artifacts only. This is the "after-the-fact" baseline that continuous ADO evidence can later be compared against; it does not replace ADO ingestion.
 
-## ADR-041 — Absent link classes are "not assessable", not gaps
-2026-11-03 · Accepted
+## ADR-041 — Assessability is declared by sources, not guessed from links
+2026-11-03 · Accepted. Revised during the PR #1 review: the first version guessed from missing links and was replaced.
 
-A missing-link rule whose link class never occurs anywhere in the ingested evidence cannot distinguish "nothing is linked" from "this source cannot carry the link" (documents have no ADO Tested By links). Listing every artifact as a gap produced thousands of misleading findings on the first real import. `unassessable_rules` names such rules. Gap Markdown, CLI totals and the explorer report them once as not assessable, and coverage shows "not assessable" instead of 0%. Gap JSON keeps every raw finding for audit. On the synthetic project every rule remains assessable, so demo metrics are unchanged.
+A missing-link rule cannot be evaluated against evidence whose source can never hold that link. Documents carry no ADO Tested By or Parent links, and listing every imported requirement as a gap produced thousands of misleading findings. The first version inferred "not assessable" from the absence of any link of the class in the graph. The review showed why that is wrong: an ADO project with nothing yet linked, which is the worst real gap, would then also read "not assessable".
 
+Sources therefore declare what they can carry. The document-import profile states `provides_links: [allocated_to]` and stamps imported artifacts with `link_classes`. `evaluate_rules` skips a missing-link subject whose `link_classes` exclude the rule's link, and `unassessable_rules` names a rule only when every one of its subjects is skipped. ADO, git and fixture artifacts declare no classes and are always assessed.
+
+Because this happens inside the engine, every consumer agrees:
+- `dhf gaps` and its JSON;
+- the explorer;
+- the audit pack's gap report;
+- the SSTR verification-gaps and SAD design-gaps sections;
+- release-readiness facts, the DRR and PR descriptions.
+
+Rule files may also scope themselves by source (`sources: [file]` on the document-baseline rules), replacing a filter that lived in the explorer.
 
 ## ADR-042 — Template sets for the owner's document structure
-2026-11-03 · Accepted (R-062)
+2026-11-03 · Accepted (R-062). Revised during the PR #1 review: sets became overlays instead of copied specs.
 
-Reviewers judge drafts against the documents they already use. `DHF_TEMPLATE_SET=<name>` selects `specs/documents/<name>/<doc>.yaml` when it exists and falls back to the default spec otherwise. The `bd` set re-arranges the SAD, SDD and SSTR under the owner's headings, grouping and order.
-- **Shared sections are copied unchanged.** They keep the same IDs, queries, prompts, allowed kinds and rules, so validation, impact and selective regeneration behave identically and their content matches the default drafts.
-- **Owner-only headings are human sections.** These are headings whose content needs records outside the evidence graph (readiness reviews, tools analysis, data and UI design, version history).
-- **Repeated groups can nest.** They take `heading_level` and `group_level` (defaults 3 and 2 preserve existing output).
-- **The manifest records the template path, and regeneration reloads it.** A document keeps its structure even if the environment's set changes, and impact detection hashes the recorded template. Recorded paths and set names are validated against the specs folder.
+Reviewers judge drafts against the documents they already use. `DHF_TEMPLATE_SET=<name>` selects `specs/documents/<name>/<doc>.yaml` and falls back to the default spec.
 
+A set is an overlay (`extends: <doc>`):
+- **Shared sections are referenced by ID.** They may change only their title, heading level and group heading; `load_spec` rejects any other key. Queries, prompts, allowed kinds and validators are therefore the defaults by construction and cannot drift.
+- **Headings only the owner's document has are human sections.** These are headings whose content needs records outside the evidence graph.
+- **Group headings render one level above their section.** No separate `group_level` setting is needed.
+
+Each manifest records the template path, and impact and regeneration reload it. A manifest written before template sets has no path and keeps the default spec. The template hash covers the overlay together with its base, so a change to a shared base section still marks overlay documents stale. Recorded paths and set names are validated against the specs folder.

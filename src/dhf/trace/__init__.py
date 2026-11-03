@@ -112,20 +112,38 @@ def coverage(graph: dict, release: str = "1.1") -> dict:
     }
 
 
+def rule_subjects(rule: dict, artifacts: list[dict]) -> list[dict]:
+    """Artifacts a rule inspects: its types, attribute filters and optional source systems."""
+    return [
+        a
+        for a in sorted(artifacts, key=lambda a: a["id"])
+        if a["type"] in rule["types"]
+        and all(a["attributes"].get(k) == v for k, v in rule.get("attrs", {}).items())
+        and not any(a["attributes"].get(k) == v for k, v in rule.get("not_attrs", {}).items())
+        and (not rule.get("sources") or a["source"]["system"] in rule["sources"])
+    ]
+
+
+def can_carry(artifact: dict, link: str) -> bool:
+    """Whether the artifact's source can hold `link` at all.
+
+    Sources that declare their link classes (document baselines) cannot fail rules on any
+    other link; ADO, git and fixture evidence can carry every class, so an absent link there
+    is a real gap, even when nothing at all is linked."""
+    classes = artifact["attributes"].get("link_classes")
+    return classes is None or link in classes
+
+
 def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
     nodes = {a["id"]: a for a in graph["artifacts"]}
     edges = confirmed_links(graph)
     findings = []
     for rule in rules:
-        for a in sorted(nodes.values(), key=lambda a: a["id"]):
-            if a["type"] not in rule["types"]:
-                continue
+        for a in rule_subjects(rule, graph["artifacts"]):
             attrs = a["attributes"]
-            if any(attrs.get(k) != v for k, v in rule.get("attrs", {}).items()):
-                continue
-            if any(attrs.get(k) == v for k, v in rule.get("not_attrs", {}).items()):
-                continue
             operation = rule["op"]
+            if operation == "missing_link" and not can_carry(a, rule["link"]):
+                continue  # not assessable for this artifact's source; never a gap
             if operation == "missing_link":
                 anchor, peer = ("dst", "src") if rule["direction"] == "in" else ("src", "dst")
                 flagged = not any(
@@ -153,6 +171,7 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
                     if r["type"] == "test_result"
                     and r["attributes"]["test_case"] == a["id"]
                     and r["attributes"]["outcome"] == "Passed"
+                    and r["attributes"].get("completed_at")  # undated results prove no timing
                 ]
                 passed.sort(key=lambda r: r["attributes"].get("completed_at", ""))
                 reqs = [
@@ -192,25 +211,17 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
 
 
 def unassessable_rules(graph: dict, rules: list[dict]) -> list[str]:
-    """Missing-link rules whose link class never occurs in the graph.
+    """Missing-link rules none of whose subjects come from a source able to carry the link.
 
-    Either the ingested sources cannot carry those links (e.g. documents without ADO
-    Tested By links) or nothing is linked at all; reports must say which, not list N gaps."""
-    types = {a["id"]: a["type"] for a in graph["artifacts"]}
-    edges = confirmed_links(graph)
-    result = []
-    for rule in rules:
-        if rule["op"] != "missing_link":
-            continue
-        own, peer = ("dst", "src") if rule["direction"] == "in" else ("src", "dst")
-        if not any(
-            e["type"] == rule["link"]
-            and types[e[own]] in rule["types"]
-            and types[e[peer]] in rule["peer_types"]
-            for e in edges
-        ):
-            result.append(rule["id"])
-    return result
+    Decided by what each source declares (document imports list their link classes), not by
+    which links happen to exist, so 'nothing is linked' in ADO stays a reported gap."""
+    return [
+        rule["id"]
+        for rule in rules
+        if rule["op"] == "missing_link"
+        and (subjects := rule_subjects(rule, graph["artifacts"]))
+        and not any(can_carry(a, rule["link"]) for a in subjects)
+    ]
 
 
 def gaps(graph: dict, rules_path: Path = Path("specs/rules/gaps.yaml")) -> list[dict]:

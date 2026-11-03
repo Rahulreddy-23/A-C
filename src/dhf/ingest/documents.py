@@ -17,6 +17,8 @@ import yaml
 from dhf.models.evidence import validate_graph
 
 BODY_LIMIT = 6000
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+VERSION = re.compile(r"(?:#|\brev(?:ision)?\.?\s*|_v|\bv)(\d+(?:\.\d+)*)", re.I)
 
 
 def clean(text: str) -> str:
@@ -24,7 +26,7 @@ def clean(text: str) -> str:
 
 
 def norm(text: str) -> str:
-    """Comparison key for headers, headings and item names."""
+    """Comparison key for headers and headings."""
     return re.sub(r"[^a-z0-9]+", "", (text or "").lower())
 
 
@@ -32,33 +34,82 @@ def slug(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9.]+", "-", text.strip()).strip("-")
 
 
-def docx_blocks(path: Path) -> list[dict]:
-    """Body order: headings with level, paragraphs, tables as rows of cell text."""
+def matches(name: str, pattern: str) -> bool:
+    """File globs ignore case on every platform."""
+    return fnmatch.fnmatchcase(name.lower(), pattern.lower())
+
+
+def visible_text(element) -> str:
+    """Run text as Word shows it with tracked changes accepted: insertions kept,
+    deletions and moved-away text dropped, line breaks kept as newlines."""
+    parts: list[str] = []
+
+    def walk(node) -> None:
+        for child in node:
+            tag = child.tag
+            if tag in (W + "del", W + "moveFrom"):
+                continue
+            if tag == W + "t" and child.text:
+                parts.append(child.text)
+            elif tag == W + "tab":
+                parts.append(" ")
+            elif tag in (W + "br", W + "cr"):
+                parts.append("\n")
+            else:
+                walk(child)
+
+    walk(element)
+    return "".join(parts)
+
+
+def docx_blocks(path: Path) -> tuple[list[dict], Counter]:
+    """Body order: headings with level, paragraphs, tables as rows of cell text.
+
+    Content controls are entered; cell text keeps one line per paragraph or break."""
     from docx import Document
     from docx.table import Table
-    from docx.text.paragraph import Paragraph
 
     document = Document(str(path))
+    styles = {s.style_id: s.name or "" for s in document.styles if s.style_id}
+    body = document.element.body
+    notes: Counter = Counter()
+    if next(body.iter(W + "ins", W + "del"), None) is not None:
+        notes["documents with tracked changes (read as accepted)"] += 1
+
+    def children(container):
+        for child in container.iterchildren():
+            if child.tag == W + "sdt":
+                notes["content controls read"] += 1
+                content = child.find(W + "sdtContent")
+                if content is not None:
+                    yield from children(content)
+            elif child.tag in (W + "p", W + "tbl"):
+                yield child
+
+    def cell_text(tc) -> str:
+        lines = (clean(line) for p in tc.iter(W + "p") for line in visible_text(p).split("\n"))
+        return "\n".join(line for line in lines if line)
+
     blocks: list[dict] = []
-    for child in document.element.body.iterchildren():
-        tag = child.tag.rsplit("}", 1)[-1]
-        if tag == "p":
-            paragraph = Paragraph(child, document)
-            text = clean(paragraph.text)
-            style = (paragraph.style.name if paragraph.style is not None else "") or ""
-            level = re.match(r"(?i)heading\s*(\d)", style)
+    for child in children(body):
+        if child.tag == W + "p":
+            text = clean(visible_text(child))
+            style = child.find(f"{W}pPr/{W}pStyle")
+            name = styles.get(style.get(W + "val"), "") if style is not None else ""
+            level = re.match(r"(?i)heading\s*(\d)", name)
             if text and level:
                 blocks.append({"kind": "heading", "level": int(level[1]), "text": text})
             elif text:
                 blocks.append({"kind": "para", "text": text})
-        elif tag == "tbl":
+        else:
             try:
-                rows = [[clean(c.text) for c in row.cells] for row in Table(child, document).rows]
+                table = Table(child, document)
+                rows = [[cell_text(c._element) for c in r.cells] for r in table.rows]
             except (IndexError, ValueError):  # irregular grids
                 blocks.append({"kind": "table", "rows": [], "unreadable": True})
                 continue
             blocks.append({"kind": "table", "rows": rows})
-    return blocks
+    return blocks, notes
 
 
 def heading_paths(blocks: list[dict]) -> list[str]:
@@ -74,7 +125,9 @@ def heading_paths(blocks: list[dict]) -> list[str]:
 
 def block_text(block: dict) -> str:
     if block["kind"] == "table":
-        return "\n".join(" | ".join(c for c in row if c) for row in block["rows"] if any(row))
+        return "\n".join(
+            " | ".join(c.replace("\n", "; ") for c in row if c) for row in block["rows"] if any(row)
+        )
     return block["text"]
 
 
@@ -90,13 +143,17 @@ def cells(row: list[str], index: dict[str, int]) -> dict[str, str]:
     return {name: row[i] if i < len(row) else "" for name, i in index.items()}
 
 
+def one_line(text: str) -> str:
+    return clean(text.replace("\n", " "))
+
+
 def artifact(
     kind: str, ident: str, title: str, body: str, attrs: dict, source: dict, anchor: str = ""
 ) -> dict:
     return {
         "id": ident,
         "type": kind,
-        "title": title or ident,
+        "title": one_line(title) or ident,
         "body": body[:BODY_LIMIT],
         "attributes": {"synthetic": False, "document": source["document"], **attrs},
         "source": {
@@ -126,12 +183,15 @@ def extract_document(blocks: list[dict], rule: dict, source: dict) -> dict:
                 continue
             for row in block["rows"][1:]:
                 cell = cells(row, col)
-                if cell.get(spec["id"]):
-                    attrs = {k: cell.get(v, "") for k, v in spec.get("attributes", {}).items()}
+                ident = one_line(cell.get(spec["id"], ""))
+                if ident:
+                    attrs = {
+                        k: one_line(cell.get(v, "")) for k, v in spec.get("attributes", {}).items()
+                    }
                     found.append(
                         artifact(
                             spec["type"],
-                            cell[spec["id"]],
+                            ident,
                             cell.get(spec["title"], ""),
                             cell.get(spec["body"], ""),
                             {"section": paths[index], **attrs},
@@ -143,9 +203,11 @@ def extract_document(blocks: list[dict], rule: dict, source: dict) -> dict:
         header = spec["header"]
         for index, block in tables:
             col = header_index(block["rows"][0], header, header)
-            if not col or len(block["rows"]) < 2 or not cells(block["rows"][1], col)[spec["id"]]:
+            if not col or len(block["rows"]) < 2:
                 continue
-            cell = cells(block["rows"][1], col)
+            cell = {k: one_line(v) for k, v in cells(block["rows"][1], col).items()}
+            if not cell[spec["id"]]:
+                continue
             title, body = "", []
             for nxt in blocks[index + 1 :]:
                 if nxt["kind"] == "heading" or (
@@ -199,18 +261,17 @@ def extract_document(blocks: list[dict], rule: dict, source: dict) -> dict:
             )
 
     for spec in rule.get("matrices", []):
-        names = [spec["src"], spec["dst"]]
         for _, block in tables:
-            col = header_index(block["rows"][0], names, names)
-            if not col:
+            col = header_index(block["rows"][0], spec["header"], [spec["src"], spec["dst"]])
+            if not col or len(col) < 2:
                 continue
             for row in block["rows"][1:]:
                 cell = cells(row, col)
-                if cell[spec["src"]]:
+                if one_line(cell[spec["src"]]):
                     pending.append(
                         {
                             "link": spec["link"],
-                            "src_id": cell[spec["src"]],
+                            "src_id": one_line(cell[spec["src"]]),
                             "names": cell[spec["dst"]],
                             "none_values": spec.get("none_values", []),
                             "document": source["document"],
@@ -234,15 +295,15 @@ def extract_document(blocks: list[dict], rule: dict, source: dict) -> dict:
                 "",
             )
             parts: dict[str, list[str]] = {}
-            name = ""
+            name = None  # text before the first design section belongs to no section
             for nxt in blocks[index + 1 :]:
                 if nxt["kind"] == "heading" and nxt["level"] <= block["level"]:
                     break
                 if nxt["kind"] == "heading" and nxt["level"] == block["level"] + 1:
                     name = nxt["text"]
                     parts.setdefault(name, [])
-                elif nxt["kind"] != "heading":
-                    parts.setdefault(name, []).append(block_text(nxt))
+                elif nxt["kind"] != "heading" and name is not None:
+                    parts[name].append(block_text(nxt))
             words = {k: sum(len(t.split()) for t in v) for k, v in parts.items()}
             missing = [
                 s
@@ -269,17 +330,39 @@ def extract_document(blocks: list[dict], rule: dict, source: dict) -> dict:
     return {"artifacts": found, "pending_links": pending, "report": dict(report)}
 
 
+def name_tokens(name: str) -> tuple[str, ...]:
+    """Words of a software-item name; a plural 's' and a trailing 'Service' are folded."""
+    words = [
+        w[:-1] if len(w) > 3 and w.endswith("s") else w
+        for w in re.findall(r"[a-z0-9]+", name.lower())
+    ]
+    if len(words) > 1 and words[-1] == "service":
+        words.pop()
+    return tuple(words)
+
+
 def component_resolver(artifacts: list[dict]):
-    """Name → component ID: exact, then without a 'Service(s)' suffix, then a unique near match."""
-    components = {norm(a["title"]): a["id"] for a in artifacts if a["type"] == "component"}
+    """Name → component ID: the same words, else one component whose words contain (or are
+    contained in) the name as a run of at least two whole words. Never substrings."""
+    components: dict[tuple[str, ...], str] = {}
+    for a in artifacts:
+        if a["type"] == "component":
+            components.setdefault(name_tokens(a["title"]), a["id"])
+
+    def within(outer: tuple[str, ...], inner: tuple[str, ...]) -> bool:
+        return any(outer[i : i + len(inner)] == inner for i in range(len(outer) - len(inner) + 1))
 
     def resolve(name: str) -> str | None:
-        if norm(name) in components:
-            return components[norm(name)]
-        key = norm(re.sub(r"(?i)\s*\bservices?\s*$", "", name.strip()))
+        key = name_tokens(name)
+        if not key:
+            return None
         if key in components:
             return components[key]
-        near = {v for k, v in components.items() if key and (key in k or k in key)}
+        near = {
+            cid
+            for words, cid in components.items()
+            if min(len(words), len(key)) >= 2 and (within(words, key) or within(key, words))
+        }
         return near.pop() if len(near) == 1 else None
 
     return resolve
@@ -297,8 +380,11 @@ def resolve_links(artifacts: list[dict], pending: list[dict]) -> tuple[list[dict
             report["matrix rows for unknown requirements"] += 1
             continue
         names = [n.strip() for n in re.split(r"[,;\n]", row["names"]) if n.strip()]
-        none = {norm(v) for v in row["none_values"]}
-        if all(norm(n) in none for n in names):
+        if not names:  # an empty cell states no allocation; it is not an explicit N/A
+            report["matrix rows without software items"] += 1
+            continue
+        none = {v.strip().upper() for v in row["none_values"]}
+        if all(n.rstrip(".").strip().upper() in none for n in names):
             source["attributes"]["allocation"] = "N/A"
             report["requirements allocated N/A"] += 1
             continue
@@ -329,8 +415,10 @@ def edge(src: str, dst: str, kind: str, document: str) -> dict:
     }
 
 
-def version_key(name: str) -> tuple[int, ...]:
-    return tuple(int(n) for n in re.findall(r"(?:#|_v|\bv)(\d+)", name, re.I)) or (0,)
+def version_key(name: str) -> tuple[tuple[int, ...], ...]:
+    """Issue markers in a file name ('#11', 'v1.10', '_v06', 'Rev 9') as comparable numbers."""
+    found = VERSION.findall(name)
+    return tuple(tuple(int(p) for p in v.split(".")) for v in found) or ((0,),)
 
 
 def csv_artifacts(rows: list[dict], spec: dict, source: dict) -> list[dict]:
@@ -364,9 +452,8 @@ def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
     rules = yaml.safe_load(profile.read_text())
     retrieved = datetime.now(UTC).isoformat()
     files = sorted(p for p in folder.iterdir() if p.is_file())
-    excluded = {
-        p for p in files if any(fnmatch.fnmatch(p.name, g) for g in rules.get("exclude", []))
-    }
+    patterns = rules.get("exclude", [])
+    excluded = {p for p in files if any(matches(p.name, g) for g in patterns)}
     report: Counter = Counter()
     artifacts: list[dict] = []
     pending: list[dict] = []
@@ -381,24 +468,27 @@ def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
         }
 
     for rule in rules.get("documents", []):
-        matches = [p for p in files if fnmatch.fnmatch(p.name, rule["glob"]) and p not in excluded]
-        if rule.get("pick", "all") == "latest" and len(matches) > 1:
-            matches.sort(key=lambda p: version_key(p.name))
-            report[f"{rule['name']}: older issues skipped"] += len(matches) - 1
-            matches = matches[-1:]
-        for path in matches:
+        found = [p for p in files if matches(p.name, rule["glob"]) and p not in excluded]
+        if rule.get("pick", "all") == "latest" and len(found) > 1:
+            found.sort(key=lambda p: version_key(p.name))
+            report[f"{rule['name']}: older issues skipped"] += len(found) - 1
+            if version_key(found[-1].name) == version_key(found[-2].name):
+                report[f"{rule['name']}: latest issue ambiguous (took the last by name)"] += 1
+            found = found[-1:]
+        for path in found:
             try:
-                blocks = docx_blocks(path)
+                blocks, notes = docx_blocks(path)
             except Exception:  # encrypted or not a Word package
                 report["unreadable documents"] += 1
                 continue
             result = extract_document(blocks, rule, source(path))
+            report.update(notes)
             report.update(result["report"])
             artifacts.extend(result["artifacts"])
             pending.extend(result["pending_links"])
             used.append(path.name)
     for spec in rules.get("csv", []):
-        for path in (p for p in files if fnmatch.fnmatch(p.name, spec["glob"])):
+        for path in (p for p in files if matches(p.name, spec["glob"]) and p not in excluded):
             with path.open(encoding="utf-8-sig", newline="") as handle:
                 rows = list(csv.DictReader(handle))
             dropped = set(spec.get("drop", []))
@@ -407,9 +497,13 @@ def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
             artifacts.extend(csv_artifacts(rows, spec, source(path)))
             used.append(path.name)
 
+    # Documents carry only the link classes the profile extracts; rules that need other
+    # links (ADO Tested By, Parent/Child) are not assessable for these artifacts.
+    provides = list(rules.get("provides_links", []))
     unique: dict[str, dict] = {}
     duplicates = []
     for a in artifacts:
+        a["attributes"]["link_classes"] = provides
         if a["id"] in unique:
             duplicates.append(f"{a['id']} ({a['attributes']['document']})")
         else:

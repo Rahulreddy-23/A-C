@@ -8,7 +8,7 @@ from pathlib import Path, PurePosixPath
 
 from dhf.evaluation import clause_coverage, clause_markdown
 from dhf.models.evidence import validate_graph
-from dhf.trace import coverage, gaps, rtm
+from dhf.trace import coverage, gaps, rtm, unassessable_rules
 from dhf.trace.reports import gap_rules, gaps_markdown, rtm_markdown
 
 
@@ -70,18 +70,28 @@ def audit_payload(
 
     add("trace/explorer.html", create_explorer(current, documents))
     add("trace/rtm.json", json.dumps(rtm(current, release), indent=2))
+    findings, blind = gaps(current), unassessable_rules(current, gap_rules())
     add(
         "trace/gaps.json",
-        json.dumps({"findings": gaps(current), "coverage": coverage(current, release)}, indent=2),
+        json.dumps(
+            {"findings": findings, "coverage": coverage(current, release)}
+            | ({"not_assessable": blind} if blind else {}),
+            indent=2,
+        ),
     )
     add("trace/rtm.md", rtm_markdown(current, rtm(current, release)))
-    add("trace/gaps.md", gaps_markdown(gaps(current), gap_rules()))
+    add("trace/gaps.md", gaps_markdown(findings, gap_rules(), blind))
     add("clause_coverage.md", clause_markdown(clause_coverage(documents)))
     add(
         "README.md",
         (
-            "# Audit evidence draft\n\nSynthetic evidence and document drafts. "
-            "No product approval, risk acceptance or e-signature is implied. "
+            "# Audit evidence draft\n\n"
+            + (
+                "Synthetic evidence and document drafts. "
+                if all(a["attributes"].get("synthetic") is True for a in current["artifacts"])
+                else "Confidential company evidence and document drafts; keep local. "
+            )
+            + "No product approval, risk acceptance or e-signature is implied. "
             "Verify every checksum before use. "
             "Snapshots retain prior revisions used by manifests.\n"
         ),

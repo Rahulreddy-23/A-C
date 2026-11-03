@@ -4,8 +4,12 @@ import re
 from decimal import Decimal
 
 ID_PATTERN = re.compile(
-    r"\b(?:(?:UN|SYS|SRS|HAZ|RC|COMP|TC|BUG|PR|RUN|RES|ACT|REV|ADR|SOUP)-"
-    r"\d[\w.-]*|UNIT-[a-z_]+)\b"
+    r"\b(?:(?:UN|SYS|SRS|HAZ|RC|COMP|TC|BUG|PR|RUN|RES|ACT|REV|ADR|SOUP|ADO)-"
+    r"\d[\w.-]*|UNIT-[a-z_]+"
+    # Real-project IDs: document IDs (SPEC-KS-4303, PREQ-KS-1) and imported architecture
+    # items and units (SI-Fleet-Service, UNIT-Fleet.Ks.Fleet.Core).
+    r"|[A-Z][A-Z0-9]+-[A-Z][A-Z0-9]+-\d+"
+    r"|(?:SI|UNIT)-[A-Z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*)\b"
 )
 NUMBER_PATTERN = re.compile(r"(?<![A-Za-z0-9_.])[-+]?\d+(?:\.\d+)?(?![A-Za-z0-9_]|\.\d)")
 

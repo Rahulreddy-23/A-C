@@ -12,8 +12,9 @@ from dhf.generate import (
     expand_sections,
     generate_section,
     load_spec,
+    manifest_template,
     sha,
-    template_path,
+    template_digest,
 )
 from dhf.graph.queries import query
 from dhf.llm import LLM, canonical
@@ -44,9 +45,7 @@ def impact(graph: dict, manifest: dict, previous: dict | None = None) -> dict:
                 neighbors.setdefault(target, set()).add(source)
     specs = {
         s["id"]: s
-        for s in expand_sections(
-            load_spec(manifest["doc_id"], manifest["template_spec"].get("path")), graph
-        )
+        for s in expand_sections(load_spec(manifest["doc_id"], manifest_template(manifest)), graph)
     }
     sections = []
     for section in manifest["sections"]:
@@ -148,7 +147,7 @@ def regenerate(
         raise ValueError("Missing section boundaries; repair edited Markdown before regeneration")
     sections = []
     for definition in expand_sections(
-        load_spec(manifest["doc_id"], manifest["template_spec"].get("path")), graph
+        load_spec(manifest["doc_id"], manifest_template(manifest)), graph
     ):
         id = definition["id"]
         if id in stale or id not in old:
@@ -162,12 +161,8 @@ def regenerate(
         **manifest,
         "doc_version": manifest["doc_version"] + 1,
         "generated_at": datetime.now(UTC).isoformat(),
-        "template": template_path(
-            manifest["doc_id"], manifest["template_spec"].get("path")
-        ).as_posix(),
-        "template_sha256": sha(
-            template_path(manifest["doc_id"], manifest["template_spec"].get("path")).read_text()
-        ),
+        "template": manifest_template(manifest),
+        "template_sha256": template_digest(manifest_template(manifest)),
         "llm_cost_usd": 0 if llm.provider == "copilotstudio" else llm.run_spend - cost,
         **({"copilot_credits": llm.run_spend - cost} if llm.provider == "copilotstudio" else {}),
         "telemetry": {
@@ -177,7 +172,7 @@ def regenerate(
         },
     }
     result = assemble(
-        load_spec(manifest["doc_id"], manifest["template_spec"].get("path")),
+        load_spec(manifest["doc_id"], manifest_template(manifest)),
         graph,
         manifest["params"],
         sections,

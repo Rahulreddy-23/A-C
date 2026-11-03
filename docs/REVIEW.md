@@ -2,6 +2,70 @@
 
 Written by Claude. Since 2026-11-03 Claude is engineer as well as PM and reviewer (AGENTS.md); Codex reads this file at the start of every milestone if re-engaged.
 
+## PR #1 — fresh-perspective review (2026-11-03)
+
+**How it was reviewed:**
+- Nine independent reviewers, one per angle: line-by-line, removed behaviour, cross-file callers, Python pitfalls, guard routing, reuse, simplification, efficiency and altitude.
+- About 45 deduplicated candidates.
+- One independent verifier per candidate, quoting the triggering line or refuting it; most confirmations include a reproduction script.
+- A final gap sweep of the committed head.
+- Refuted: the document-rule scoping (already guarded) and the seeder ignoring `ADO_READ_ONLY` (by design: it is a separate tool for writing synthetic data).
+
+**Fixed on `claude/m17-real-data`:**
+
+*Read-only and data safety*
+- `dhf baseline` pushed tags in read-only mode. Every docs push now goes through `DocsReview.push`, and the git channel itself refuses pushes to read-only organizations. A failed tag push deletes the local tag.
+- git ignores configured credential helpers (`-c credential.helper=`), so a stored write-capable credential is never used and the PAT is never saved to a keychain.
+- The synthetic-only LLM guard missed packs with no evidence items. It now checks the whole graph for generation, regeneration, `copilot-request` and the support verifier.
+- The synthetic tag now counts only when the mapping names one explicitly.
+
+*Assessability*
+- "Not assessable" is now declared by sources (`provides_links` / `link_classes`) inside the rule engine. An ADO project with nothing linked reports every gap.
+- All gap consumers now agree: the CLI, explorer, audit pack, generation facts, DRR and PR bodies (ADR-041 revised).
+
+*ADO ingest*
+- Seed lines accept every URL form, and a scope whose seeds yield nothing is an error instead of a whole-project read.
+- Seeded scopes read runs only for `test_plans`; other scopes read every run.
+- Out-of-scope code links are filtered.
+- Results without a test case are counted, not a crash.
+- Duplicate document IDs become `ADO-<id>` and are reported.
+- Revisions are fetched only for requirements.
+- `discover` accepts minimal mapping profiles.
+- One reciprocal-link map is shared with the mock.
+- `*.localhost` no longer disables read-only mode.
+
+*Document import*
+- Tracked insertions are read as accepted; deletions are dropped.
+- Content controls are read.
+- Cells keep one line per paragraph, so one-item-per-line matrices split.
+- Name matching uses whole words, never substrings.
+- Blank or punctuation-only cells are not "N/A".
+- Globs ignore case, and Office lock files are excluded.
+- Dotted versions and "Rev N" order correctly.
+- The matrix `header` is honoured.
+- Preamble text no longer creates an empty design section.
+
+*Text, IDs and templates*
+- Test steps are decoded once, so literal `<…>` text survives.
+- HTML with omitted `</td>`/`</tr>`, nested tables and block-level `<li>` content keeps its text.
+- The ID grammar covers real shapes (`PREQ-KS-1670`, `SPEC-…`, `SI-…`, `UNIT-Item.Unit`, `ADO-n`), so provenance links and the invented-ID check work for them.
+- Template sets are overlays that may only re-present shared sections (ADR-042 revised).
+- Manifests without a recorded template keep the default.
+- Overlay hashes include their base.
+
+*Explorer, audit pack and docs*
+- Element IDs instead of `querySelector`, which the explorer harness requires.
+- Audit README and diagram labels follow the evidence (synthetic or confidential) and the product name.
+- The docs clone mirrors remote tags.
+- The watch test asserts the interval and the cycle order.
+- The onboarding guide gives the right `explore` option and states the SAD/SDD limit.
+
+**Not changed:**
+- Merged-cell (vMerge) table reading is still quadratic. It is noticeable only for very large merged tables.
+- `extract_document` was not split into smaller functions.
+- No CLI report-writing helper was added.
+- SAD/SDD drafting from document baselines alone is not supported: they need code-derived architecture (R-061). This is now documented rather than half-supported.
+
 ## M17 — Real-data readiness (owner dataset trial, 2026-11-03)
 
 The owner supplied the hackathon dataset (`Hackathon_2026/`, gitignored, company data) and a read-only PAT for the real project. Dataset-specific results stay local in `out/real-docs/` and are not quoted here.

@@ -170,7 +170,8 @@ def test_seed_admin_and_reset_contract(ado_server) -> None:
         base = f"http://127.0.0.1:{ado_server.server_port}"
         assert c.get(base + "/_mock/state").status_code == 200
         assert c.post(base + "/_mock/apply-scenario/change_1").status_code == 200
-        assert c.post(base + "/_mock/reset").status_code == 200
+        # Reset rebuilds every mock repository: well over httpx's 5 s default on Windows git.
+        assert c.post(base + "/_mock/reset", timeout=120).status_code == 200
         assert len(c.get(base + "/_mock/state").json()["runs"]) == 2
 
 

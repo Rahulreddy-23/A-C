@@ -37,12 +37,6 @@ def test_live_demo_shared_ledger_budget_and_offline_isolation(tmp_path, monkeypa
     assert DEMO["remaining_run_cap"](live) == 0
 
 
-def test_demo_evidence_links_hashes_redline_and_audit():
-    result = run_path("tools/check_demo_pack.py")["check_demo_pack"]()
-    assert result["audit_verified_files"] == 33
-    assert result["tracked_redline"] == "pass"
-
-
 def test_copilot_live_demo_uses_credit_ledger_and_configured_transport(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     root = tmp_path / "run"

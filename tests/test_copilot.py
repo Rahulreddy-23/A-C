@@ -304,7 +304,7 @@ def test_day1_sample_is_exact_preview_and_passes_reference_validator(tmp_path):
         chunks[0],
         prompt["max_output_tokens"],
     )
-    root = Path("port/copilot_studio/day1/samples")
+    root = Path("tests/fixtures")
     assert request == json.loads((root / "copilot_request.json").read_text())
     response = json.loads((root / "copilot_response.json").read_text())
     assert response["request_id"] == request["request_id"]
@@ -332,7 +332,7 @@ def test_copilot_request_cli_is_read_only(tmp_path, monkeypatch):
     )
     assert output.exit_code == 0, output.output
     assert json.loads(output.output) == json.loads(
-        Path("port/copilot_studio/day1/samples/copilot_request.json").read_text()
+        Path("tests/fixtures/copilot_request.json").read_text()
     )
     assert not (tmp_path / "llm/ledger.json").exists()
 

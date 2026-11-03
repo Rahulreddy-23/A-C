@@ -58,7 +58,6 @@ specs/
 data/synthetic/      synthetic dataset, answer key, change scenarios
 tools/mock_ado/      local ADO REST mock: state, git-backed repos, HTML pages, scenarios (dev + demo)
 tools/seed_ado/      optional real-org seeder (M11)
-port/copilot_studio/ Copilot Studio port pack
 eval/                golden outputs, metrics harness
 docs/                BRIEF.md, DECISIONS.md
 out/                 generated artifacts (gitignored)

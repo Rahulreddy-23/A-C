@@ -2,7 +2,14 @@ name: checks
 on: [push, pull_request]
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      DHF_PROVIDER: mock
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -10,8 +17,12 @@ jobs:
           python-version: '3.12'
       - run: uv sync --locked
       - run: uv run pytest
-        env:
-          DHF_PROVIDER: mock
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run dhf --help
+      # Later checks still run after a failure, so one run reports every problem.
+      - if: ${{ !cancelled() }}
+        run: uv run ruff check .
+      - if: ${{ !cancelled() }}
+        run: uv run ruff format --check .
+      - if: ${{ !cancelled() }}
+        run: uv run dhf --help
+      - if: ${{ !cancelled() }}
+        run: uv run python tools/demo.py

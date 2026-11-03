@@ -115,14 +115,16 @@ class CopilotStudioAdapter:
         request_id = request["request_id"]
         target = outgoing / (request_id + ".json")
         temp = outgoing / (request_id + ".tmp")
-        temp.write_text(json.dumps(request, sort_keys=True, ensure_ascii=False))
+        temp.write_text(
+            json.dumps(request, sort_keys=True, ensure_ascii=False), encoding="utf-8", newline="\n"
+        )
         temp.replace(target)
         response = incoming / (request_id + ".json")
         deadline = time.monotonic() + float(setting("DHF_COPILOT_TIMEOUT_S", "120"))
         while time.monotonic() < deadline:
             if response.exists():
                 try:
-                    return json.loads(response.read_text())
+                    return json.loads(response.read_text(encoding="utf-8"))
                 except (ValueError, OSError):
                     raise DraftingUnavailable("unparseable", "copilotstudio") from None
             time.sleep(0.2)

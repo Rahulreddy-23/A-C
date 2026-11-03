@@ -6,7 +6,7 @@ import yaml
 
 
 def validate_dataset() -> dict:
-    data = yaml.safe_load(Path("data/synthetic/evidence.yaml").read_text())
+    data = yaml.safe_load(Path("data/synthetic/evidence.yaml").read_text(encoding="utf-8"))
     nodes = {a["id"]: a for a in data["artifacts"]}
     assert len(nodes) == len(data["artifacts"])
     assert all(e["src"] in nodes and e["dst"] in nodes for e in data["links"])
@@ -62,7 +62,7 @@ def validate_dataset() -> dict:
             latest = max(results, key=lambda a: a["attributes"]["completed_at"])
             if latest["attributes"]["completed_at"] < req["attributes"].get("changed_at", ""):
                 observed["G11"].add(e["src"])
-    key = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text())
+    key = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text(encoding="utf-8"))
     for rule, ids in observed.items():
         assert ids == set(key[rule]), (rule, sorted(ids), key[rule])
     return {

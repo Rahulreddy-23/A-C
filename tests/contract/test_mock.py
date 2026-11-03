@@ -12,7 +12,7 @@ def client(server, token: str = "mock-app-token") -> httpx.Client:
 
 
 def test_dataset_links_counts_and_history() -> None:
-    data = yaml.safe_load(Path("data/synthetic/evidence.yaml").read_text())
+    data = yaml.safe_load(Path("data/synthetic/evidence.yaml").read_text(encoding="utf-8"))
     ids = [a["id"] for a in data["artifacts"]]
     assert len(ids) == len(set(ids)) == 248
     assert all(e["src"] in ids and e["dst"] in ids for e in data["links"])
@@ -28,8 +28,8 @@ def test_dataset_links_counts_and_history() -> None:
     ]:
         assert sum(a["type"] == typ for a in data["artifacts"]) == count
     assert all(a["attributes"]["synthetic"] for a in data["artifacts"])
-    assert not any("/_mock/" in p.read_text() for p in Path("src").rglob("*.py"))
-    assert not any("from tools" in p.read_text() for p in Path("src").rglob("*.py"))
+    assert not any("/_mock/" in p.read_text(encoding="utf-8") for p in Path("src").rglob("*.py"))
+    assert not any("from tools" in p.read_text(encoding="utf-8") for p in Path("src").rglob("*.py"))
 
 
 def test_workitem_contract_auth_revisions_and_html(ado_server) -> None:
@@ -95,7 +95,7 @@ def test_tests_git_pr_status_and_scenario_contract(ado_server) -> None:
                 0
                 if pr["pullRequestId"] == 7
                 else len(
-                    yaml.safe_load(Path("data/synthetic/history.yaml").read_text())[
+                    yaml.safe_load(Path("data/synthetic/history.yaml").read_text(encoding="utf-8"))[
                         pr["pullRequestId"] - 1
                     ]["workitems"]
                 )
@@ -152,7 +152,9 @@ def test_git_transport_device_guard(ado_server) -> None:
     import subprocess
 
     work = ado_server.root / "seed-kestrel-device-sw"
-    (work / "unauthorized.txt").write_text("product must not publish this")
+    (work / "unauthorized.txt").write_text(
+        "product must not publish this", encoding="utf-8", newline="\n"
+    )
     git(["add", "."], work)
     git(["commit", "-m", "Guardrail probe"], work)
     try:
@@ -168,7 +170,8 @@ def test_seed_admin_and_reset_contract(ado_server) -> None:
         base = f"http://127.0.0.1:{ado_server.server_port}"
         assert c.get(base + "/_mock/state").status_code == 200
         assert c.post(base + "/_mock/apply-scenario/change_1").status_code == 200
-        assert c.post(base + "/_mock/reset").status_code == 200
+        # Reset rebuilds every mock repository: well over httpx's 5 s default on Windows git.
+        assert c.post(base + "/_mock/reset", timeout=120).status_code == 200
         assert len(c.get(base + "/_mock/state").json()["runs"]) == 2
 
 

@@ -48,7 +48,7 @@ def strict_output_schema(schema_id: str) -> dict:
     from pathlib import Path
 
     output_model(schema_id)  # Reject unknown/path-traversal schema names.
-    schema = json.loads(Path(f"specs/schemas/{schema_id}.json").read_text())
+    schema = json.loads(Path(f"specs/schemas/{schema_id}.json").read_text(encoding="utf-8"))
 
     def strip_bounds(value: object) -> None:
         if isinstance(value, dict):

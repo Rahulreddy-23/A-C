@@ -13,7 +13,7 @@ def test_live_demo_shared_ledger_budget_and_offline_isolation(tmp_path, monkeypa
     root.mkdir()
     offline = DEMO["demo_configuration"](root, False)
     assert offline["provider"] == "mock" and offline["environment"]["DHF_CACHE_ROOT"] != "out"
-    assert Path(offline["environment"]["DHF_ENV_FILE"]).read_text() == ""
+    assert Path(offline["environment"]["DHF_ENV_FILE"]).read_text(encoding="utf-8") == ""
     with pytest.raises(ValueError, match="DHF_LIVE_PROVIDER explicitly"):
         DEMO["demo_configuration"](root, True)
     monkeypatch.setenv("DHF_LIVE_PROVIDER", "openai")
@@ -23,17 +23,23 @@ def test_live_demo_shared_ledger_budget_and_offline_isolation(tmp_path, monkeypa
     monkeypatch.setenv("DHF_MAX_USD_PER_RUN", "9")
     Path("out").mkdir()
     Path("out/ledger.json").write_text(
-        json.dumps({"openai": {"actual_usd": 0.63, "reserved_usd": 0.02}})
+        json.dumps({"openai": {"actual_usd": 0.63, "reserved_usd": 0.02}}),
+        encoding="utf-8",
+        newline="\n",
     )
     live = DEMO["demo_configuration"](root, True)
     assert "DHF_ENV_FILE" not in live["environment"]
     assert live["environment"]["DHF_CACHE_ROOT"] == "out" and live["provider"] == "openai"
     assert live["run_cap"] == 0.25 and live["starting_spend"] == 0.65
     Path("out/ledger.json").write_text(
-        json.dumps({"openai": {"actual_usd": 0.73, "reserved_usd": 0.07}})
+        json.dumps({"openai": {"actual_usd": 0.73, "reserved_usd": 0.07}}),
+        encoding="utf-8",
+        newline="\n",
     )
     assert DEMO["remaining_run_cap"](live) == pytest.approx(0.10)
-    Path("out/ledger.json").write_text(json.dumps({"openai": {"actual_usd": 1}}))
+    Path("out/ledger.json").write_text(
+        json.dumps({"openai": {"actual_usd": 1}}), encoding="utf-8", newline="\n"
+    )
     assert DEMO["remaining_run_cap"](live) == 0
 
 
@@ -48,7 +54,9 @@ def test_copilot_live_demo_uses_credit_ledger_and_configured_transport(tmp_path,
     monkeypatch.setenv("DHF_COPILOT_FLOW_URL", "https://example.invalid/signed")
     Path("out").mkdir()
     Path("out/ledger.json").write_text(
-        json.dumps({"copilotstudio": {"actual_credits": 12, "reserved_credits": 3}})
+        json.dumps({"copilotstudio": {"actual_credits": 12, "reserved_credits": 3}}),
+        encoding="utf-8",
+        newline="\n",
     )
     config = DEMO["demo_configuration"](root, True)
     assert config["provider"] == "copilotstudio"

@@ -20,7 +20,7 @@ def test_local_png_is_repeatable_and_word_has_figure(tmp_path):
     result = generate_document(
         "sad", ingest_fixtures(), {"release": "1.1"}, out=tmp_path, llm=LLM(root=tmp_path / "llm")
     )
-    source = (tmp_path / "sad.architecture.mmd").read_text()
+    source = (tmp_path / "sad.architecture.mmd").read_text(encoding="utf-8")
     layout = diagram_layout(source)
     assert len(layout["components"]) == 6
     assert sum(len(c["units"]) for c in layout["components"]) == 20
@@ -72,7 +72,9 @@ def test_audit_checks_payload_hashes_and_missing_source_revisions(tmp_path):
             archive.writestr(name, value)
     with pytest.raises(ValueError, match="Checksum mismatch"):
         verify_audit(tampered)
-    (tmp_path / "docs/sstr.md").write_text("Tampered local document")
+    (tmp_path / "docs/sstr.md").write_text(
+        "Tampered local document", encoding="utf-8", newline="\n"
+    )
     with pytest.raises(ValueError, match="Document checksum"):
         audit_pack([graph], tmp_path / "docs", tmp_path / "bad.zip", "1.1")
 
@@ -82,7 +84,8 @@ def test_extensibility_adds_only_yaml_and_filters_real_unit_results(tmp_path, mo
     workspace.mkdir()
     shutil.copytree("specs", workspace / "specs")
     specs = {
-        doc: (workspace / "specs/documents" / f"{doc}.yaml").read_text() for doc in ("sutr", "rtm")
+        doc: (workspace / "specs/documents" / f"{doc}.yaml").read_text(encoding="utf-8")
+        for doc in ("sutr", "rtm")
     }
     for doc in specs:
         (workspace / "specs/documents" / f"{doc}.yaml").unlink()
@@ -94,17 +97,21 @@ def test_extensibility_adds_only_yaml_and_filters_real_unit_results(tmp_path, mo
     monkeypatch.chdir(workspace)
     llm = LLM(root=tmp_path / "llm")
     for doc, config in specs.items():
-        (workspace / "specs/documents" / f"{doc}.yaml").write_text(config)
+        (workspace / "specs/documents" / f"{doc}.yaml").write_text(
+            config, encoding="utf-8", newline="\n"
+        )
         result = generate_document(doc, graph, {"release": "1.1"}, out=workspace / "docs", llm=llm)
         assert result["manifest"]["doc_id"] == doc
     assert {p: hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in original} == original
     summary = (
         result["manifest"]
         if result["manifest"]["doc_id"] == "sutr"
-        else json.loads((workspace / "docs/sutr.manifest.json").read_text())
+        else json.loads((workspace / "docs/sutr.manifest.json").read_text(encoding="utf-8"))
     )
     assert summary["sections"][0]["facts"]["summary"]["total"] == 0
-    assert "No explicitly recorded unit-level results" in (workspace / "docs/sutr.md").read_text()
+    assert "No explicitly recorded unit-level results" in (workspace / "docs/sutr.md").read_text(
+        encoding="utf-8"
+    )
     changed = copy.deepcopy(graph)
     case = next(a for a in changed["artifacts"] if a["id"] == "TC-021")
     case["attributes"]["level"] = "unit"

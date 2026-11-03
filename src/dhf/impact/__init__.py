@@ -195,14 +195,16 @@ def regenerate(
     result["manifest"]["docx"]["sha256"] = hashlib.sha256(
         (out / (doc + ".docx")).read_bytes()
     ).hexdigest()
-    (out / (doc + ".md")).write_text(result["markdown"])
-    (out / (doc + ".manifest.json")).write_text(json.dumps(result["manifest"], indent=2))
+    (out / (doc + ".md")).write_text(result["markdown"], encoding="utf-8", newline="\n")
+    (out / (doc + ".manifest.json")).write_text(
+        json.dumps(result["manifest"], indent=2), encoding="utf-8", newline="\n"
+    )
     return result
 
 
 def write_report(reports: list[dict], root: Path = Path("out")) -> None:
     root.mkdir(parents=True, exist_ok=True)
-    (root / "impact.json").write_text(json.dumps(reports, indent=2))
+    (root / "impact.json").write_text(json.dumps(reports, indent=2), encoding="utf-8", newline="\n")
     text = (
         "# Change impact\n\n| Document | Stale | Possibly affected sections | "
         "Optional unit groups |\n|---|---:|---:|---:|\n"
@@ -240,4 +242,4 @@ def write_report(reports: list[dict], root: Path = Path("out")) -> None:
                 for c in section["causes"]
             )
             text += f"| {report['document']} | {section['id']} | {section['status']} | {causes} |\n"
-    (root / "impact.md").write_text(text)
+    (root / "impact.md").write_text(text, encoding="utf-8", newline="\n")

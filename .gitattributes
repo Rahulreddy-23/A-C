@@ -1,0 +1,2 @@
+# LF in every checkout, so specs, templates and golden outputs match byte for byte.
+* text=auto eol=lf

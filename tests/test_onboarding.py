@@ -143,7 +143,9 @@ def test_default_seed_native_chronology_and_system_date_guard(tmp_path):
         assert rejected.status_code == 400 and not read_state(server.root)["items"]
         result = seed.seed()
         graph = ado.ingest(tmp_path / "clones")
-        expected = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text())
+        expected = yaml.safe_load(
+            Path("data/synthetic/expected_gaps.yaml").read_text(encoding="utf-8")
+        )
         assert score_findings(gaps(graph), expected)["precision"] == 1.0
         assert score_findings(gaps(graph), expected)["recall"] == 1.0
         assert [(f["rule"], f["artifact_id"]) for f in gaps(graph) if f["rule"] == "G11"] == [

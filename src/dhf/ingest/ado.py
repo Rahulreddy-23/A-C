@@ -101,11 +101,11 @@ def load_scope(path: str = "") -> dict:
     path = path or setting("ADO_SCOPE", "")
     if not path:
         return {}
-    scope = yaml.safe_load(Path(path).read_text()) or {}
+    scope = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     ids = {int(i) for i in scope.get("seed_ids") or []}
     unparsed = 0
     for name in scope.get("seed_files") or []:
-        found, missed = seed_ids((Path(path).parent / name).read_text())
+        found, missed = seed_ids((Path(path).parent / name).read_text(encoding="utf-8"))
         ids |= found
         unparsed += missed
     declared = "seed_ids" in scope or "seed_files" in scope
@@ -161,7 +161,9 @@ def git_command(args: list[str], cwd: Path, token: str = "", strip: bool = True)
     helper.parent.mkdir(parents=True, exist_ok=True)
     helper.write_text(
         '#!/bin/sh\ncase "$1" in\n*Username*) printf "%s" "dhf";;\n'
-        '*) printf "%s" "$DHF_GIT_PAT";;\nesac\n'
+        '*) printf "%s" "$DHF_GIT_PAT";;\nesac\n',
+        encoding="utf-8",
+        newline="\n",
     )
     helper.chmod(0o700)
     env = dict(
@@ -172,12 +174,15 @@ def git_command(args: list[str], cwd: Path, token: str = "", strip: bool = True)
         DHF_GIT_ROLE="app",
         GCM_INTERACTIVE="never",
     )
+    # No stored credentials; no CRLF conversion, so Windows checkouts keep the exact bytes.
     result = subprocess.run(
-        ["git", "-c", "credential.helper=", *args],
+        ["git", "-c", "credential.helper=", "-c", "core.autocrlf=false", *args],
         cwd=cwd,
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     if result.returncode:
         raise RuntimeError("Git operation failed; check repository access and branch configuration")
@@ -219,7 +224,7 @@ class ADO:
             event_hooks={"request": [self.guard]},
         )
         self.mapping = yaml.safe_load(
-            Path(setting("ADO_MAPPING", "specs/ado_mapping.yaml")).read_text()
+            Path(setting("ADO_MAPPING", "specs/ado_mapping.yaml")).read_text(encoding="utf-8")
         )
 
     def close(self) -> None:

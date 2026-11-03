@@ -30,19 +30,25 @@ WORK_TYPES = {
 def git(args: list[str], cwd: Path, seed: bool = True, strip: bool = True) -> str:
     env = dict(os.environ, DHF_GIT_ROLE="seed" if seed else "app")
     result = subprocess.run(
-        ["git", *args], cwd=cwd, env=env, capture_output=True, text=True, check=True
+        ["git", "-c", "core.autocrlf=false", *args],
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
     )
     return result.stdout.strip() if strip else result.stdout
 
 
 def write_state(root: Path, state: dict) -> None:
     temp = root / "state.tmp"
-    temp.write_text(json.dumps(state))
+    temp.write_text(json.dumps(state), encoding="utf-8", newline="\n")
     temp.replace(root / "state.json")
 
 
 def read_state(root: Path) -> dict:
-    return json.loads((root / "state.json").read_text())
+    return json.loads((root / "state.json").read_text(encoding="utf-8"))
 
 
 def payload(artifact: dict) -> str:
@@ -53,8 +59,8 @@ def init(root: Path = ROOT, empty: bool = False) -> dict:
     if (root / "state.json").exists():
         return read_state(root)
     root.mkdir(parents=True, exist_ok=True)
-    dataset = yaml.safe_load((DATA / "evidence.yaml").read_text())
-    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    dataset = yaml.safe_load((DATA / "evidence.yaml").read_text(encoding="utf-8"))
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text(encoding="utf-8"))
     artifacts = dataset["artifacts"]
     eligible = [] if empty else [a for a in artifacts if a["type"] in WORK_TYPES]
     ids = {a["id"]: i for i, a in enumerate(eligible, 1)}
@@ -94,7 +100,9 @@ def init(root: Path = ROOT, empty: bool = False) -> dict:
         git(["init", "--initial-branch=main"], work)
         git(["config", "user.name", "Synthetic Seeder"], work)
         git(["config", "user.email", "synthetic@example.invalid"], work)
-        (work / "README.md").write_text("# Entirely synthetic demo repository\n")
+        (work / "README.md").write_text(
+            "# Entirely synthetic demo repository\n", encoding="utf-8", newline="\n"
+        )
         if name == "kestrel-device-sw" and not empty:
             shutil.copytree(DATA / "code", work, dirs_exist_ok=True)
             for file in (work / "kestrel").glob("*.py"):
@@ -103,7 +111,9 @@ def init(root: Path = ROOT, empty: bool = False) -> dict:
             (work / "architecture.yaml").write_text(
                 yaml.safe_dump(
                     [a for a in artifacts if a["type"] in ("component", "adr")], sort_keys=False
-                )
+                ),
+                encoding="utf-8",
+                newline="\n",
             )
         elif not empty:
             shutil.copyfile(DATA / "sad_v1.md", work / "sad.md")
@@ -123,7 +133,9 @@ def init(root: Path = ROOT, empty: bool = False) -> dict:
                 ' echo "Device repository is read-only to product" >&2\n exit 1\nfi\n'
                 if name == "kestrel-device-sw"
                 else "exit 0\n"
-            )
+            ),
+            encoding="utf-8",
+            newline="\n",
         )
         hook.chmod(0o755)
         repos.append(
@@ -135,7 +147,7 @@ def init(root: Path = ROOT, empty: bool = False) -> dict:
                 "project": {"id": "kestrel", "name": "Kestrel"},
             }
         )
-    history = yaml.safe_load((DATA / "history.yaml").read_text())
+    history = yaml.safe_load((DATA / "history.yaml").read_text(encoding="utf-8"))
     prs = []
     for entry in [] if empty else history:
         prs.append(commit_entry(root, entry, ids))
@@ -192,10 +204,10 @@ def commit_entry(root: Path, entry: dict, ids: dict, scenario: dict | None = Non
     for path in entry["files"]:
         dest = work / path
         dest.parent.mkdir(parents=True, exist_ok=True)
-        text = (DATA / "code" / path).read_text()
+        text = (DATA / "code" / path).read_text(encoding="utf-8")
         if scenario:
             text = text.replace(scenario["old"], scenario["new"])
-        dest.write_text(text)
+        dest.write_text(text, encoding="utf-8", newline="\n")
     message = entry["title"] + " " + " ".join(f"AB#{ids[r]}" for r in entry["workitems"])
     git(["add", "."], work)
     git(["commit", "-m", message], work)
@@ -221,13 +233,15 @@ def apply_scenario(name: str, root: Path = ROOT) -> dict:
     state = read_state(root)
     if name in state["scenarios"]:
         return {"already_applied": name}
-    scenario = yaml.safe_load((DATA / "scenarios" / f"{name}.yaml").read_text())
+    scenario = yaml.safe_load((DATA / "scenarios" / f"{name}.yaml").read_text(encoding="utf-8"))
     edit = scenario["edit"]
     native = state["ids"][edit["id"]]
     item = state["items"][str(native)]["current"]
     item["fields"]["System.Description"] = edit["body"] + '\nDHF-META:{"synthetic": true}'
     item["fields"][
-        yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())["fields"]["acceptance_criteria"]
+        yaml.safe_load(Path("specs/ado_mapping.yaml").read_text(encoding="utf-8"))["fields"][
+            "acceptance_criteria"
+        ]
     ] = edit["attributes"]["acceptance_criteria"]
     item["rev"] += 1
     item["fields"]["System.ChangedDate"] = scenario["run"]["completed_at"]

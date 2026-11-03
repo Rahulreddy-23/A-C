@@ -41,7 +41,9 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
             review = DocsReview(ado, tmp_path / "docs-clone")
             published = review.publish(result)
             result["markdown"] = resolved_markdown(result)
-            (review.root / (doc + ".md")).write_text(result["markdown"])
+            (review.root / (doc + ".md")).write_text(
+                result["markdown"], encoding="utf-8", newline="\n"
+            )
             git_command(["add", doc + ".md"], review.root)
             git_command(
                 [
@@ -60,7 +62,7 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
             assert review.check_pr(doc, published["pr_id"])["ready"]
             merge_docs_pr(published["pr_id"], ado_server.root)
             review.create_baseline(doc, published["pr_id"])
-            (root / (doc + ".md")).write_text(result["markdown"])
+            (root / (doc + ".md")).write_text(result["markdown"], encoding="utf-8", newline="\n")
         import time
 
         real_sleep = time.sleep
@@ -96,9 +98,9 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
         assert 0 <= unchanged < changed, run.output  # cycle 1 unchanged; cycle 2 sees change_1
         assert "2 changed, 3 added" in run.output
         graph = store.graph()
-        expected = yaml.safe_load(Path("data/synthetic/scenarios/change_1.yaml").read_text())[
-            "expected_sections"
-        ]
+        expected = yaml.safe_load(
+            Path("data/synthetic/scenarios/change_1.yaml").read_text(encoding="utf-8")
+        )["expected_sections"]
         for doc, original in baseline.items():
             report = impact(graph, original["manifest"], before)
             actual = {
@@ -132,7 +134,10 @@ def test_watch_selective_regeneration_preserves_human_edits(ado_server, tmp_path
         assert (
             consistency(
                 graph,
-                [__import__("json").loads(p.read_text()) for p in root.glob("*.manifest.json")],
+                [
+                    __import__("json").loads(p.read_text(encoding="utf-8"))
+                    for p in root.glob("*.manifest.json")
+                ],
             )
             == []
         )
@@ -155,7 +160,7 @@ def test_consistency_all_rules(tmp_path):
         "passed"
     ] = 0
     assert {f["rule"] for f in consistency(graph, [broken])} == {"C02", "C03"}
-    legacy = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    legacy = legacy_design(Path("data/synthetic/sad_v1.md").read_text(encoding="utf-8"))
     findings = consistency(graph, [legacy])
     assert {f["rule"] for f in findings} == {"C01", "C04"}
     assert next(f for f in findings if f["rule"] == "C01")["missing"] == ["COMP-06"]

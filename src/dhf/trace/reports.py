@@ -72,7 +72,7 @@ def import_markdown(
 
 
 def gap_rules() -> list[dict]:
-    return yaml.safe_load(Path("specs/rules/gaps.yaml").read_text())["rules"]
+    return yaml.safe_load(Path("specs/rules/gaps.yaml").read_text(encoding="utf-8"))["rules"]
 
 
 def rtm_markdown(graph: dict, rows: list[dict]) -> str:

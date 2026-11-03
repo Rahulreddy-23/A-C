@@ -125,7 +125,7 @@ def test_docs_pr_push_readiness_recheck_and_merged_baseline(ado_server, tmp_path
     files = git_command(["ls-tree", "-r", "--name-only", "HEAD"], review.root).splitlines()
     assert {"sstr.md", "sstr.docx", "sstr.manifest.json"} <= set(files)
     # Simulate a human editing and pushing Markdown in the PR.
-    (review.root / "sstr.md").write_text(resolved_markdown(result))
+    (review.root / "sstr.md").write_text(resolved_markdown(result), encoding="utf-8", newline="\n")
     git_command(["add", "sstr.md"], review.root)
     git_command(
         [
@@ -146,8 +146,8 @@ def test_docs_pr_push_readiness_recheck_and_merged_baseline(ado_server, tmp_path
     assert merged["status"] == "completed"
     assert review.create_baseline("sstr", pr_id) == "sstr-v1"
     tag, previous = review.baseline("sstr")
-    assert tag == "sstr-v1" and previous == (review.root / "sstr.md").read_text()
-    manifest = json.loads((review.root / "sstr.manifest.json").read_text())
+    assert tag == "sstr-v1" and previous == (review.root / "sstr.md").read_text(encoding="utf-8")
+    manifest = json.loads((review.root / "sstr.manifest.json").read_text(encoding="utf-8"))
     assert manifest["review"]["status"] == "ready_for_review"
     ado.close()
 

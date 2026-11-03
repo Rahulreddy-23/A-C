@@ -58,7 +58,8 @@ def risk_gaps(graph: dict, modes: list[dict] | None = None) -> list[dict]:
     import yaml
 
     definitions = {
-        r["op"]: r for r in yaml.safe_load(Path("specs/rules/risk.yaml").read_text())["rules"]
+        r["op"]: r
+        for r in yaml.safe_load(Path("specs/rules/risk.yaml").read_text(encoding="utf-8"))["rules"]
     }
     rows = risk_rows(graph)
     findings = []
@@ -105,7 +106,9 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
         import yaml
 
         unit = nodes[params["entity"]]
-        primary = yaml.safe_load(Path("specs/risk/functions.yaml").read_text())[unit["id"]]
+        primary = yaml.safe_load(Path("specs/risk/functions.yaml").read_text(encoding="utf-8"))[
+            unit["id"]
+        ]
         hazards = [r for r in risk_rows(graph) if unit["id"] in r["units"]]
         ids = {unit["id"], unit["attributes"]["component"]}
         ids.update(
@@ -303,7 +306,9 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
                 r["id"]
                 for file in ("gaps", "consistency", "risk")
                 for r in __import__("yaml").safe_load(
-                    __import__("pathlib").Path(f"specs/rules/{file}.yaml").read_text()
+                    __import__("pathlib")
+                    .Path(f"specs/rules/{file}.yaml")
+                    .read_text(encoding="utf-8")
                 )["rules"]
             ]
             all_findings = drafts + [

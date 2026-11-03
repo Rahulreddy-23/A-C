@@ -206,7 +206,7 @@ def create_explorer(
     from dhf.trace.consistency import consistency
 
     rules = {
-        path.stem: yaml.safe_load(path.read_text()).get("rules", [])
+        path.stem: yaml.safe_load(path.read_text(encoding="utf-8")).get("rules", [])
         for path in sorted(Path("specs/rules").glob("*.yaml"))
     }
     blind = unassessable_rules(graph, rules["gaps"])
@@ -227,7 +227,7 @@ def create_explorer(
         "rules": [rule for group in rules.values() for rule in group],
         "document_titles": {
             **{
-                path.stem: yaml.safe_load(path.read_text()).get("title")
+                path.stem: yaml.safe_load(path.read_text(encoding="utf-8")).get("title")
                 for path in sorted(Path("specs/documents").glob("*.yaml"))
             },
             # Each draft keeps the title of the template set it was generated from.
@@ -239,5 +239,5 @@ def create_explorer(
     }
     return render_explorer(
         explorer_payload(graph, findings, reports, documents, presentation),
-        Path("specs/render/explorer.html").read_text(),
+        Path("specs/render/explorer.html").read_text(encoding="utf-8"),
     )

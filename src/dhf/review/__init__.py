@@ -131,7 +131,7 @@ class DocsReview:
     def commit(self, branch: str, doc: str, markdown: str, manifest: dict, previous: str) -> None:
         if self.ado.read_only:
             raise ReadOnlyViolation("Read-only mode: refusing to push to the docs repository")
-        (self.root / (doc + ".md")).write_text(markdown)
+        (self.root / (doc + ".md")).write_text(markdown, encoding="utf-8", newline="\n")
         from dhf.generate.support import support_comments
 
         counts = render_docx(
@@ -145,12 +145,16 @@ class DocsReview:
             "sha256": hashlib.sha256((self.root / (doc + ".docx")).read_bytes()).hexdigest(),
             **counts,
         }
-        (self.root / (doc + ".manifest.json")).write_text(json.dumps(manifest, indent=2))
+        (self.root / (doc + ".manifest.json")).write_text(
+            json.dumps(manifest, indent=2), encoding="utf-8", newline="\n"
+        )
         from dhf.render.diagram import write_diagrams
 
         diagrams = write_diagrams(doc, manifest["sections"], self.root)
         manifest["diagrams"] = diagrams
-        (self.root / (doc + ".manifest.json")).write_text(json.dumps(manifest, indent=2))
+        (self.root / (doc + ".manifest.json")).write_text(
+            json.dumps(manifest, indent=2), encoding="utf-8", newline="\n"
+        )
         git_command(
             [
                 "add",
@@ -279,8 +283,8 @@ class DocsReview:
             raise ValueError("PR does not belong to the requested DHF document")
         git_command(["fetch", "origin", ref], self.root, self.ado.token)
         git_command(["checkout", "-B", ref.removeprefix("refs/heads/"), "FETCH_HEAD"], self.root)
-        markdown = (self.root / (doc + ".md")).read_text()
-        manifest = json.loads((self.root / (doc + ".manifest.json")).read_text())
+        markdown = (self.root / (doc + ".md")).read_text(encoding="utf-8")
+        manifest = json.loads((self.root / (doc + ".manifest.json")).read_text(encoding="utf-8"))
         check = readiness(markdown, manifest)
         manifest["review"]["status"] = "ready_for_review" if check["ready"] else "draft"
         manifest["review"]["readiness"] = check

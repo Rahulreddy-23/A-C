@@ -91,7 +91,9 @@ def build(folder: Path) -> None:
         "﻿ID,Work Item Type,Title,Assigned To,State,Tags\n"
         '"5001","Test Case","Fleet list shows pumps","Pat Example <pat@example.com>","Approved",'
         '"Fleet; Regression"\n'
-        '"5002","Test Case","Fleet access denied","Pat Example <pat@example.com>","Design",\n'
+        '"5002","Test Case","Fleet access denied","Pat Example <pat@example.com>","Design",\n',
+        encoding="utf-8",
+        newline="\n",
     )
     Document().save(folder / "REF Kestrel notes.docx")
 
@@ -124,7 +126,9 @@ def test_document_baseline_import_extracts_trace_and_flags_inconsistencies(tmp_p
     assert nodes["TC-5001"]["attributes"]["tags"] == ["Fleet", "Regression"]
     assert "example.com" not in json.dumps(graph) and "Pat Example" not in json.dumps(graph)
 
-    rules = yaml.safe_load(Path("specs/rules/document_baseline.yaml").read_text())["rules"]
+    rules = yaml.safe_load(Path("specs/rules/document_baseline.yaml").read_text(encoding="utf-8"))[
+        "rules"
+    ]
     flagged = {}
     for finding in evaluate_rules(graph, rules):
         flagged.setdefault(finding["rule"], []).append(finding["artifact_id"])
@@ -162,7 +166,7 @@ def test_import_docs_command_writes_store_and_report(tmp_path) -> None:
     )
     assert result.exit_code == 0, result.output
     assert "software_req=2" in result.output and "baseline findings" in result.output
-    report = (tmp_path / "out" / "import-report.md").read_text()
+    report = (tmp_path / "out" / "import-report.md").read_text(encoding="utf-8")
     assert "| D05 | 2 |" in report and "UNIT-Fleet.Ks.Fleet.Core" in report
 
 
@@ -273,7 +277,9 @@ def test_import_handles_word_features_and_matrix_edge_cases(tmp_path) -> None:
     assert nodes["PREQ-KS-4"]["attributes"]["unresolved_allocations"] == ["Guidance Engine"]
     assert nodes["PREQ-KS-5"]["attributes"]["unresolved_allocations"] == ["?"]
     assert "" not in nodes["UNIT-Fleet.Ks.Fleet.Api"]["attributes"]["design_sections"]
-    rules = yaml.safe_load(Path("specs/rules/document_baseline.yaml").read_text())["rules"]
+    rules = yaml.safe_load(Path("specs/rules/document_baseline.yaml").read_text(encoding="utf-8"))[
+        "rules"
+    ]
     unallocated = {f["artifact_id"] for f in evaluate_rules(graph, rules) if f["rule"] == "D01"}
     assert {"PREQ-KS-2", "PREQ-KS-4", "PREQ-KS-5"} <= unallocated
 
@@ -327,16 +333,17 @@ def test_explorer_meets_the_dom_harness_contract(tmp_path) -> None:
     from dhf.render.explorer import create_explorer
     from dhf.trace.consistency import legacy_design
 
-    baseline = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    baseline = legacy_design(Path("data/synthetic/sad_v1.md").read_text(encoding="utf-8"))
     html = create_explorer(ingest_fixtures(), [], baselines=[baseline])
-    assert "querySelector" not in Path("specs/render/explorer.html").read_text()
+    assert "querySelector" not in Path("specs/render/explorer.html").read_text(encoding="utf-8")
     if not shutil.which("node"):
         pytest.skip("node is not installed; the static contract above still applies")
-    (tmp_path / "explorer.html").write_text(html)
+    (tmp_path / "explorer.html").write_text(html, encoding="utf-8", newline="\n")
     check = subprocess.run(
         ["node", "tools/check_explorer.cjs", str(tmp_path / "explorer.html")],
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     assert check.returncode == 0, check.stdout + check.stderr
 

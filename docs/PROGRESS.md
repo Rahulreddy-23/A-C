@@ -480,3 +480,33 @@ Dataset-specific results are local only (`out/real-docs/`, gitignored). This sec
     - Documented software items reach hazards and risk controls through their SAD allocations.
     - Orphan-code proposals (L02) skip units from documents.
     - `uv run pytest -q` → `182 passed in 172.72s`; ruff clean; `./scripts/demo.sh` → exit 0, gaps P/R 1.00, deterministic impact exact (51), change_1 impact P/R 1.00 (75). Real baseline re-import: 129 of 129 units carry design text.
+
+### Windows support and README refresh — 2026-11-03
+
+The owner asked for native Windows support as a priority, and for a clear README for macOS and Windows.
+
+- **Windows (ADR-045)**
+  - `dhf` could not start on Windows: the LLM layer imported `fcntl`. The ledger and cache lock now uses `flock` or `msvcrt`.
+  - Every text read and write states UTF-8, and every write states LF line endings (246 calls, of which ruff's PLW1514 flags only 89). `tests/test_portability.py` enforces this, together with UTF-8 decoding of text subprocess output.
+  - `.gitattributes` checks out LF. Git runs with `core.autocrlf=false` and decodes UTF-8.
+  - The `dhf` entry point (`dhf.cli:run`) and the demo print UTF-8 on Windows pipes.
+  - Code-file keys use `/`. The mock's reset clears git's read-only files before deleting.
+  - CI runs pytest, ruff, `dhf --help` and the offline demo on `ubuntu-latest` and `windows-latest`.
+- **README** rewritten: requirements and install for macOS and Windows, quick start, configuration, a command table, the review workflow, AI providers, real projects, development, rules and documentation links (tracked docs only).
+- **Verification (macOS, with Windows encodings simulated)**
+  - `uv run ruff check .` → `All checks passed!`; `uv run ruff format --check .` → `128 files already formatted`
+  - `PYTHONCOERCECLOCALE=0 PYTHONUTF8=0 LC_ALL=C uv run pytest -q` (no UTF-8 defaults, as on Windows) → `178 passed in 161.12s`
+  - `PYTHONIOENCODING=cp1252 uv run dhf --help` (a Windows pipe) → exit 0; the `→` in the help text prints.
+  - `PYTHONIOENCODING=cp1252 uv run python tools/demo.py` → exit 0; unknown IDs 0; gaps P/R 1.00; deterministic impact exact (51 records); audit pack 33 verified files.
+  - README quick start in a clean worktree: `dhf ingest --source fixtures` (248 artifacts), `dhf gaps` (21 gaps), `dhf generate sstr` (12 sections, 0 rejections), `dhf explore` → all succeeded.
+- **Found by the new CI demo step:** on Ubuntu, the demo's simulated owner ran `git rebase` without a git identity. That fails on any machine with no `user.name`/`user.email` (CI runners, fresh laptops); developer machines had hidden it. The rebase now passes the same synthetic identity as the commit before it.
+  - With git's global config disabled and `user.useConfigOnly=true`: the previous commit fails at the same step as CI (exit 1); the fix → exit 0, all four baselines tagged, gaps P/R 1.00, deterministic impact exact (51), audit pack 33 verified files.
+- **First native Windows run** (`windows-latest`): `1 failed, 177 passed in 378.28s`. The hook-guarded git pushes, the `msvcrt` lock, ingest, review PRs and redlines all pass.
+  - The failure was `test_seed_admin_and_reset_contract`. The mock's reset rebuilds every repository, and on Windows git that outlasts httpx's 5 s default client timeout; the server's `WinError 10053` was it answering a client that had already gone.
+  - That call now waits up to 120 s. The product's own ADO client already allows 60 s.
+  - CI's later steps now run after a failure, so one run also reports the demo.
+- **Native Windows, all green** (`windows-latest`, PR run on 2e277b4): `178 passed in 500.54s`. The offline demo completed: all four baselines tagged, gaps P/R 1.00, deterministic impact exact (51 records), audit pack 33 verified files.
+- **Flaky explorer budget:** the push run on the same commit failed one test (`1 failed, 177 passed in 352.03s`) — the explorer DOM harness's 2 s initial-render budget.
+  - `render_ms` counts from page start and refreshes on every update. The harness read it only after its whole scripted session, so a runner stall during any interaction counted against the initial render.
+  - Locally, the initial render takes 19 ms and the whole session 33 ms; 25 hash seeds all pass, so the generated page does not vary.
+  - The budget now applies to the stats taken at load, and a failure reports the measured time.

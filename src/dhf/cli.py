@@ -1,3 +1,5 @@
+import io
+import sys
 from typing import TYPE_CHECKING
 
 import typer
@@ -19,6 +21,15 @@ def version() -> None:
 @app.callback()
 def main() -> None:
     """DHF evidence automation."""
+
+
+def run() -> None:
+    """Console entry point. Windows pipes and redirects default to a legacy code page, and
+    help text and reports print UTF-8 (arrows, dashes), so output is UTF-8 everywhere."""
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+    app()
 
 
 @app.command()
@@ -114,9 +125,13 @@ def gaps_command(db: str = "out/evidence.sqlite", output_dir: str = "out") -> No
     (out / "gaps.json").write_text(
         json.dumps(
             {"findings": findings, "coverage": coverage(graph), "not_assessable": blind}, indent=2
-        )
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
-    (out / "gaps.md").write_text(gaps_markdown(findings, rules, blind))
+    (out / "gaps.md").write_text(
+        gaps_markdown(findings, rules, blind), encoding="utf-8", newline="\n"
+    )
     typer.echo(
         f"{len(findings)} deterministic gaps"
         + (f" ({len(blind)} rules not assessable from these sources)" if blind else "")
@@ -149,15 +164,21 @@ def import_docs_command(
         result = store.ingest(graph)
     finally:
         store.close()
-    rules = yaml.safe_load(Path("specs/rules/document_baseline.yaml").read_text())["rules"]
+    rules = yaml.safe_load(Path("specs/rules/document_baseline.yaml").read_text(encoding="utf-8"))[
+        "rules"
+    ]
     findings = evaluate_rules(graph, rules)
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / "import-report.json").write_text(
-        json.dumps({"summary": summary, "findings": findings}, indent=2)
+        json.dumps({"summary": summary, "findings": findings}, indent=2),
+        encoding="utf-8",
+        newline="\n",
     )
     blind = unassessable_rules(graph, rules)
-    (out / "import-report.md").write_text(import_markdown(summary, findings, rules, graph, blind))
+    (out / "import-report.md").write_text(
+        import_markdown(summary, findings, rules, graph, blind), encoding="utf-8", newline="\n"
+    )
     typer.echo(
         f"Snapshot {result['snapshot']}: "
         + ", ".join(f"{k}={v}" for k, v in summary["artifact_counts"].items())
@@ -186,8 +207,8 @@ def rtm_command(
         store.close()
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "rtm.json").write_text(json.dumps(rows, indent=2))
-    (out / "rtm.md").write_text(rtm_markdown(graph, rows))
+    (out / "rtm.json").write_text(json.dumps(rows, indent=2), encoding="utf-8", newline="\n")
+    (out / "rtm.md").write_text(rtm_markdown(graph, rows), encoding="utf-8", newline="\n")
     typer.echo(f"{len(rows)} RTM rows → {out / 'rtm.md'} + {out / 'rtm.json'}")
 
 
@@ -221,12 +242,13 @@ def generate(
     if input_file:
         import json
 
-        params["review_input"] = json.loads(Path(input_file).read_text())
+        params["review_input"] = json.loads(Path(input_file).read_text(encoding="utf-8"))
     if doc == "drr":
         import json
 
         params["documents"] = [
-            json.loads(p.read_text()) for p in Path(documents).glob("*.manifest.json")
+            json.loads(p.read_text(encoding="utf-8"))
+            for p in Path(documents).glob("*.manifest.json")
         ]
         from dhf.ingest.ado import ADO
         from dhf.review import DocsReview
@@ -244,7 +266,7 @@ def generate(
             finally:
                 prior.close()
         if impact_file:
-            params["impact_reports"] = json.loads(Path(impact_file).read_text())
+            params["impact_reports"] = json.loads(Path(impact_file).read_text(encoding="utf-8"))
     from dhf.llm import LLM
 
     llm = LLM(provider)
@@ -268,7 +290,7 @@ def generate(
             published = review.publish(result, gap_count=len(gaps(graph)))
             Path(documents, doc + ".docx").write_bytes((review.root / (doc + ".docx")).read_bytes())
             Path(documents, doc + ".manifest.json").write_text(
-                json.dumps(result["manifest"], indent=2)
+                json.dumps(result["manifest"], indent=2), encoding="utf-8", newline="\n"
             )
             typer.echo(f"PR {published['pr_id']}: {published['pr_url']}")
             typer.echo(f"Readiness: {len(published['readiness']['blockers'])} blockers")
@@ -399,7 +421,7 @@ def generate_section_command(
     report_budget(llm)
     target = Path(f"out/cross-provider/{doc}-{section}-{provider}.json")
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(result, indent=2))
+    target.write_text(json.dumps(result, indent=2), encoding="utf-8", newline="\n")
     typer.echo(f"{len(result['claims'])} validated claims; ${llm.run_spend:.6f} → {target}")
 
 
@@ -415,8 +437,8 @@ def check_command(doc: str, pr_id: int | None = None, documents: str = "out/docu
     if pr_id is None:
         root = Path(documents)
         result = readiness(
-            (root / (doc + ".md")).read_text(),
-            json.loads((root / (doc + ".manifest.json")).read_text()),
+            (root / (doc + ".md")).read_text(encoding="utf-8"),
+            json.loads((root / (doc + ".manifest.json")).read_text(encoding="utf-8")),
         )
     else:
         ado = ADO()
@@ -458,7 +480,10 @@ def consistency_command(
         graph = store.graph()
     finally:
         store.close()
-    manifests = [json.loads(p.read_text()) for p in sorted(Path(documents).glob("*.manifest.json"))]
+    manifests = [
+        json.loads(p.read_text(encoding="utf-8"))
+        for p in sorted(Path(documents).glob("*.manifest.json"))
+    ]
     if baselines:
         from dhf.ingest.ado import ADO
         from dhf.review import DocsReview
@@ -469,7 +494,9 @@ def consistency_command(
         finally:
             ado.close()
     findings = consistency(graph, manifests)
-    Path("out/consistency.json").write_text(json.dumps(findings, indent=2))
+    Path("out/consistency.json").write_text(
+        json.dumps(findings, indent=2), encoding="utf-8", newline="\n"
+    )
     typer.echo(f"{len(findings)} consistency findings → out/consistency.json")
 
 
@@ -498,13 +525,13 @@ def document_impacts(db: str, documents: str, since: str = "baseline") -> tuple[
                 raise typer.BadParameter("Unknown snapshot")
         reports = []
         for path in sorted(Path(documents).glob("*.manifest.json")):
-            manifest = json.loads(path.read_text())
+            manifest = json.loads(path.read_text(encoding="utf-8"))
             report = impact(graph, manifest, previous)
             statuses = {s["id"]: s["status"] for s in report["sections"]}
             for section in manifest["sections"]:
                 section["evidence_status"] = statuses.get(section["id"], "current")
             manifest["impact"] = report
-            path.write_text(json.dumps(manifest, indent=2))
+            path.write_text(json.dumps(manifest, indent=2), encoding="utf-8", newline="\n")
             reports.append(report)
         write_report(reports)
         return graph, reports
@@ -555,12 +582,17 @@ def regenerate_command(
         if not changed:
             continue
         doc = report["document"]
-        manifest = json.loads((root / (doc + ".manifest.json")).read_text())
+        manifest = json.loads((root / (doc + ".manifest.json")).read_text(encoding="utf-8"))
         provider = manifest["model"]["provider"]
         if provider not in llms:
             llms[provider] = LLM(provider)
         result = regenerate(
-            graph, manifest, (root / (doc + ".md")).read_text(), report, root, llms[provider]
+            graph,
+            manifest,
+            (root / (doc + ".md")).read_text(encoding="utf-8"),
+            report,
+            root,
+            llms[provider],
         )
         report_budget(llms[provider])
         typer.echo(f"{doc}: regenerated {len(changed)} sections")
@@ -571,7 +603,7 @@ def regenerate_command(
                     result, changed_sections=changed, gap_count=len(gaps(graph))
                 )
                 (root / (doc + ".manifest.json")).write_text(
-                    json.dumps(result["manifest"], indent=2)
+                    json.dumps(result["manifest"], indent=2), encoding="utf-8", newline="\n"
                 )
                 (root / (doc + ".docx")).write_bytes(
                     (DocsReview(ado).root / (doc + ".docx")).read_bytes()
@@ -643,7 +675,9 @@ def propose_command(
         graph = store.graph()
     finally:
         store.close()
-    manifests = [json.loads(p.read_text()) for p in Path(documents).glob("*.manifest.json")]
+    manifests = [
+        json.loads(p.read_text(encoding="utf-8")) for p in Path(documents).glob("*.manifest.json")
+    ]
     llm = LLM(provider)
     result = propose(graph, manifests, llm=llm)
     report_budget(llm)
@@ -665,7 +699,9 @@ def eval_command(
     from dhf.graph import Store
 
     root = Path(documents)
-    manifests = [json.loads(p.read_text()) for p in sorted(root.glob("*.manifest.json"))]
+    manifests = [
+        json.loads(p.read_text(encoding="utf-8")) for p in sorted(root.glob("*.manifest.json"))
+    ]
     if not manifests:
         raise typer.BadParameter("Generate documents first")
     store = Store(Path(db))
@@ -675,18 +711,25 @@ def eval_command(
         store.close()
     if not baseline["artifacts"]:
         raise typer.BadParameter("Unknown baseline snapshot")
-    reports = json.loads(Path(impact_file).read_text()) if impact_file else None
+    reports = json.loads(Path(impact_file).read_text(encoding="utf-8")) if impact_file else None
     result = evaluate(
         graph,
         baseline,
         manifests,
-        {d["doc_id"]: (root / (d["doc_id"] + ".md")).read_text() for d in manifests},
+        {
+            d["doc_id"]: (root / (d["doc_id"] + ".md")).read_text(encoding="utf-8")
+            for d in manifests
+        },
         reports,
     )
     Path("out").mkdir(exist_ok=True)
-    Path("out/metrics.json").write_text(json.dumps(result, indent=2))
-    Path("out/metrics.md").write_text(metrics_markdown(result))
-    Path("out/clause_coverage.md").write_text(clause_markdown(result["clause_coverage"]))
+    Path("out/metrics.json").write_text(
+        json.dumps(result, indent=2), encoding="utf-8", newline="\n"
+    )
+    Path("out/metrics.md").write_text(metrics_markdown(result), encoding="utf-8", newline="\n")
+    Path("out/clause_coverage.md").write_text(
+        clause_markdown(result["clause_coverage"]), encoding="utf-8", newline="\n"
+    )
     typer.echo(
         f"Unknown IDs: {result['unknown_id_count']}; "
         f"gaps precision={result['gap_detection']['precision']:.2f} "
@@ -744,8 +787,12 @@ def discover_command(output: str = "out/discovery/ado_mapping.yaml") -> None:
         ado.close()
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(yaml.safe_dump(report["mapping"], sort_keys=False))
-    target.with_suffix(".discovery.json").write_text(json.dumps(report, indent=2))
+    target.write_text(
+        yaml.safe_dump(report["mapping"], sort_keys=False), encoding="utf-8", newline="\n"
+    )
+    target.with_suffix(".discovery.json").write_text(
+        json.dumps(report, indent=2), encoding="utf-8", newline="\n"
+    )
     typer.echo(f"Mapping draft → {target}; {len(report['unknowns'])} unknowns require confirmation")
 
 
@@ -780,17 +827,17 @@ def verify_support_command(
         raise typer.BadParameter("No matching documents")
     llm = LLM(provider)
     for path in paths:
-        manifest = verify_document(graph, json.loads(path.read_text()), llm, sample)
+        manifest = verify_document(graph, json.loads(path.read_text(encoding="utf-8")), llm, sample)
         id = manifest["doc_id"]
         word = root / (id + ".docx")
         manifest["docx"] = render_docx(
-            (root / (id + ".md")).read_text(),
+            (root / (id + ".md")).read_text(encoding="utf-8"),
             word,
             timestamp=manifest["generated_at"],
             support_findings=support_comments(manifest),
         )
         manifest["docx"]["sha256"] = hashlib.sha256(word.read_bytes()).hexdigest()
-        path.write_text(json.dumps(manifest, indent=2))
+        path.write_text(json.dumps(manifest, indent=2), encoding="utf-8", newline="\n")
         report = manifest["claim_support"]
         typer.echo(
             f"{id}: {report['counts']}; support rate={report['support_rate']} "
@@ -825,14 +872,21 @@ def explore_command(
         store.close()
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence before exploring")
-    manifests = [json.loads(p.read_text()) for p in sorted(Path(documents).glob("*.manifest.json"))]
-    reports = json.loads(Path(impact_file).read_text()) if impact_file else None
+    manifests = [
+        json.loads(p.read_text(encoding="utf-8"))
+        for p in sorted(Path(documents).glob("*.manifest.json"))
+    ]
+    reports = json.loads(Path(impact_file).read_text(encoding="utf-8")) if impact_file else None
     from dhf.trace.consistency import legacy_design
 
-    baselines = [legacy_design(Path(baseline_file).read_text())] if baseline_file else []
+    baselines = (
+        [legacy_design(Path(baseline_file).read_text(encoding="utf-8"))] if baseline_file else []
+    )
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(create_explorer(graph, manifests, reports, baselines))
+    target.write_text(
+        create_explorer(graph, manifests, reports, baselines), encoding="utf-8", newline="\n"
+    )
     typer.echo(f"Explorer: {len(graph['artifacts'])} artifacts → {target}; offline HTML")
 
 
@@ -856,7 +910,7 @@ def export_snapshot_command(
     target = Path(output_dir)
     target.mkdir(parents=True, exist_ok=True)
     for name, content in snapshot_files(graph).items():
-        (target / name).write_text(content)
+        (target / name).write_text(content, encoding="utf-8", newline="\n")
     typer.echo(
         f"Snapshot export: {len(graph['artifacts'])} artifacts, {len(graph['links'])} links"
         f" → {target}; review before upload"

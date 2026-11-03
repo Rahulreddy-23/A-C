@@ -27,7 +27,7 @@ def test_all_components_units_allocations_and_local_diagrams(tmp_path: Path) -> 
     assert "| Name | Kind / bases | Fields |" in sdd["markdown"]
     assert "G12" in sad["markdown"] and "SOUP-01" in sad["markdown"]
     assert len(expand_sections(load_spec("sdd"), graph)) == 162
-    diagram = (tmp_path / "sad.architecture.mmd").read_text()
+    diagram = (tmp_path / "sad.architecture.mmd").read_text(encoding="utf-8")
     assert diagram.startswith("flowchart LR") and "UNIT_sensor_pressure -->" in diagram
     assert all(id.replace("-", "_") in diagram for id in components | units)
     pressure = query(graph, "unit_allocation", {"entity": "UNIT-sensor_pressure"})

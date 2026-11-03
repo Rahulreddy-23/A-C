@@ -47,7 +47,7 @@ def test_sstr_generation_citations_manifest_and_cache(tmp_path: Path) -> None:
     assert summary["facts"]["summary"]["passed"] == 39
     import json
 
-    golden = json.loads(Path("eval/golden/sstr_deterministic.json").read_text())
+    golden = json.loads(Path("eval/golden/sstr_deterministic.json").read_text(encoding="utf-8"))
     assert {
         s["id"]: s["markdown"] for s in manifest["sections"] if s["mode"] == "deterministic"
     } == golden

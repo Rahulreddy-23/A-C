@@ -1,4 +1,7 @@
+import os
 import shutil
+import stat
+from collections.abc import Callable
 from pathlib import Path
 
 import typer
@@ -9,6 +12,12 @@ from mock_ado.state import ROOT, apply_scenario, init
 app = typer.Typer(help="Local synthetic Azure DevOps REST server.")
 
 
+def clear_readonly(remove: Callable[[str], object], path: str, _error: BaseException) -> None:
+    """Git marks object files read-only, and Windows refuses to delete them until cleared."""
+    os.chmod(path, stat.S_IWRITE)
+    remove(path)
+
+
 def reset_root(root: Path) -> None:
     resolved = root.resolve()
     # Never delete arbitrary locations; only our initialized test-tool state.
@@ -17,7 +26,7 @@ def reset_root(root: Path) -> None:
         or not (resolved / "git/kestrel-device-sw.git").is_dir()
     ):
         raise ValueError("Refusing to reset a location without initialized mock state")
-    shutil.rmtree(resolved)
+    shutil.rmtree(resolved, onexc=clear_readonly)
     init(root)
 
 

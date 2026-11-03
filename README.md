@@ -77,7 +77,7 @@ Run every command from the repository root. `uv run dhf --help` lists all comman
 ## Review workflow
 
 1. `generate --open-pr` opens a draft PR with Markdown, Word and a manifest.
-2. Reviewers edit the Markdown in the PR. AI suggestions are marked `[Suggested — review required]`. To accept or reject one, record a marker with the claim's ID:
+2. Reviewers edit the Markdown in the PR. AI suggestions are marked `[Suggested — review required]`. To accept one, remove that prefix; to reject it, remove the claim. In both cases, record the decision with the claim's `dhf-claim` ID, as `accepted` or `rejected`:
    ```md
    <!-- dhf-resolution:<claim-id> accepted reviewer=Name rationale=Why -->
    ```

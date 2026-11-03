@@ -233,7 +233,17 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
             # Other drafts were opened before earlier merges. The simulated owner
             # rebases its own local docs branch before the mock's fast-forward merge.
             git_command(["fetch", "origin", "main"], review.root, ado.token)
-            git_command(["rebase", "origin/main"], review.root)
+            git_command(
+                [
+                    "-c",
+                    "user.name=Synthetic Owner",
+                    "-c",
+                    "user.email=owner@example.invalid",
+                    "rebase",
+                    "origin/main",
+                ],
+                review.root,
+            )
             git_command(["push", "--force-with-lease", "origin", "HEAD"], review.root, ado.token)
             merge_docs_pr(pr, server.root)
             tag = review.create_baseline(doc, pr)

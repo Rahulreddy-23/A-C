@@ -499,4 +499,6 @@ The owner asked for native Windows support as a priority, and for a clear README
   - `PYTHONIOENCODING=cp1252 uv run dhf --help` (a Windows pipe) → exit 0; the `→` in the help text prints.
   - `PYTHONIOENCODING=cp1252 uv run python tools/demo.py` → exit 0; unknown IDs 0; gaps P/R 1.00; deterministic impact exact (51 records); audit pack 33 verified files.
   - README quick start in a clean worktree: `dhf ingest --source fixtures` (248 artifacts), `dhf gaps` (21 gaps), `dhf generate sstr` (12 sections, 0 rejections), `dhf explore` → all succeeded.
+- **Found by the new CI demo step:** on Ubuntu, the demo's simulated owner ran `git rebase` without a git identity. That fails on any machine with no `user.name`/`user.email` (CI runners, fresh laptops); developer machines had hidden it. The rebase now passes the same synthetic identity as the commit before it.
+  - With git's global config disabled and `user.useConfigOnly=true`: the previous commit fails at the same step as CI (exit 1); the fix → exit 0, all four baselines tagged, gaps P/R 1.00, deterministic impact exact (51), audit pack 33 verified files.
 - **Pending:** the first `windows-latest` CI run (see the PR checks). Git for Windows running the `#!/bin/sh` hooks is verified only by that run.

@@ -251,20 +251,27 @@ def render_docx(
     for item in paragraph_diff(baseline, markdown):
         block, change = item["block"], item["change"]
         if block["type"] == "diagram":
+            import base64
             from io import BytesIO
 
-            from dhf.render.diagram import diagram_bytes
+            from dhf.render.diagram import diagram_image, diagram_layout
 
             figure += 1
+            layout = diagram_layout(block["text"])
+            png = base64.b64decode(diagram_image(layout)["png_base64"])
+            width = section.page_width - section.left_margin - section.right_margin
+            # Keep the caption's line free; a tall architecture scales to the page height.
+            height = section.page_height - section.top_margin - section.bottom_margin - Inches(0.6)
             p = doc.add_paragraph()
-            p.add_run().add_picture(
-                BytesIO(diagram_bytes(block["text"])),
-                width=section.page_width - section.left_margin - section.right_margin,
-            )
+            if width * layout["height"] > height * layout["width"]:
+                p.add_run().add_picture(BytesIO(png), height=height)
+            else:
+                p.add_run().add_picture(BytesIO(png), width=width)
             revision(p, change)
             content(
                 doc.add_paragraph(style="Caption"),
-                f"Figure {figure}. Component allocation and extracted code dependencies",
+                f"Figure {figure}. Component allocation"
+                + (" and extracted code dependencies" if layout["dependencies"] else ""),
                 change,
             )
         elif block["type"] == "table":

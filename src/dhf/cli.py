@@ -26,7 +26,7 @@ def ingest(source: str = "ado", db: str = "out/evidence.sqlite", verbose: bool =
     """Ingest ADO over HTTP or synthetic fixture files with provenance."""
     from pathlib import Path
 
-    from dhf.graph import Store
+    from dhf.graph import Store, configuration_only
     from dhf.ingest.ado import ADO
     from dhf.ingest.fixtures import ingest_fixtures
 
@@ -73,6 +73,16 @@ def ingest(source: str = "ado", db: str = "out/evidence.sqlite", verbose: bool =
                 + ", ".join(result["changed"][:20])
                 + (" … (use --verbose)" if len(result["changed"]) > 20 else "")
             )
+            scoped = [
+                id
+                for id in result["changed"]
+                if id in previous and id in nodes and configuration_only(previous[id], nodes[id])
+            ]
+            if scoped:
+                typer.echo(
+                    f"  {len(scoped)} differ only in the link classes the scope can read "
+                    "(a scope change): drafts citing them are re-flagged for review."
+                )
         if verbose:
             typer.echo(json.dumps(result, indent=2))
     finally:
@@ -288,6 +298,8 @@ def copilot_request(
         store.close()
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence first")
+    llm = LLM("copilotstudio")
+    require_synthetic(graph, llm)  # data policy first, before any section work
     matches = [
         item
         for item in expand_sections(load_spec(doc), graph)
@@ -301,8 +313,6 @@ def copilot_request(
         raise typer.BadParameter(
             "Section needs multiple evidence chunks; choose a single-chunk section"
         )
-    llm = LLM("copilotstudio")
-    require_synthetic(graph, llm)
     typer.echo(
         json.dumps(
             llm.copilot_request(
@@ -394,7 +404,7 @@ def generate_section_command(
 
 
 @app.command("check")
-def check_command(doc: str, pr_id: int | None = None) -> None:
+def check_command(doc: str, pr_id: int | None = None, documents: str = "out/documents") -> None:
     """Recheck edited Markdown; with --pr-id, push updated manifest/DOCX and PR status."""
     import json
     from pathlib import Path
@@ -403,7 +413,7 @@ def check_command(doc: str, pr_id: int | None = None) -> None:
     from dhf.review import DocsReview, readiness
 
     if pr_id is None:
-        root = Path("out/documents")
+        root = Path(documents)
         result = readiness(
             (root / (doc + ".md")).read_text(),
             json.loads((root / (doc + ".manifest.json")).read_text()),

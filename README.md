@@ -60,7 +60,9 @@ uv run dhf ingest --source ado        # HTTP + device Git clone; start mock firs
 
 Real projects: an existing DHF (Word documents plus ADO CSV exports) imports offline with
 `uv run dhf import-docs <folder>`. A live ADO project is read through `ADO_SCOPE` and is read-only
-by default. Company evidence stays local and never goes to personal LLM keys. See
+by default. Without source code, the scope's `documents:` folder supplies the architecture (the
+SAD's software items and matrix, the SDDs' units), so SAD and SDD draft too. Company evidence stays
+local and never goes to personal LLM keys. See
 [real-project onboarding](docs/REAL_DATA_ONBOARDING.md).
 
 Every ingestion stores an immutable SQLite snapshot, provenance, content hashes,

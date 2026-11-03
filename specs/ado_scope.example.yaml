@@ -5,8 +5,8 @@
 # paths relative to this file).
 seed_ids: []
 seed_files: []
-#  - ../../Hackathon_2026/Requirements.txt
-#  - ../../Hackathon_2026/Specifications.txt
+#  - ../../dataset/requirement-urls.txt
+#  - ../../dataset/specification-urls.txt
 
 # Optional WIQL query whose results are added to the seeds.
 # wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.AreaPath] UNDER 'Project\\Area'"
@@ -28,3 +28,8 @@ test_plans: []
 # release: "1.0"
 # Source repository to clone read-only for code evidence; empty skips code evidence.
 repository: ""
+# Design documents that supply the architecture when no source code is in scope (ADR-044):
+# software items, units and their allocations, read locally on every ingest (folder relative
+# to this file). ADO stays the source for requirements, specifications and tests.
+# documents: ../../dhf-documents
+# documents: {folder: ../../dhf-documents, types: [component, software_unit]}

@@ -139,13 +139,19 @@ class MockAdapter:
         if "scope" in pack.get("facts", {}) and "verification_runs" in pack["facts"]:
             # Reference context is available for validation, not purpose prose.
             evidence = [a for a in evidence if a["id"].startswith("UN-")]
+        from dhf.models.values import cut_at_word, opening_sentence
+
+        def quoted(body: str) -> str:
+            # Document sections run to thousands of characters; quote their opening.
+            return body if len(body) <= 1000 else opening_sentence(body) or cut_at_word(body, 1000)
+
         return {
             "claims": [
                 {
                     "text": (
                         f"{item['title']} is implemented in {item['properties']['Path']}."
                         if item["id"].startswith("UNIT-") and "Path" in item.get("properties", {})
-                        else item["body"]
+                        else quoted(item["body"])
                     ),
                     "kind": kind,
                     "citations": [item["id"]],

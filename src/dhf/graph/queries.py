@@ -257,7 +257,7 @@ def prompt_pack(pack: dict) -> dict:
         properties = {
             labels.get(k, k.replace("_", " ").capitalize()): display(k, v)
             for k, v in attrs.items()
-            if k not in ("synthetic", "steps", "requirement_history", "changed_at")
+            if k not in ("synthetic", "steps", "requirement_history", "changed_at", "link_classes")
         }
         evidence.append(
             {

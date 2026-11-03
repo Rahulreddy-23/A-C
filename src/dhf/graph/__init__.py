@@ -30,6 +30,20 @@ def diff_graph(previous: dict, current: dict) -> dict:
     }
 
 
+def configuration_only(before: dict, after: dict) -> bool:
+    """Whether two revisions differ only in the link classes their source declares: a scope
+    change rather than an evidence change. Impact still re-flags drafts that cite them,
+    because assessability, and so gap sections, can change with it."""
+
+    def evidence(a: dict) -> tuple:
+        attrs = {k: v for k, v in a["attributes"].items() if k != "link_classes"}
+        return a["title"], a["body"], canonical(attrs), a["source"]["revision"]
+
+    return before["attributes"].get("link_classes") != after["attributes"].get(
+        "link_classes"
+    ) and evidence(before) == evidence(after)
+
+
 class Store:
     def __init__(self, path: Path = Path("out/evidence.sqlite")) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

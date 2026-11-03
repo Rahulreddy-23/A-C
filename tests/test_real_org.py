@@ -390,7 +390,7 @@ def test_outdated_verification_ignores_results_without_a_date() -> None:
     assert not [f for f in gaps(graph) if f["rule"] == "G11"]
 
 
-def test_discovery_works_with_a_pat_that_cannot_read_code(monkeypatch) -> None:
+def test_discovery_works_with_a_pat_that_cannot_read_code() -> None:
     from dhf.ingest.discovery import discover
 
     ado = ADO(REAL, "Project", "placeholder", scope={"seed_ids": [1], "test_plans": []})

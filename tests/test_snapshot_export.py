@@ -37,4 +37,4 @@ def test_snapshot_export_is_complete_deterministic_and_locally_hashed(tmp_path):
     out = tmp_path / "export"
     result = CliRunner().invoke(app, ["export-snapshot", "--db", str(db), "--output-dir", str(out)])
     assert result.exit_code == 0 and "248 artifacts, 413 links" in result.output
-    assert {p.name: p.read_text() for p in out.iterdir()} == files
+    assert {p.name: p.read_text(encoding="utf-8") for p in out.iterdir()} == files

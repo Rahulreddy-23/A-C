@@ -1,8 +1,10 @@
 """Offline synthetic demo tooling; owner review/merge simulation never enters src/."""
 
 import hashlib
+import io
 import json
 import os
+import sys
 import threading
 import uuid
 from pathlib import Path
@@ -47,7 +49,7 @@ def human_fixture_review(result: dict) -> str:
 
 def cumulative_spend(provider: str) -> float:
     path = Path("out/ledger.json")
-    entry = json.loads(path.read_text()).get(provider, {}) if path.exists() else {}
+    entry = json.loads(path.read_text(encoding="utf-8")).get(provider, {}) if path.exists() else {}
     if provider == "copilotstudio":
         return entry.get("actual_credits", 0) + entry.get("reserved_credits", 0)
     return entry.get("actual_usd", 0) + entry.get("reserved_usd", 0)
@@ -70,7 +72,7 @@ def demo_configuration(root: Path, live: bool) -> dict:
                 "Live demo needs the configured provider key; use ./scripts/demo.sh offline"
             )
     empty = root / "empty.env"
-    empty.write_text("")
+    empty.write_text("", encoding="utf-8", newline="\n")
     run_cap = (
         min(250.0, float(setting("DHF_COPILOT_CREDITS_PER_RUN", "250")))
         if provider == "copilotstudio"
@@ -120,7 +122,9 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
     docs = root / "documents"
     docs.mkdir()
     Path("out/demo-active.json").write_text(
-        json.dumps({"root": str(root), "db": str(db), "documents": str(docs)}, indent=2)
+        json.dumps({"root": str(root), "db": str(db), "documents": str(docs)}, indent=2),
+        encoding="utf-8",
+        newline="\n",
     )
     runner = CliRunner()
     ado = ADO()
@@ -193,8 +197,11 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
             flush=True,
         )
         for doc in ("sstr", "sad", "sdd", "sfmea"):
-            manifest = json.loads((docs / (doc + ".manifest.json")).read_text())
-            result = {"manifest": manifest, "markdown": (docs / (doc + ".md")).read_text()}
+            manifest = json.loads((docs / (doc + ".manifest.json")).read_text(encoding="utf-8"))
+            result = {
+                "manifest": manifest,
+                "markdown": (docs / (doc + ".md")).read_text(encoding="utf-8"),
+            }
             review = DocsReview(ado)
             pr = (
                 manifest["review"]["pr_id"]
@@ -206,7 +213,7 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
             if doc != "sdd":
                 assert not initial["ready"]
             edited = human_fixture_review(result)
-            (review.root / (doc + ".md")).write_text(edited)
+            (review.root / (doc + ".md")).write_text(edited, encoding="utf-8", newline="\n")
             git_command(["add", doc + ".md"], review.root)
             git_command(
                 [
@@ -230,7 +237,7 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
             git_command(["push", "--force-with-lease", "origin", "HEAD"], review.root, ado.token)
             merge_docs_pr(pr, server.root)
             tag = review.create_baseline(doc, pr)
-            (docs / (doc + ".md")).write_text(edited)
+            (docs / (doc + ".md")).write_text(edited, encoding="utf-8", newline="\n")
             (docs / (doc + ".manifest.json")).write_bytes(
                 (review.root / (doc + ".manifest.json")).read_bytes()
             )
@@ -254,7 +261,7 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
         from dhf.cli import document_impacts
 
         _, own_reports = document_impacts(str(db), str(docs))
-        saved.write_text(json.dumps(own_reports, indent=2))
+        saved.write_text(json.dumps(own_reports, indent=2), encoding="utf-8", newline="\n")
         command(
             [
                 "explore",
@@ -268,7 +275,7 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
         )
         command(["regenerate", "--stale", "--open-pr", "--db", str(db), "--documents", str(docs)])
         (root / "redline-sstr.docx").write_bytes((docs / "sstr.docx").read_bytes())
-        sstr = json.loads((docs / "sstr.manifest.json").read_text())
+        sstr = json.loads((docs / "sstr.manifest.json").read_text(encoding="utf-8"))
         command(
             ["check", "sstr", "--pr-id", str(int(sstr["review"]["pr_url"].rsplit("/", 1)[1]))],
             expected_exit=1,
@@ -319,7 +326,7 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
                 ]
             )
         command(["eval", "--db", str(db), "--documents", str(docs), "--impact-file", str(saved)])
-        metrics = json.loads(Path("out/metrics.json").read_text())
+        metrics = json.loads(Path("out/metrics.json").read_text(encoding="utf-8"))
         assert metrics["unknown_id_count"] == 0
         assert metrics["gap_detection"]["precision"] == metrics["gap_detection"]["recall"] == 1
         # Deterministic sections cite fixed evidence, so their change_1 impact must match the
@@ -330,9 +337,9 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
         from dhf.evaluation import impact_score
         from dhf.generate import load_spec
 
-        expected = yaml.safe_load(Path("data/synthetic/scenarios/change_1.yaml").read_text())[
-            "expected_sections"
-        ]
+        expected = yaml.safe_load(
+            Path("data/synthetic/scenarios/change_1.yaml").read_text(encoding="utf-8")
+        )["expected_sections"]
         modes = {doc: {s["id"]: s["mode"] for s in load_spec(doc)["sections"]} for doc in expected}
 
         def deterministic(doc: str, id: str) -> bool:
@@ -340,7 +347,7 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
 
         reports = [
             r | {"sections": [s for s in r["sections"] if deterministic(r["document"], s["id"])]}
-            for r in json.loads(saved.read_text())
+            for r in json.loads(saved.read_text(encoding="utf-8"))
         ]
         key = {
             doc: {id: s for id, s in rows.items() if deterministic(doc, id)}
@@ -393,8 +400,10 @@ def run_demo(live: bool = False, pause_before_change: bool = False) -> dict:
             "audit": str(root / "audit-pack.zip"),
             "status": "drafts require human review",
         }
-        (root / "run.json").write_text(json.dumps(result, indent=2))
-        Path("out/demo-latest.json").write_text(json.dumps(result, indent=2))
+        (root / "run.json").write_text(json.dumps(result, indent=2), encoding="utf-8", newline="\n")
+        Path("out/demo-latest.json").write_text(
+            json.dumps(result, indent=2), encoding="utf-8", newline="\n"
+        )
         print(json.dumps(result, indent=2), flush=True)
         return result
     finally:
@@ -413,6 +422,9 @@ if __name__ == "__main__":
     parser.add_argument("--live", action="store_true")
     parser.add_argument("--pause-before-change", action="store_true")
     args = parser.parse_args()
+    for stream in (sys.stdout, sys.stderr):  # Windows pipes default to a legacy code page
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     try:
         run_demo(live=args.live, pause_before_change=args.pause_before_change)
     except (ValueError, RuntimeError) as error:

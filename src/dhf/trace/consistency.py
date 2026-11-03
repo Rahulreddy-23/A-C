@@ -28,7 +28,9 @@ def consistency(graph: dict, documents: list[dict]) -> list[dict]:
 
     nodes = {a["id"]: a for a in graph["artifacts"]}
     findings = []
-    rules = yaml.safe_load(Path("specs/rules/consistency.yaml").read_text())["rules"]
+    rules = yaml.safe_load(Path("specs/rules/consistency.yaml").read_text(encoding="utf-8"))[
+        "rules"
+    ]
     for rule in rules:
         for doc in documents:
             common = {

@@ -1,9 +1,12 @@
 """Cached, budget-guarded provider interface. Reserve worst-case cost before calling."""
 
-import fcntl
+import contextlib
 import hashlib
 import json
 import re
+import sys
+import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Protocol
 
@@ -11,6 +14,33 @@ import yaml
 
 from dhf.config import setting
 from dhf.models import output_model, strict_output_schema
+
+
+@contextlib.contextmanager
+def exclusive(path: Path) -> Iterator[None]:
+    """Exclusive inter-process lock on `path` for the whole block (ledger and cache):
+    flock on macOS and Linux, a one-byte msvcrt lock on Windows."""
+    with path.open("a+", encoding="utf-8", newline="\n") as handle:
+        if sys.platform != "win32":
+            import fcntl
+
+            fcntl.flock(handle, fcntl.LOCK_EX)
+            yield
+            return
+        import msvcrt
+
+        handle.seek(0)
+        while True:
+            try:
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                break
+            except OSError:  # held by another process
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 def canonical(value: object) -> str:
@@ -137,9 +167,9 @@ class LLM:
         if self.provider == "mock":
             return 0.0, 0.0
         if self.provider == "openai":
-            defaults = yaml.safe_load(Path("specs/llm/prices.yaml").read_text())["openai"].get(
-                model, {}
-            )
+            defaults = yaml.safe_load(Path("specs/llm/prices.yaml").read_text(encoding="utf-8"))[
+                "openai"
+            ].get(model, {})
             key = "DHF_OPENAI_" + re.sub(r"[^A-Za-z0-9]", "_", model).upper()
             legacy = model == "gpt-4.1-mini"
             values = [
@@ -165,7 +195,7 @@ class LLM:
     def budget_status(self) -> dict:
         """Read cumulative headroom without credentials or provider payloads."""
         path = self.root / "ledger.json"
-        ledger = json.loads(path.read_text()) if path.exists() else {}
+        ledger = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
         entry = ledger.get(self.provider, {})
         if self.provider == "copilotstudio":
             cap = self.copilot_cap()
@@ -294,8 +324,7 @@ class LLM:
         )
         cached = self.cache / f"{self.provider}-{key}.json"
         lock = self.root / "ledger.lock"
-        with lock.open("a") as handle:
-            fcntl.flock(handle, fcntl.LOCK_EX)
+        with exclusive(lock):
             if key in self.preload_errors:
                 raise self.preload_errors[key]
             if cached.exists():
@@ -304,13 +333,13 @@ class LLM:
                 else:
                     self.hits += 1
                 if self.provider == "copilotstudio":
-                    saved = json.loads(cached.read_text())
+                    saved = json.loads(cached.read_text(encoding="utf-8"))
                     self.last_model = saved["model"]
                     self.last_usage_source = saved.get("usage_source", "reported")
                     return response_model.model_validate(saved["response"]).model_dump(mode="json")
-                return response_model.model_validate_json(cached.read_text()).model_dump(
-                    mode="json"
-                )
+                return response_model.model_validate_json(
+                    cached.read_text(encoding="utf-8")
+                ).model_dump(mode="json")
             # UTF-8 bytes bound input tokens conservatively; reserve all output tokens.
             input_tokens = len((prompt + canonical(pack) + canonical(schema)).encode()) + 512
             if self.provider == "copilotstudio":
@@ -339,7 +368,9 @@ class LLM:
                 else (input_tokens * in_price + completion_limit * out_price) / 1e6
             )
             ledger_path = self.root / "ledger.json"
-            ledger = json.loads(ledger_path.read_text()) if ledger_path.exists() else {}
+            ledger = (
+                json.loads(ledger_path.read_text(encoding="utf-8")) if ledger_path.exists() else {}
+            )
             entry = ledger.get(self.provider, {})
             outstanding = entry.get("reserved_usd", 0.0)
             actual = entry.get("actual_usd", 0.0)
@@ -356,7 +387,7 @@ class LLM:
                 "calls": ledger.get(self.provider, {}).get("calls", 0) + 1,
             }
             temp = ledger_path.with_suffix(".tmp")
-            temp.write_text(canonical(ledger))
+            temp.write_text(canonical(ledger), encoding="utf-8", newline="\n")
             temp.replace(ledger_path)
             self.calls += 1
             # Failed calls retain the reservation: fail safe rather than overspend.
@@ -386,9 +417,9 @@ class LLM:
                 entry["input_tokens"] = entry.get("input_tokens", 0) + usage["input_tokens"]
                 entry["output_tokens"] = entry.get("output_tokens", 0) + usage["output_tokens"]
                 self.run_spend += billed - cost
-                temp.write_text(canonical(ledger))
+                temp.write_text(canonical(ledger), encoding="utf-8", newline="\n")
                 temp.replace(ledger_path)
-            cached.write_text(result.model_dump_json())
+            cached.write_text(result.model_dump_json(), encoding="utf-8", newline="\n")
             return result.model_dump(mode="json")
 
     def _generate_copilot(
@@ -415,7 +446,7 @@ class LLM:
             )
         reserve = (input_tokens + completion_limit) * rate / 1000
         path = self.root / "ledger.json"
-        ledger = json.loads(path.read_text()) if path.exists() else {}
+        ledger = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
         entry = ledger.get("copilotstudio", {})
         actual = entry.get("actual_credits", 0.0)
         outstanding = entry.get("reserved_credits", 0.0)
@@ -432,7 +463,7 @@ class LLM:
             "calls": entry.get("calls", 0) + 1,
         }
         temp = path.with_suffix(".tmp")
-        temp.write_text(canonical(ledger))
+        temp.write_text(canonical(ledger), encoding="utf-8", newline="\n")
         temp.replace(path)
         self.calls += 1
         request = request_payload(key, prompt_id, version, prompt, pack, schema)
@@ -457,13 +488,15 @@ class LLM:
 
             raise DraftingUnavailable("invalid_usage", "copilotstudio")
         self._settle_copilot(ledger["copilotstudio"], usage, usage_source, rate, reserve)
-        temp.write_text(canonical(ledger))
+        temp.write_text(canonical(ledger), encoding="utf-8", newline="\n")
         temp.replace(path)
         self.last_model = reported_model
         self.last_usage_source = usage_source
         output = result.model_dump(mode="json")
         cached.write_text(
-            canonical({"response": output, "model": reported_model, "usage_source": usage_source})
+            canonical({"response": output, "model": reported_model, "usage_source": usage_source}),
+            encoding="utf-8",
+            newline="\n",
         )
         return output
 
@@ -515,10 +548,9 @@ class LLM:
         }
         total = sum(reservations.values())
         lock = self.root / "ledger.lock"
-        with lock.open("a") as handle:
-            fcntl.flock(handle, fcntl.LOCK_EX)
+        with exclusive(lock):
             path = self.root / "ledger.json"
-            ledger = json.loads(path.read_text()) if path.exists() else {}
+            ledger = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
             entry = ledger.get("copilotstudio", {})
             if (
                 self.run_spend + total > run_cap
@@ -537,7 +569,7 @@ class LLM:
             }
             ledger["copilotstudio"] = entry
             temp = path.with_suffix(".tmp")
-            temp.write_text(canonical(ledger))
+            temp.write_text(canonical(ledger), encoding="utf-8", newline="\n")
             temp.replace(path)
             self.run_spend += total
             self.calls += len(pending)
@@ -582,8 +614,10 @@ class LLM:
                             "response": result.model_dump(mode="json"),
                             "usage_source": usage_source,
                         }
-                    )
+                    ),
+                    encoding="utf-8",
+                    newline="\n",
                 )
                 self.preloaded_keys.add(key)
-            temp.write_text(canonical(ledger))
+            temp.write_text(canonical(ledger), encoding="utf-8", newline="\n")
             temp.replace(path)

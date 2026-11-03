@@ -480,3 +480,23 @@ Dataset-specific results are local only (`out/real-docs/`, gitignored). This sec
     - Documented software items reach hazards and risk controls through their SAD allocations.
     - Orphan-code proposals (L02) skip units from documents.
     - `uv run pytest -q` → `182 passed in 172.72s`; ruff clean; `./scripts/demo.sh` → exit 0, gaps P/R 1.00, deterministic impact exact (51), change_1 impact P/R 1.00 (75). Real baseline re-import: 129 of 129 units carry design text.
+
+### Windows support and README refresh — 2026-11-03
+
+The owner asked for native Windows support as a priority, and for a clear README for macOS and Windows.
+
+- **Windows (ADR-045)**
+  - `dhf` could not start on Windows: the LLM layer imported `fcntl`. The ledger and cache lock now uses `flock` or `msvcrt`.
+  - Every text read and write states UTF-8, and every write states LF line endings (246 calls, of which ruff's PLW1514 flags only 89). `tests/test_portability.py` enforces this, together with UTF-8 decoding of text subprocess output.
+  - `.gitattributes` checks out LF. Git runs with `core.autocrlf=false` and decodes UTF-8.
+  - The `dhf` entry point (`dhf.cli:run`) and the demo print UTF-8 on Windows pipes.
+  - Code-file keys use `/`. The mock's reset clears git's read-only files before deleting.
+  - CI runs pytest, ruff, `dhf --help` and the offline demo on `ubuntu-latest` and `windows-latest`.
+- **README** rewritten: requirements and install for macOS and Windows, quick start, configuration, a command table, the review workflow, AI providers, real projects, development, rules and documentation links (tracked docs only).
+- **Verification (macOS, with Windows encodings simulated)**
+  - `uv run ruff check .` → `All checks passed!`; `uv run ruff format --check .` → `128 files already formatted`
+  - `PYTHONCOERCECLOCALE=0 PYTHONUTF8=0 LC_ALL=C uv run pytest -q` (no UTF-8 defaults, as on Windows) → `178 passed in 161.12s`
+  - `PYTHONIOENCODING=cp1252 uv run dhf --help` (a Windows pipe) → exit 0; the `→` in the help text prints.
+  - `PYTHONIOENCODING=cp1252 uv run python tools/demo.py` → exit 0; unknown IDs 0; gaps P/R 1.00; deterministic impact exact (51 records); audit pack 33 verified files.
+  - README quick start in a clean worktree: `dhf ingest --source fixtures` (248 artifacts), `dhf gaps` (21 gaps), `dhf generate sstr` (12 sections, 0 rejections), `dhf explore` → all succeeded.
+- **Pending:** the first `windows-latest` CI run (see the PR checks). Git for Windows running the `#!/bin/sh` hooks is verified only by that run.

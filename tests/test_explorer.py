@@ -19,9 +19,9 @@ def decode(html: str) -> dict:
 
 def test_all_nodes_provenance_gap_families_and_inert_offline_html():
     graph = ingest_fixtures()
-    historical = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    historical = legacy_design(Path("data/synthetic/sad_v1.md").read_text(encoding="utf-8"))
     payload = decode(create_explorer(graph, [], baselines=[historical]))
-    html = render_explorer(payload, Path("specs/render/explorer.html").read_text())
+    html = render_explorer(payload, Path("specs/render/explorer.html").read_text(encoding="utf-8"))
     assert len(payload["nodes"]) == 248 and len(payload["links"]) == 413
     assert all(n["source"]["url"] and n["source"]["revision"] for n in payload["nodes"])
     assert {r[0] for n in payload["nodes"] for r in n["rules"]} == {"G", "C", "F"}
@@ -60,7 +60,7 @@ def test_all_nodes_provenance_gap_families_and_inert_offline_html():
 
 def test_baseline_consistency_is_filterable_in_explorer():
     graph = ingest_fixtures()
-    historical = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    historical = legacy_design(Path("data/synthetic/sad_v1.md").read_text(encoding="utf-8"))
     payload = decode(create_explorer(graph, [], baselines=[historical]))
     baseline = [f for f in payload["findings"] if f.get("scope") == "baseline"]
     assert {f["rule"] for f in baseline} == {"C01", "C04"}

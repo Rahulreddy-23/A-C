@@ -144,9 +144,9 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
 
         import yaml
 
-        for interface in yaml.safe_load(Path("specs/render/interfaces.yaml").read_text())[
-            "interfaces"
-        ]:
+        for interface in yaml.safe_load(
+            Path("specs/render/interfaces.yaml").read_text(encoding="utf-8")
+        )["interfaces"]:
             component = nodes.get(interface["component"])
             if component is None or "interfaces" not in component["attributes"]:
                 continue  # declared for another product's architecture

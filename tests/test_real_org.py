@@ -110,9 +110,13 @@ def test_scope_limits_and_plan_filtered_results(ado_server, tmp_path: Path) -> N
 
 def test_seed_files_accept_work_item_urls_and_bare_ids(tmp_path: Path) -> None:
     (tmp_path / "requirements.txt").write_text(
-        "https://dev.azure.example/org/Project/_workitems/edit/7\n 12 \nnot an id\n"
+        "https://dev.azure.example/org/Project/_workitems/edit/7\n 12 \nnot an id\n",
+        encoding="utf-8",
+        newline="\n",
     )
-    (tmp_path / "scope.yaml").write_text("seed_ids: [3]\nseed_files: [requirements.txt]\n")
+    (tmp_path / "scope.yaml").write_text(
+        "seed_ids: [3]\nseed_files: [requirements.txt]\n", encoding="utf-8", newline="\n"
+    )
     assert load_scope(str(tmp_path / "scope.yaml"))["seed_ids"] == [3, 7, 12]
 
 
@@ -162,7 +166,7 @@ def test_rich_text_fields_mapped_ids_and_attributes() -> None:
 
 
 def test_discovery_accepts_reciprocal_links_and_suggests_document_id_fields() -> None:
-    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text(encoding="utf-8"))
     items = [
         {
             "id": n,
@@ -184,14 +188,20 @@ def test_seed_files_accept_every_ado_url_form_and_never_silently_widen(tmp_path:
         "103 - Pump shall alarm on occlusion\n"
         "https://dev.azure.example/org/P/_apis/wit/workItems/104\n"
         "https://dev.azure.example/org/P/_boards/board?workitem=105\n"
-        "# comment\nnot an id\n"
+        "# comment\nnot an id\n",
+        encoding="utf-8",
+        newline="\n",
     )
-    (tmp_path / "scope.yaml").write_text("seed_files: [seeds.txt]\n")
+    (tmp_path / "scope.yaml").write_text(
+        "seed_files: [seeds.txt]\n", encoding="utf-8", newline="\n"
+    )
     scope = load_scope(str(tmp_path / "scope.yaml"))
     assert scope["seed_ids"] == [101, 102, 103, 104, 105] and scope["unparsed_seed_lines"] == 1
     assert ADO(REAL, "P", "x", scope=scope).report["seed lines without a work-item ID"] == 1
-    (tmp_path / "empty.txt").write_text("nothing here\n")
-    (tmp_path / "broken.yaml").write_text("seed_files: [empty.txt]\nhistory: false\n")
+    (tmp_path / "empty.txt").write_text("nothing here\n", encoding="utf-8", newline="\n")
+    (tmp_path / "broken.yaml").write_text(
+        "seed_files: [empty.txt]\nhistory: false\n", encoding="utf-8", newline="\n"
+    )
     with pytest.raises(ValueError, match="none could be read"):
         load_scope(str(tmp_path / "broken.yaml"))
 
@@ -255,10 +265,10 @@ def test_results_without_cases_and_duplicate_document_ids_do_not_abort(
         }
     )
     write_state(ado_server.root, state)
-    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text(encoding="utf-8"))
     mapping["id_tag_prefix"] = "NONE:"
     mapping["id_fields"] = {"software_req": "Custom.SpecID"}
-    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping))
+    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping), encoding="utf-8", newline="\n")
     monkeypatch.setenv("ADO_MAPPING", str(tmp_path / "mapping.yaml"))
     base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
     scope = {"seed_ids": [ids["SRS-001"], ids["SRS-002"]], "follow": {"depth": 0}}
@@ -307,7 +317,10 @@ def test_git_channel_refuses_pushes_to_read_only_orgs_and_ignores_credential_hel
 
     monkeypatch.setattr(subprocess, "run", record)
     git_command(["status", "--short"], tmp_path / "repo")
-    assert seen[-1] == (["git", "-c", "credential.helper=", "status", "--short"], "never")
+    assert seen[-1] == (
+        ["git", "-c", "credential.helper=", "-c", "core.autocrlf=false", "status", "--short"],
+        "never",
+    )
 
 
 def test_docs_review_refuses_baselines_in_read_only_mode() -> None:
@@ -459,9 +472,9 @@ def test_mappings_cannot_overwrite_reserved_attributes() -> None:
 
 
 def test_scope_follows_the_mappings_trace_links_by_default(tmp_path, monkeypatch) -> None:
-    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text(encoding="utf-8"))
     mapping["relations"]["derives_from"] = "System.LinkTypes.Dependency-Reverse"
-    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping))
+    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping), encoding="utf-8", newline="\n")
     monkeypatch.setenv("ADO_MAPPING", str(tmp_path / "mapping.yaml"))
     follow = ADO(REAL, "P", "x", scope={}).follow_default()
     assert {"System.LinkTypes.Dependency-Forward", "System.LinkTypes.Dependency-Reverse"} <= follow
@@ -526,12 +539,16 @@ def test_runs_without_in_scope_results_are_not_evidence(ado_server, tmp_path) ->
 
 def test_scope_release_must_be_quoted_text(tmp_path: Path) -> None:
     scope_file = tmp_path / "scope.yaml"
-    scope_file.write_text("seed_ids: [1]\nrelease: 1.10\n")  # YAML reads the number 1.1
+    scope_file.write_text(
+        "seed_ids: [1]\nrelease: 1.10\n", encoding="utf-8", newline="\n"
+    )  # YAML reads the number 1.1
     with pytest.raises(ValueError, match='quoted text, e.g. release: "1.1"'):
         load_scope(str(scope_file))
-    scope_file.write_text('seed_ids: [1]\nrelease: "1.10"\n')
+    scope_file.write_text('seed_ids: [1]\nrelease: "1.10"\n', encoding="utf-8", newline="\n")
     assert load_scope(str(scope_file))["release"] == "1.10"
-    scope_file.write_text("seed_ids: [1]\nrelease:\n")  # blank: no release, never "None"
+    scope_file.write_text(
+        "seed_ids: [1]\nrelease:\n", encoding="utf-8", newline="\n"
+    )  # blank: no release, never "None"
     assert load_scope(str(scope_file))["release"] is None
 
 
@@ -560,9 +577,9 @@ def test_mapped_work_item_links_never_make_code_rules_assessable(
     from dhf.trace import gaps, unassessable_rules
     from dhf.trace.reports import gap_rules
 
-    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text(encoding="utf-8"))
     mapping["relations"]["implements"] = "System.LinkTypes.Dependency-Forward"
-    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping))
+    (tmp_path / "mapping.yaml").write_text(yaml.safe_dump(mapping), encoding="utf-8", newline="\n")
     monkeypatch.setenv("ADO_MAPPING", str(tmp_path / "mapping.yaml"))
     ids = read_state(ado_server.root)["ids"]
     base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"

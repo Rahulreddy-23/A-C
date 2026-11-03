@@ -113,7 +113,7 @@ def audit_pack(snapshots: list[dict], root: Path, target: Path, release: str) ->
 
     if not re.fullmatch(r"[\w.-]+", release):
         raise ValueError("Invalid release")
-    docs = [json.loads(p.read_text()) for p in sorted(root.glob("*.manifest.json"))]
+    docs = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(root.glob("*.manifest.json"))]
     files = {}
     for doc in docs:
         names = [doc["doc_id"] + suffix for suffix in (".md", ".docx", ".manifest.json")]

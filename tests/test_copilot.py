@@ -66,7 +66,7 @@ def test_http_request_cache_ledger_preview_and_secret_redaction(tmp_path, monkey
     assert status["actual_credits"] == pytest.approx(0.019)
     assert status["reserved_credits"] == pytest.approx(0)
     assert secret not in json.dumps(status)
-    assert secret not in (tmp_path / "ledger.json").read_text()
+    assert secret not in (tmp_path / "ledger.json").read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize(
@@ -158,7 +158,7 @@ def test_folder_document_is_one_file_with_section_failures(tmp_path, monkeypatch
                 else []
             )
             if requests:
-                batch = json.loads(requests[0].read_text())
+                batch = json.loads(requests[0].read_text(encoding="utf-8"))
                 seen.append(batch)
                 rows = [reply(item) for item in batch["sections"]]
                 rows[0] = reply(batch["sections"][0], status="refused")
@@ -175,7 +175,9 @@ def test_folder_document_is_one_file_with_section_failures(tmp_path, monkeypatch
                             "document_id": batch["document_id"],
                             "sections": rows,
                         }
-                    )
+                    ),
+                    encoding="utf-8",
+                    newline="\n",
                 )
                 return
             time.sleep(0.01)
@@ -305,8 +307,8 @@ def test_day1_sample_is_exact_preview_and_passes_reference_validator(tmp_path):
         prompt["max_output_tokens"],
     )
     root = Path("tests/fixtures")
-    assert request == json.loads((root / "copilot_request.json").read_text())
-    response = json.loads((root / "copilot_response.json").read_text())
+    assert request == json.loads((root / "copilot_request.json").read_text(encoding="utf-8"))
+    response = json.loads((root / "copilot_response.json").read_text(encoding="utf-8"))
     assert response["request_id"] == request["request_id"]
     claims = json.loads(response["claims_json"])
     validated = validate_claims(claims, chunks[0], section["allowed_kinds"])
@@ -332,7 +334,7 @@ def test_copilot_request_cli_is_read_only(tmp_path, monkeypatch):
     )
     assert output.exit_code == 0, output.output
     assert json.loads(output.output) == json.loads(
-        Path("tests/fixtures/copilot_request.json").read_text()
+        Path("tests/fixtures/copilot_request.json").read_text(encoding="utf-8")
     )
     assert not (tmp_path / "llm/ledger.json").exists()
 
@@ -369,7 +371,7 @@ def test_http_usage_mode_provenance_and_cache(tmp_path, monkeypatch, mode, avail
         150 if available else (len("".join(str(v) for v in requests[0].values()).encode()) + 2) // 3
     )
     expected_output = 40 if available else (len(claims_json.encode()) + 2) // 3
-    entry = json.loads((tmp_path / "ledger.json").read_text())["copilotstudio"]
+    entry = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))["copilotstudio"]
     assert entry["input_tokens"] == expected_input
     assert entry["output_tokens"] == expected_output
     assert entry["actual_credits"] == pytest.approx((expected_input + expected_output) * 0.1 / 1000)
@@ -379,12 +381,12 @@ def test_http_usage_mode_provenance_and_cache(tmp_path, monkeypatch, mode, avail
     # Cache provenance survives a new process and switching the configured mode.
     monkeypatch.setenv("DHF_COPILOT_USAGE", "reported")
     cached = LLM("copilotstudio", tmp_path, adapter)
-    before = (tmp_path / "ledger.json").read_text()
+    before = (tmp_path / "ledger.json").read_text(encoding="utf-8")
     assert cached.generate("test", 1, "Write café claims", PACK, 100) == {"claims": []}
     assert cached.last_usage_source == source
     assert (cached.calls, cached.hits) == (0, 1)
     assert len(requests) == 1
-    assert (tmp_path / "ledger.json").read_text() == before
+    assert (tmp_path / "ledger.json").read_text(encoding="utf-8") == before
     assert "SECRET" not in before
 
 
@@ -418,12 +420,12 @@ def test_estimated_partial_usage_and_mixed_cumulative_ledger(tmp_path, monkeypat
         CopilotStudioAdapter(httpx.Client(transport=httpx.MockTransport(endpoint))),
     )
     llm.generate("test", 1, "Reported", PACK, 100)
-    legacy = json.loads((tmp_path / "ledger.json").read_text())
+    legacy = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))
     legacy["copilotstudio"].pop("usage_source")
     legacy["copilotstudio"].pop("credits_by_usage_source")
-    (tmp_path / "ledger.json").write_text(json.dumps(legacy))
+    (tmp_path / "ledger.json").write_text(json.dumps(legacy), encoding="utf-8", newline="\n")
     llm.generate("test", 1, "Estimated", PACK, 100)
-    entry = json.loads((tmp_path / "ledger.json").read_text())["copilotstudio"]
+    entry = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))["copilotstudio"]
     assert entry["usage_source"] == "mixed"
     assert entry["credits_by_usage_source"]["reported"] == pytest.approx(0.019)
     assert entry["credits_by_usage_source"]["estimated"] > 0

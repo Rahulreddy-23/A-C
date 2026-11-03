@@ -34,9 +34,9 @@ def test_fixture_http_graph_parity_and_exact_changes(ado_server, tmp_path: Path)
         apply_scenario("change_1", ado_server.root)
         after = ado.ingest(tmp_path / "clones")
         changes = store.ingest(after)
-        expected = yaml.safe_load(Path("data/synthetic/scenarios/change_1.yaml").read_text())[
-            "expected_changed"
-        ]
+        expected = yaml.safe_load(
+            Path("data/synthetic/scenarios/change_1.yaml").read_text(encoding="utf-8")
+        )["expected_changed"]
         assert sorted(changes["changed"] + changes["added"]) == sorted(expected)
         assert changes["removed"] == []
         assert store.graph(1) == before
@@ -129,8 +129,8 @@ def test_enriched_fixture_quality_and_native_revision_history() -> None:
         {"revision": 1, "changed_at": "2026-09-20T12:00:00Z"},
         {"revision": 2, "changed_at": "2026-10-04T12:00:00Z"},
     ]
-    assert len(Path("data/synthetic/prd.md").read_text().split()) >= 200
-    assert len(Path("data/synthetic/sad_v1.md").read_text().split()) >= 400
+    assert len(Path("data/synthetic/prd.md").read_text(encoding="utf-8").split()) >= 200
+    assert len(Path("data/synthetic/sad_v1.md").read_text(encoding="utf-8").split()) >= 400
     for name in (
         "sensor_pressure",
         "infusion_bounds",
@@ -149,5 +149,7 @@ def test_enriched_fixture_quality_and_native_revision_history() -> None:
         "log_events",
         "log_digest",
     ):
-        count = len(Path(f"data/synthetic/code/kestrel/{name}.py").read_text().splitlines())
+        count = len(
+            Path(f"data/synthetic/code/kestrel/{name}.py").read_text(encoding="utf-8").splitlines()
+        )
         assert 30 <= count <= 120, (name, count)

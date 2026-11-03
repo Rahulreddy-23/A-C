@@ -81,7 +81,7 @@ def diagram_image(layout: dict) -> dict:
     """Pure JSON layout → base64 PNG and dimensions; glyph data is versioned config."""
     width, height = layout["width"], layout["height"]
     canvas = bytearray(bytes((255, 255, 255)) * width * height)
-    font = yaml.safe_load(Path("specs/render/font5x7.yaml").read_text())
+    font = yaml.safe_load(Path("specs/render/font5x7.yaml").read_text(encoding="utf-8"))
 
     def box(x: int, y: int, w: int, h: int, color: tuple) -> None:
         for yy in range(max(0, y), min(height, y + h)):

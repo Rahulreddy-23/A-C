@@ -158,7 +158,11 @@ def seed_route(
         git(["remote", "add", "origin", str(bare)], work)
         if name == "kestrel-device-sw":
             hook = bare / "hooks/pre-receive"
-            hook.write_text('#!/bin/sh\nif [ "$DHF_GIT_ROLE" != "seed" ]; then exit 1; fi\n')
+            hook.write_text(
+                '#!/bin/sh\nif [ "$DHF_GIT_ROLE" != "seed" ]; then exit 1; fi\n',
+                encoding="utf-8",
+                newline="\n",
+            )
             hook.chmod(0o755)
         repo = {
             "id": name,
@@ -229,7 +233,9 @@ def seed_route(
                     if change["changeType"] == "delete":
                         dest.unlink()
                     else:
-                        dest.write_text(change["newContent"]["content"])
+                        dest.write_text(
+                            change["newContent"]["content"], encoding="utf-8", newline="\n"
+                        )
                 git(["add", "."], work)
                 git(["commit", "-m", commit["comment"]], work)
                 commits.append({"commitId": git(["rev-parse", "HEAD"], work)})

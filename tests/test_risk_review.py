@@ -69,7 +69,7 @@ def test_drr_inputs_not_invented_and_proposals_are_separate(tmp_path):
     llm = LLM(root=tmp_path / "llm")
     with pytest.raises(ValueError, match="review_input"):
         generate_document("drr", graph, {"release": "1.1"}, out=tmp_path, llm=llm)
-    review = json.loads(Path("data/synthetic/review_input.json").read_text())
+    review = json.loads(Path("data/synthetic/review_input.json").read_text(encoding="utf-8"))
     result = generate_document(
         "drr",
         graph,
@@ -155,7 +155,7 @@ def test_function_analysis_uses_real_callables_and_baseline_findings(tmp_path):
 
     graph = ingest_fixtures()
     nodes = {a["id"]: a for a in graph["artifacts"]}
-    functions = yaml.safe_load(Path("specs/risk/functions.yaml").read_text())
+    functions = yaml.safe_load(Path("specs/risk/functions.yaml").read_text(encoding="utf-8"))
     for unit, function in functions.items():
         tree = ast.parse(nodes[unit]["body"])
         callables = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
@@ -167,7 +167,7 @@ def test_function_analysis_uses_real_callables_and_baseline_findings(tmp_path):
             if isinstance(f, ast.FunctionDef)
         )
         assert function in callables
-    baseline = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    baseline = legacy_design(Path("data/synthetic/sad_v1.md").read_text(encoding="utf-8"))
     params = {"release": "1.1", "documents": [baseline]}
     table = query(graph, "drr_findings_table", params)["facts"]["rows"]
     rows = {r["rule"]: r for r in table}
@@ -184,7 +184,7 @@ def test_function_analysis_uses_real_callables_and_baseline_findings(tmp_path):
     assert [
         s["id"] for s in proposals["sections"] if s["id"].startswith("L01") and s["claims"]
     ] == ["L01.SRS-020"]
-    assert "L01.SRS-001" not in (tmp_path / "proposals/proposals.md").read_text()
+    assert "L01.SRS-001" not in (tmp_path / "proposals/proposals.md").read_text(encoding="utf-8")
 
 
 def test_drr_uses_only_the_explicit_impact_report(tmp_path, monkeypatch, ado_server):
@@ -209,7 +209,9 @@ def test_drr_uses_only_the_explicit_impact_report(tmp_path, monkeypatch, ado_ser
     monkeypatch.setenv("APP_ADO_PAT", "mock-app-token")
     monkeypatch.setattr(DocsReview, "approved_documents", lambda self: [])
     Path("out").mkdir()
-    Path("out/impact.json").write_text("Unrelated run; invalid JSON must not be read")
+    Path("out/impact.json").write_text(
+        "Unrelated run; invalid JSON must not be read", encoding="utf-8", newline="\n"
+    )
     command = [
         "generate",
         "drr",
@@ -225,10 +227,12 @@ def test_drr_uses_only_the_explicit_impact_report(tmp_path, monkeypatch, ado_ser
     result = CliRunner().invoke(app, command)
     assert result.exit_code == 0, result.output
     manifest_path = tmp_path / "docs/drr.manifest.json"
-    assert "impact_reports" not in json.loads(manifest_path.read_text())["params"]
+    assert "impact_reports" not in json.loads(manifest_path.read_text(encoding="utf-8"))["params"]
     report = [{"document": "sstr", "sections": [{"id": "anomaly_assessment", "status": "stale"}]}]
     supplied = tmp_path / "own-impact.json"
-    supplied.write_text(json.dumps(report))
+    supplied.write_text(json.dumps(report), encoding="utf-8", newline="\n")
     result = CliRunner().invoke(app, [*command, "--impact-file", str(supplied)])
     assert result.exit_code == 0, result.output
-    assert json.loads(manifest_path.read_text())["params"]["impact_reports"] == report
+    assert (
+        json.loads(manifest_path.read_text(encoding="utf-8"))["params"]["impact_reports"] == report
+    )

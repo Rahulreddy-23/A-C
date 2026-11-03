@@ -299,3 +299,18 @@ The SAD and SDD queries assumed code extraction: signatures, data structures, a 
 - **The component diagram lays out any inventory.** Components are found by role rather than by the synthetic `COMP_nn` pattern. Boxes list up to ten units ("AND n MORE" beyond that), units without a software item are counted on the figure, dotted unit names abbreviate their leading segments (`Ks.FleetMonitorService.Api` → `K.F.Api`), and the DOCX figure scales to fit the page. The synthetic diagram is byte-identical.
 
 Consequences: SAD and SDD drafts and change tracking work for the owner's project without a repository or a Code-scoped PAT. Unit-level allocation and unit tests read "not recorded", because the design documents don't record them. Personal API keys still never receive company evidence (R-059).
+
+## ADR-045 — Windows: text is UTF-8 with LF line endings on every platform
+2026-11-03 · Accepted (owner: the project must work on Windows; that is the priority)
+
+On Windows, Python reads and writes text in the ANSI code page (usually cp1252) and writes CRLF line endings, and Git can convert line endings on checkout. The LLM layer also imported `fcntl`, which Windows lacks, so no `dhf` command could start.
+
+- **Every text read and write states `encoding="utf-8"`, and every write also states `newline="\n"`.** Reports, manifests, docs-repo commits and git hook scripts are then byte-identical on every OS, so Windows and macOS reviewers see the same diffs and hashes. `tests/test_portability.py` enforces this from the syntax tree. Ruff's PLW1514 is not used: it cannot tell that most variables are `Path` objects, so it missed most of them.
+- **Git keeps exact bytes.** `.gitattributes` checks out every file with LF. Git subprocesses run with `core.autocrlf=false` and decode their output as UTF-8.
+- **The ledger and cache lock** is `flock` on macOS and Linux, and a one-byte `msvcrt` lock on Windows.
+- **Console output is UTF-8.** Windows pipes and redirects default to the legacy code page, and help text and reports print arrows and dashes. The `dhf` entry point (`dhf.cli:run`) and the demo therefore reconfigure stdout and stderr (`errors="replace"`).
+- **Paths that become evidence keys use `/`** (`as_posix()`), so code-file keys match across platforms.
+- **Shell scripts stay shell scripts.** Git for Windows runs `#!/bin/sh` hooks and the askpass helper with its bundled shell. The mock's reset clears git's read-only file attribute before deleting.
+- **CI runs the tests and the offline demo on `ubuntu-latest` and `windows-latest`.**
+
+Consequences: Windows needs only Git for Windows and uv, and the commands are the same as on macOS. `scripts/demo.sh` remains a macOS/Linux convenience; `uv run python tools/demo.py` works everywhere.

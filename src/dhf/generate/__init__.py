@@ -75,17 +75,21 @@ def overlay(layout: dict, base: dict) -> dict:
 
 def template_digest(template: str | Path) -> str:
     """Hash of everything a template's sections come from (an overlay plus its base)."""
-    text = Path(template).read_text()
+    text = Path(template).read_text(encoding="utf-8")
     base = yaml.safe_load(text).get("extends")
     return (
-        sha(text) if not base else sha(Path("specs/documents", f"{base}.yaml").read_text() + text)
+        sha(text)
+        if not base
+        else sha(Path("specs/documents", f"{base}.yaml").read_text(encoding="utf-8") + text)
     )
 
 
 def load_spec(doc: str, template: str | None = None) -> dict:
-    spec = yaml.safe_load(template_path(doc, template).read_text())
+    spec = yaml.safe_load(template_path(doc, template).read_text(encoding="utf-8"))
     if "extends" in spec:
-        spec = overlay(spec, yaml.safe_load(Path("specs/documents", f"{doc}.yaml").read_text()))
+        spec = overlay(
+            spec, yaml.safe_load(Path("specs/documents", f"{doc}.yaml").read_text(encoding="utf-8"))
+        )
     if spec["id"] != doc or len({s["id"] for s in spec["sections"]}) != len(spec["sections"]):
         raise ValueError("Invalid or duplicate spec identifiers")
     return spec
@@ -108,7 +112,7 @@ def require_synthetic(graph: dict, llm: LLM) -> None:
 
 def load_prompt(reference: str) -> dict:
     id, version = reference.rsplit("@", 1)
-    raw = Path("specs/prompts/" + id + ".md").read_text()
+    raw = Path("specs/prompts/" + id + ".md").read_text(encoding="utf-8")
     _, head, body = raw.split("---", 2)
     meta = yaml.safe_load(head)
     if (
@@ -618,7 +622,9 @@ def generate_document(
         llm.preload_copilot_folder(doc, jobs)
     sections = [generate_section(section, graph, params, llm) for section in expanded]
     version = (
-        subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, encoding="utf-8"
+        ).stdout.strip()
         or "uncommitted"
     )
     context = {
@@ -663,6 +669,8 @@ def generate_document(
     result["manifest"]["docx"]["sha256"] = hashlib.sha256(
         (out / (doc + ".docx")).read_bytes()
     ).hexdigest()
-    (out / (doc + ".md")).write_text(result["markdown"])
-    (out / (doc + ".manifest.json")).write_text(json.dumps(result["manifest"], indent=2))
+    (out / (doc + ".md")).write_text(result["markdown"], encoding="utf-8", newline="\n")
+    (out / (doc + ".manifest.json")).write_text(
+        json.dumps(result["manifest"], indent=2), encoding="utf-8", newline="\n"
+    )
     return result

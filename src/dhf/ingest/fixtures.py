@@ -10,11 +10,11 @@ from dhf.models.evidence import validate_graph
 
 
 def ingest_fixtures(root: Path = Path("data/synthetic")) -> dict:
-    raw = yaml.safe_load((root / "evidence.yaml").read_text())
-    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+    raw = yaml.safe_load((root / "evidence.yaml").read_text(encoding="utf-8"))
+    mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text(encoding="utf-8"))
     retrieved = datetime.now(UTC).isoformat()
     files = {
-        str(p.relative_to(root / "code")): p.read_text()
+        p.relative_to(root / "code").as_posix(): p.read_text(encoding="utf-8")
         for p in (root / "code").rglob("*")
         if p.is_file() and p.suffix in (".py", ".txt")
     }

@@ -247,7 +247,7 @@ def unassessable_rules(graph: dict, rules: list[dict]) -> list[str]:
 
 
 def gaps(graph: dict, rules_path: Path = Path("specs/rules/gaps.yaml")) -> list[dict]:
-    return evaluate_rules(graph, yaml.safe_load(rules_path.read_text())["rules"])
+    return evaluate_rules(graph, yaml.safe_load(rules_path.read_text(encoding="utf-8"))["rules"])
 
 
 def score_findings(findings: list[dict], expected: dict[str, list[str]]) -> dict:

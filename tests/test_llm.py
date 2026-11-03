@@ -34,7 +34,9 @@ def test_caps_persistence_and_failed_reservation(tmp_path: Path, monkeypatch) ->
         llm.generate("t", 1, "p", PACK, 1000)
     llm = LLM("openai", tmp_path, MockAdapter(), run_cap=20, build_cap=20, total_cap=5)
     llm.generate("t", 1, "p", PACK, 1000)
-    spent = json.loads((tmp_path / "ledger.json").read_text())["openai"]["reserved_usd"]
+    spent = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))["openai"][
+        "reserved_usd"
+    ]
     assert 2 < spent < 4  # First reservation fits the hard cap; a second cannot.
     with pytest.raises(BudgetExceeded):
         LLM("openai", tmp_path, MockAdapter(), run_cap=20, build_cap=20, total_cap=5).generate(
@@ -66,7 +68,8 @@ def test_build_cap_and_cumulative_run_cap(tmp_path: Path, monkeypatch) -> None:
 
 def test_schema_file_matches_contract() -> None:
     assert (
-        json.loads(Path("specs/schemas/claims.v1.json").read_text()) == Claims.model_json_schema()
+        json.loads(Path("specs/schemas/claims.v1.json").read_text(encoding="utf-8"))
+        == Claims.model_json_schema()
     )
 
 
@@ -89,10 +92,10 @@ def test_env_isolation_and_memoization(tmp_path: Path, monkeypatch) -> None:
     assert "OPENAI_API_KEY" not in os.environ
     assert setting("ANTHROPIC_API_KEY") == ""
     path = tmp_path / "config.env"
-    path.write_text("SAMPLE=value\n")
+    path.write_text("SAMPLE=value\n", encoding="utf-8", newline="\n")
     monkeypatch.setenv("DHF_ENV_FILE", str(path))
     assert setting("SAMPLE") == "value"
-    path.write_text("SAMPLE=changed\n")
+    path.write_text("SAMPLE=changed\n", encoding="utf-8", newline="\n")
     assert setting("SAMPLE") == "value"
     assert load_env.cache_info().hits > 0
 
@@ -127,7 +130,7 @@ def test_actual_cost_reconciliation_and_failure_reservation(tmp_path: Path, monk
 
     llm = LLM("openai", tmp_path, UsageAdapter())
     llm.generate("usage", 1, "p", PACK)
-    ledger = json.loads((tmp_path / "ledger.json").read_text())["openai"]
+    ledger = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))["openai"]
     assert ledger["reserved_usd"] == pytest.approx(0)
     assert ledger["actual_usd"] == pytest.approx(0.00003)
 
@@ -137,7 +140,7 @@ def test_actual_cost_reconciliation_and_failure_reservation(tmp_path: Path, monk
 
     with pytest.raises(ValueError, match="failure"):
         LLM("openai", tmp_path, FailureAdapter()).generate("fail", 1, "p", PACK)
-    failed = json.loads((tmp_path / "ledger.json").read_text())["openai"]
+    failed = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))["openai"]
     assert failed["reserved_usd"] > 0
     assert failed["actual_usd"] == ledger["actual_usd"]
     llm.generate("empty", 1, "p", {"evidence": [], "facts": {}})
@@ -234,7 +237,11 @@ def test_provider_keys_from_env_file_and_missing_key_fail_fast(tmp_path: Path, m
         with pytest.raises(ValueError, match="Missing " + key):
             adapter.complete("test", "p", PACK, 4000)
     env = tmp_path / "fake.env"
-    env.write_text("ANTHROPIC_API_KEY=fake-anthropic\nOPENAI_API_KEY=fake-openai\n")
+    env.write_text(
+        "ANTHROPIC_API_KEY=fake-anthropic\nOPENAI_API_KEY=fake-openai\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     monkeypatch.setenv("DHF_ENV_FILE", str(env))
     received = {}
 
@@ -314,7 +321,7 @@ def test_ledger_tokens_accumulate_across_distinct_calls(tmp_path: Path) -> None:
     llm = LLM(provider="anthropic", adapter=UsageAdapter(), root=tmp_path)
     for version in (1, 2):
         llm.generate("test", version, "p", PACK)
-    entry = json.loads((tmp_path / "ledger.json").read_text())["anthropic"]
+    entry = json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))["anthropic"]
     assert entry["calls"] == 2
     assert entry["input_tokens"] == 20 and entry["output_tokens"] == 40
 
@@ -347,7 +354,11 @@ def test_owner_hard_cap_counts_actual_and_outstanding_even_with_legacy_config(
     monkeypatch.setenv("DHF_OPENAI_OUTPUT_PER_MILLION", "1")
     path = tmp_path / "ledger.json"
     tmp_path.mkdir(exist_ok=True)
-    path.write_text(json.dumps({provider: {"actual_usd": cap - 0.10, "reserved_usd": 0.0999}}))
+    path.write_text(
+        json.dumps({provider: {"actual_usd": cap - 0.10, "reserved_usd": 0.0999}}),
+        encoding="utf-8",
+        newline="\n",
+    )
     llm = LLM(provider, tmp_path, MockAdapter(), run_cap=10, build_cap=10, total_cap=10)
     assert llm.hard_cap == cap
     with pytest.raises(BudgetExceeded):
@@ -364,7 +375,7 @@ def test_owner_hard_cap_counts_actual_and_outstanding_even_with_legacy_config(
     cli.command()(lambda: report_budget(llm))
     output = CliRunner().invoke(cli).output
     assert f"cumulative headroom: $0.000100 of ${cap:.2f} hard cap" in output
-    assert json.loads(path.read_text())[provider]["actual_usd"] == cap - 0.10
+    assert json.loads(path.read_text(encoding="utf-8"))[provider]["actual_usd"] == cap - 0.10
 
 
 def test_openai_gpt5_parameters_and_inclusive_usage(monkeypatch):
@@ -409,7 +420,10 @@ def test_model_tiers_prices_reasoning_reservation_and_cache(tmp_path, monkeypatc
     assert llm.prices("gpt-5.4-mini") == (0.75, 4.50)
     assert llm.prices("gpt-5.5") == (5.00, 30.00)
     # Reasoning allowance alone reserves at least 4000 * $4.50 / 1M.
-    assert json.loads((tmp_path / "ledger.json").read_text())["openai"]["reserved_usd"] > 0.036
+    assert (
+        json.loads((tmp_path / "ledger.json").read_text(encoding="utf-8"))["openai"]["reserved_usd"]
+        > 0.036
+    )
     llm.generate("tier", 1, "p", PACK, 4000, model_tier="analytical")
     assert llm.hits == 1 and len(seen) == 2
     monkeypatch.setenv("DHF_OPENAI_REASONING_EFFORT", "medium")

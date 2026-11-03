@@ -135,8 +135,8 @@ class Seeder:
         )
 
     def seed(self, dry_run: bool = False, data_root: Path = Path("data/synthetic")) -> dict:
-        dataset = yaml.safe_load((data_root / "evidence.yaml").read_text())
-        mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text())
+        dataset = yaml.safe_load((data_root / "evidence.yaml").read_text(encoding="utf-8"))
+        mapping = yaml.safe_load(Path("specs/ado_mapping.yaml").read_text(encoding="utf-8"))
         planned = work_plan(dataset, mapping)
         ids = [
             i["id"]
@@ -279,14 +279,14 @@ class Seeder:
                     "id"
                 ]
         repo = repo_names["kestrel-device-sw"]
-        history = yaml.safe_load((data_root / "history.yaml").read_text())
+        history = yaml.safe_load((data_root / "history.yaml").read_text(encoding="utf-8"))
         module_paths = {p for h in history for p in h["files"]}
         bootstrap = {
-            str(p.relative_to(data_root / "code")): p.read_text()
+            p.relative_to(data_root / "code").as_posix(): p.read_text(encoding="utf-8")
             for p in (data_root / "code").rglob("*")
             if p.is_file()
             and p.suffix in (".py", ".yaml", ".txt")
-            and str(p.relative_to(data_root / "code")) not in module_paths
+            and p.relative_to(data_root / "code").as_posix() not in module_paths
         }
         bootstrap[".kestrel-seed.json"] = '{"synthetic": "Kestrel", "schema_version": 1}\n'
         bootstrap["architecture.yaml"] = yaml.safe_dump(
@@ -303,7 +303,9 @@ class Seeder:
             if pr and pr["status"] == "completed":
                 continue
             branch = "seed/" + entry["id"].lower()
-            files = {p: (data_root / "code" / p).read_text() for p in entry["files"]}
+            files = {
+                p: (data_root / "code" / p).read_text(encoding="utf-8") for p in entry["files"]
+            }
             pushed = self.push(
                 repo,
                 files,
@@ -339,7 +341,7 @@ class Seeder:
         if self.push(
             repo_names["kestrel-dhf-docs"],
             {
-                "sad.md": (data_root / "sad_v1.md").read_text(),
+                "sad.md": (data_root / "sad_v1.md").read_text(encoding="utf-8"),
                 ".kestrel-seed.json": '{"synthetic": "Kestrel", "schema_version": 1}\n',
             },
             "main",

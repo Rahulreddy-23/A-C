@@ -12,8 +12,8 @@ ROOT = Path("tests/fixtures")
 def test_validator_cases_cover_citations_confidence_and_numbers():
     sample = ROOT / "sad_component"
     pack = {
-        "facts": json.loads((sample / "facts_json.txt").read_text()),
-        "evidence": json.loads((sample / "evidence_json.txt").read_text()),
+        "facts": json.loads((sample / "facts_json.txt").read_text(encoding="utf-8")),
+        "evidence": json.loads((sample / "evidence_json.txt").read_text(encoding="utf-8")),
     }
 
     def check(claim: dict) -> dict:

@@ -39,7 +39,7 @@ class MockAdapter:
 
             import yaml
 
-            template = yaml.safe_load(Path("specs/mock/review.yaml").read_text())[
+            template = yaml.safe_load(Path("specs/mock/review.yaml").read_text(encoding="utf-8"))[
                 pack["facts"]["review_drafting"]
             ]
             ids = {a["id"] for a in evidence}
@@ -63,7 +63,9 @@ class MockAdapter:
             rule = pack["facts"]["proposal_rule"]
             if rule in ("L01", "L03") and (rule == "L03" or pack["facts"]["subject"] != "SRS-020"):
                 return {"claims": []}
-            text = yaml.safe_load(Path("specs/mock/proposals.yaml").read_text())[rule]
+            text = yaml.safe_load(Path("specs/mock/proposals.yaml").read_text(encoding="utf-8"))[
+                rule
+            ]
             return {
                 "claims": [
                     {
@@ -80,7 +82,9 @@ class MockAdapter:
 
                 import yaml
 
-                drafts = yaml.safe_load(Path("specs/mock/function_risk.yaml").read_text())
+                drafts = yaml.safe_load(
+                    Path("specs/mock/function_risk.yaml").read_text(encoding="utf-8")
+                )
                 unit = pack["facts"]["unit"]
                 hazards = [a["id"] for a in evidence if a["id"].startswith("HAZ-")]
                 return {

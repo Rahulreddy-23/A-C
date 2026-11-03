@@ -16,7 +16,7 @@ build-backend = "hatchling.build"
 packages = ["src/dhf", "tools/mock_ado", "tools/seed_ado"]
 
 [project.scripts]
-dhf = "dhf.cli:app"
+dhf = "dhf.cli:run"
 mock-ado = "mock_ado.cli:app"
 seed-ado = "seed_ado:app"
 

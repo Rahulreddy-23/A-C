@@ -76,7 +76,9 @@ def test_sad_and_sdd_draft_from_design_documents_without_code(tmp_path) -> None:
         "No code is in scope; the interface is described in the design document under "
         "Detailed Design > Sensor Monitoring > Ks.Sensor.Filter."
     )
-    assert "SI-Sensor-Monitoring" in (tmp_path / "out" / "sad.architecture.mmd").read_text()
+    assert "SI-Sensor-Monitoring" in (tmp_path / "out" / "sad.architecture.mmd").read_text(
+        encoding="utf-8"
+    )
     # System requirements the architecture allocates appear in the SAD allocation tables.
     allocation = design_query(graph, "component_allocation", {"entity": "SI-Sensor-Monitoring"})[
         "facts"
@@ -110,7 +112,9 @@ def test_ado_ingest_takes_the_architecture_from_the_scope_documents(ado_server, 
                 "repository": "",
                 "documents": "docs",
             }
-        )
+        ),
+        encoding="utf-8",
+        newline="\n",
     )
     scope = load_scope(str(scope_file))
     assert scope["documents"]["folder"] == str(tmp_path / "docs")
@@ -160,7 +164,9 @@ def test_merge_keeps_ado_authoritative_for_shared_ids() -> None:
 
 def test_documents_are_checked_when_an_ingest_starts_not_when_ado_is_opened(tmp_path):
     scope_file = tmp_path / "scope.yaml"
-    scope_file.write_text(yaml.safe_dump({"seed_ids": [1], "documents": "missing"}))
+    scope_file.write_text(
+        yaml.safe_dump({"seed_ids": [1], "documents": "missing"}), encoding="utf-8", newline="\n"
+    )
     scope = load_scope(str(scope_file))  # commands that never ingest still work
     unreachable = "http://127.0.0.1:9/org"  # any ADO read would fail to connect
     ado = ADO(unreachable, "P", "mock-app-token", scope=scope)

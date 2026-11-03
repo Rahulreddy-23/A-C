@@ -8,7 +8,7 @@ from dhf.trace import coverage, gaps, results_summary, rtm, score_findings
 
 def test_all_gap_rules_exact_answer_key() -> None:
     data = ingest_fixtures()
-    expected = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text())
+    expected = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text(encoding="utf-8"))
     assert score_findings(gaps(data), expected) == {
         "precision": 1.0,
         "recall": 1.0,
@@ -20,7 +20,7 @@ def test_all_gap_rules_exact_answer_key() -> None:
 
 def test_rtm_matches_hand_checked_rows() -> None:
     rows = {r["requirement"]: r for r in rtm(ingest_fixtures())}
-    golden = yaml.safe_load(Path("eval/golden/rtm_hand_checked.yaml").read_text())
+    golden = yaml.safe_load(Path("eval/golden/rtm_hand_checked.yaml").read_text(encoding="utf-8"))
     for id, expected in golden.items():
         assert {
             **{k: rows[id][k] for k in ("components", "changes", "tests")},

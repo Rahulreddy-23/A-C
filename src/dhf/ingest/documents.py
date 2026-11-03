@@ -490,7 +490,7 @@ def import_folder(
     """Every matching document under `folder` → validated graph plus an import report.
 
     Links may end at `known` IDs held by another source; see merge_baseline."""
-    rules = yaml.safe_load(profile.read_text())
+    rules = yaml.safe_load(profile.read_text(encoding="utf-8"))
     retrieved = datetime.now(UTC).isoformat()
     files = sorted(
         p

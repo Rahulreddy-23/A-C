@@ -14,7 +14,9 @@ def proposal_jobs(graph: dict, documents: list[dict]) -> list[dict]:
     nodes = {a["id"]: a for a in graph["artifacts"]}
     edges = confirmed_links(graph)
     jobs = []
-    for rule in yaml.safe_load(Path("specs/rules/proposals.yaml").read_text())["rules"]:
+    for rule in yaml.safe_load(Path("specs/rules/proposals.yaml").read_text(encoding="utf-8"))[
+        "rules"
+    ]:
         if rule["op"] == "requirement_implementation":
             subjects = [
                 a
@@ -105,7 +107,9 @@ def propose(
         "cost_usd": llm.run_spend,
     }
     root.mkdir(parents=True, exist_ok=True)
-    (root / "proposals.json").write_text(json.dumps(result, indent=2))
+    (root / "proposals.json").write_text(
+        json.dumps(result, indent=2), encoding="utf-8", newline="\n"
+    )
     text = (
         "# Review proposals\n\nAll entries are suggestions. "
         "No source-system update or approval is implied.\n\n"
@@ -117,5 +121,5 @@ def propose(
     text += "\n".join(
         s["markdown"] for s in sections if s["claims"] or s["status"] == "ai_unavailable"
     )
-    (root / "proposals.md").write_text(text)
+    (root / "proposals.md").write_text(text, encoding="utf-8", newline="\n")
     return result

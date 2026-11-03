@@ -19,9 +19,9 @@ from dhf.trace.consistency import consistency, legacy_design
 def clause_coverage(documents: list[dict]) -> dict:
     sections = {d["doc_id"] + "." + s["id"]: s for d in documents for s in d["sections"]}
     rows = []
-    for clause in yaml.safe_load(Path("specs/standards/clause_coverage.yaml").read_text())[
-        "clauses"
-    ]:
+    for clause in yaml.safe_load(
+        Path("specs/standards/clause_coverage.yaml").read_text(encoding="utf-8")
+    )["clauses"]:
         selected = {
             id: s
             for id, s in sections.items()
@@ -130,7 +130,9 @@ def evaluate(
 ) -> dict:
     nodes = {a["id"] for a in graph["artifacts"]}
     mixes = []
-    effort_config = yaml.safe_load(Path("specs/metrics/manual_effort.yaml").read_text())
+    effort_config = yaml.safe_load(
+        Path("specs/metrics/manual_effort.yaml").read_text(encoding="utf-8")
+    )
     unknown = set()
     schema_errors = []
     for doc in documents:
@@ -197,8 +199,8 @@ def evaluate(
                 ],
             }
         )
-    key = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text())
-    history = legacy_design(Path("data/synthetic/sad_v1.md").read_text())
+    key = yaml.safe_load(Path("data/synthetic/expected_gaps.yaml").read_text(encoding="utf-8"))
+    history = legacy_design(Path("data/synthetic/sad_v1.md").read_text(encoding="utf-8"))
     historical = consistency(baseline, [history])
     observed = set()
     for f in historical:
@@ -210,8 +212,14 @@ def evaluate(
                 else [*f.get("missing", []), *f.get("unexpected", [])]
             )
         )
-    golden = json.loads(Path("eval/golden/design_deterministic.json").read_text())
-    golden.update({"sstr": json.loads(Path("eval/golden/sstr_deterministic.json").read_text())})
+    golden = json.loads(Path("eval/golden/design_deterministic.json").read_text(encoding="utf-8"))
+    golden.update(
+        {
+            "sstr": json.loads(
+                Path("eval/golden/sstr_deterministic.json").read_text(encoding="utf-8")
+            )
+        }
+    )
     golden_results = {}
     for doc, expected in golden.items():
         actual = {
@@ -250,9 +258,9 @@ def evaluate(
         "coverage": coverage(graph),
         "impact_detection": impact_score(
             reports,
-            yaml.safe_load(Path("data/synthetic/scenarios/change_1.yaml").read_text())[
-                "expected_sections"
-            ],
+            yaml.safe_load(
+                Path("data/synthetic/scenarios/change_1.yaml").read_text(encoding="utf-8")
+            )["expected_sections"],
         ),
         "consistency": {
             "current_findings": consistency(graph, documents),

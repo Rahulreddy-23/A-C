@@ -27,7 +27,7 @@ def is_loopback(host: object) -> bool:
 @pytest.fixture(autouse=True)
 def isolate_configuration_and_network(tmp_path, monkeypatch):
     empty = tmp_path / "empty.env"
-    empty.write_text("")
+    empty.write_text("", encoding="utf-8", newline="\n")
     for name in list(os.environ):
         if name.startswith(("DHF_", "ADO_")) or name in (
             "ANTHROPIC_API_KEY",

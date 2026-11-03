@@ -86,7 +86,9 @@ function geometry() {
     if (title.textContent !== source.title || !node.textContent.includes(source.id)) throw Error('Truncated node label');
   });
 }
-if (get('load-status').hidden !== true || initial.nodes !== payload.nodes.length || initial.links !== payload.links.length || initial.render_ms >= 2000) throw Error('Evidence did not initialize');
+if (get('load-status').hidden !== true || initial.nodes !== payload.nodes.length || initial.links !== payload.links.length) throw Error('Evidence did not initialize');
+// render_ms counts from page start and refreshes on every update, so only the stats taken at load time the initial render.
+if (initialApp.render_ms >= 2000) throw Error(`Initial render took ${Math.round(initialApp.render_ms)} ms`);
 if (initial.selected !== 'SRS-021' || !initial.focus.includes('SYS-007') || !initial.focus.includes('HAZ-04') || !initial.focus.includes('UNIT-sensor_pressure')) throw Error('Default trace incomplete');
 geometry();
 get('search').value = 'REV-01'; get('search').listeners.input();

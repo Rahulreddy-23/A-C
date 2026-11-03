@@ -505,3 +505,8 @@ The owner asked for native Windows support as a priority, and for a clear README
   - The failure was `test_seed_admin_and_reset_contract`. The mock's reset rebuilds every repository, and on Windows git that outlasts httpx's 5 s default client timeout; the server's `WinError 10053` was it answering a client that had already gone.
   - That call now waits up to 120 s. The product's own ADO client already allows 60 s.
   - CI's later steps now run after a failure, so one run also reports the demo.
+- **Native Windows, all green** (`windows-latest`, PR run on 2e277b4): `178 passed in 500.54s`. The offline demo completed: all four baselines tagged, gaps P/R 1.00, deterministic impact exact (51 records), audit pack 33 verified files.
+- **Flaky explorer budget:** the push run on the same commit failed one test (`1 failed, 177 passed in 352.03s`) — the explorer DOM harness's 2 s initial-render budget.
+  - `render_ms` counts from page start and refreshes on every update. The harness read it only after its whole scripted session, so a runner stall during any interaction counted against the initial render.
+  - Locally, the initial render takes 19 ms and the whole session 33 ms; 25 hash seeds all pass, so the generated page does not vary.
+  - The budget now applies to the stats taken at load, and a failure reports the measured time.

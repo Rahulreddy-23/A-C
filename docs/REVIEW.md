@@ -1,7 +1,5 @@
 # Review Log
 
-Written by Claude. Since 2026-11-03 Claude is engineer as well as PM and reviewer (AGENTS.md); Codex reads this file at the start of every milestone if re-engaged.
-
 ## PR #1 — fresh-perspective review (2026-11-03)
 
 **How it was reviewed:**

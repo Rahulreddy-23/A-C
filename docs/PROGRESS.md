@@ -377,4 +377,32 @@ Dataset-specific results are local only (`out/real-docs/`, gitignored). This sec
   - `./scripts/demo.sh` → exit 0, unknown IDs 0, baseline gaps P/R 1.00 (21), change_1 impact P/R 1.00 (75).
   - Real baseline, run locally: same 112 consistency findings. `dhf gaps` names the 6 ADO-link rules as not assessable.
   - `node tools/check_explorer.cjs` passes on the demo explorer; it is a demo-specific harness, so not run against real data.
+- **Live ADO trial (2026-11-03, read-only; data local under out/real/)**
+  - With the renewed PAT, `dhf discover` read the hackathon scope (seed lists plus direct links) in about 3 s. It found the work-item types, link types and the document-ID field, and reported repositories as not readable without Code scope.
+  - Scoped `dhf ingest`: requirements, specifications, test cases and in-scope results from three test plans; about 9 minutes, dominated by run results. No write left the process.
+  - Fixes from the trial (ADR-043):
+    - follow the mapping's Dependency links;
+    - declare unread sources, so G02 is not assessable without code;
+    - keep only runs that hold in-scope results;
+    - a scope `release` for runs whose names carry none.
+  - The owner-format SSTR was generated from the live evidence (mock provider, local) with 0 validation rejections. Traceability rows link to the live work items.
+  - `uv run pytest -q` → `168 passed in 146.07s`; ruff clean.
 
+- **PR #2 fresh-perspective review fixes (2026-11-03)**
+  - **Company data:** a test used a test-run title copied from the owner's dataset. It now uses a fictional name. The commit that added it exists only on this unmerged branch.
+  - **Scope `release`:**
+    - It must be quoted text; an unquoted `1.10` used to become "1.1".
+    - It labels only runs of the scope's own test plans; the ingest report counts them.
+    - A blank value means no release.
+  - **Link following:**
+    - `follow.relations: []` follows no links again.
+    - The scope example no longer lists relations, so copying it keeps the mapping-based default.
+    - Both ends of every `-Forward`/`-Reverse` link type are followed, and discovery treats them the same way.
+  - **Link classes:** mapped work-item links are declared as `link:peer` pairs for work-item types, so a work-item `implements` mapping no longer makes the code rule G02 assessable without a repository.
+  - **Runs:** whole-project reads keep empty or aborted runs again. Seeded scopes still keep only runs with in-scope results, and the report counts the ones they skip.
+  - **Docs:** the port contract's assessability text matches. The REVIEW.md headings are restored, with outcomes appended under each item.
+  - Verification: `uv run pytest -q` → `172 passed in 160.12s`; ruff check and format clean; `tools/check_port.py` reference contracts pass.
+  - **Gap sweep follow-up:**
+    - A seeded scope declares only the link types it follows, so Related pairs, which are not followed by default, no longer produce false G06 gaps.
+    - A rule with no subjects is not assessable when no source can read its link, or what it `requires` (G11 needs results). A scope without test plans now reads "not assessable" for G05 and G11 instead of zero.
+    - `uv run pytest -q` → `173 passed in 160.24s`.

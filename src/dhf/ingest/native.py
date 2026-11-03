@@ -235,14 +235,17 @@ def parse_steps(text: str) -> list[dict]:
     return steps
 
 
-def normalize_run(run: dict, mapping: dict, retrieved: str, base: str) -> dict:
+def normalize_run(
+    run: dict, mapping: dict, retrieved: str, base: str, default_release: str = ""
+) -> dict:
+    """A run's release comes from its name, else the scope's release for its test plans."""
     release_match = re.search(mapping["release_pattern"], run["name"])
     attrs = {
         "synthetic": (
             synthetic_marker(run.get("comment", ""), [], mapping)
             or run.get("comment", "").startswith("Synthetic fixture evidence only.")
         ),
-        "release": release_match[1] if release_match else "",
+        "release": release_match[1] if release_match else default_release,
         "completed_at": run.get("completedDate", ""),
         "environment": run.get("buildConfiguration", {}).get("platform", ""),
         "is_retest": "retest" in run["name"].lower(),

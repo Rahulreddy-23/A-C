@@ -111,7 +111,21 @@ def load_scope(path: str = "") -> dict:
     declared = "seed_ids" in scope or "seed_files" in scope
     if declared and not ids and not scope.get("wiql"):
         raise ValueError(f"ADO_SCOPE {path} names seeds but none could be read")
+    release = scope.get("release")
+    if release is not None and not isinstance(release, str):
+        # YAML reads `release: 1.10` as the number 1.1; a label must stay as written.
+        raise ValueError(f'ADO_SCOPE release must be quoted text, e.g. release: "{release}"')
     return {**scope, "seed_ids": sorted(ids), "unparsed_seed_lines": unparsed}
+
+
+def reciprocal(link: str) -> str:
+    """The other end of an ADO link type: ADO shows each link on both work items."""
+    if link in RECIPROCAL:
+        return RECIPROCAL[link]
+    for end, other in (("-Forward", "-Reverse"), ("-Reverse", "-Forward")):
+        if link.endswith(end):
+            return link[: -len(end)] + other
+    return link
 
 
 def subcommand(args: list[str]) -> str:
@@ -303,7 +317,7 @@ class ADO:
     def expand(self, seeds: set[int], follow: dict, limit: int) -> list[dict]:
         """Seed work items plus linked items up to `depth` hops along the chosen link types."""
         depth = int(follow.get("depth", 1))
-        relations = set(follow.get("relations", DEFAULT_FOLLOW))
+        relations = self.followed(follow)
         items: dict[int, dict] = {}
         frontier = set(seeds)
         for level in range(depth + 1):
@@ -324,6 +338,22 @@ class ADO:
                 if relation["rel"] in relations and (match := WORKITEM_URL.search(relation["url"]))
             }
         return [items[i] for i in sorted(items)]
+
+    def followed(self, follow: dict) -> set[str]:
+        """Link types scope expansion follows: an explicit list ([] follows none), else the
+        default."""
+        chosen = follow.get("relations")
+        return self.follow_default() if chosen is None else set(chosen)
+
+    def follow_default(self) -> set[str]:
+        """Parent/child and test links, plus both ends of every link type the mapping traces
+        (e.g. Dependency between requirements and specifications); Related is too broad."""
+        mapped = {v for v in self.mapping["relations"].values() if v != "System.LinkTypes.Related"}
+        return set(DEFAULT_FOLLOW) | mapped | {reciprocal(r) for r in mapped}
+
+    def runs_read(self) -> bool:
+        plans = self.scope.get("test_plans")
+        return bool(plans) if plans is not None else not self.seeded
 
     def test_runs(self) -> list[dict]:
         """Runs of the scope's test plans; every run for a whole-project read; none for a
@@ -395,9 +425,13 @@ class ADO:
                         )
                     )
         outside_bugs: list[tuple[str, str]] = []
+        # The scope's release labels only runs of its own test plans whose names carry none.
+        scope_release = str(self.scope.get("release") or "") if self.scope.get("test_plans") else ""
+        if self.scope.get("release") and not scope_release:
+            self.report["scope release ignored (no test_plans)"] += 1
         for raw_run in self.test_runs():
-            run = normalize_run(raw_run, mapping, retrieved, self.url)
-            artifacts.append(run)
+            run = normalize_run(raw_run, mapping, retrieved, self.url, scope_release)
+            kept = False  # in a seeded scope a run is evidence only through in-scope results
             for result in self.collection(f"/_apis/test/runs/{raw_run['id']}/results"):
                 case = (result.get("testCase") or {}).get("id")
                 if case is None:
@@ -407,6 +441,9 @@ class ADO:
                     self.report["test results outside scope"] += 1
                     continue
                 artifact = normalize_result(result, run, native_ids, retrieved, self.url)
+                if not kept:
+                    artifacts.append(run)
+                    kept = True
                 artifacts.append(artifact)
                 links.extend(
                     [
@@ -431,6 +468,12 @@ class ADO:
                             "Associated bug",
                         )
                     )
+            if not kept and not self.seeded:
+                artifacts.append(run)  # a whole-project read keeps empty or aborted runs
+            elif not kept:
+                self.report["test runs without in-scope results"] += 1
+            elif scope_release and not re.search(mapping["release_pattern"], raw_run["name"]):
+                self.report["test runs labelled with the scope release"] += 1
         # A failed result's defect is evidence of that result: read it even when the scope did
         # not reach it, or the result would be reported as having no defect (G05).
         missing = sorted({int(bug) for _, bug in outside_bugs})
@@ -463,6 +506,41 @@ class ADO:
             for a in artifacts
             if a["type"] == "software_req" and a["attributes"].get("component") in by_id
         )
+        if not (repo_name and self.runs_read()):
+            # Declare the link classes this configuration can carry, so rules on links it
+            # never reads (code without a repository, results without test plans) are not
+            # assessable instead of a gap per artifact (ADR-041).
+            # Work-item links only ever join work items, so a mapped link never makes a rule
+            # about code changes or results assessable (G02 stays blind without a repository).
+            work_items = {
+                kind
+                for value in mapping["work_item_types"].values()
+                for kind in (value.values() if isinstance(value, dict) else [value])
+            }
+            # A seeded scope sees only the link types its expansion follows; a link it
+            # never follows is not readable, so its rules are not assessable (no false gaps).
+            followed = self.followed(self.scope.get("follow", {})) if self.seeded else None
+
+            def readable(link_type: str) -> bool:
+                return followed is None or bool({link_type, reciprocal(link_type)} & followed)
+
+            classes = {
+                f"{k}:{peer}"
+                for k, v in mapping["relations"].items()
+                if v != "System.LinkTypes.Related" and readable(v)
+                for peer in work_items
+            }
+            for pair in mapping.get("related_pairs", []):  # typed: a shared name, a given peer
+                if readable("System.LinkTypes.Related"):
+                    classes |= {f"{pair['type']}:{pair['src']}", f"{pair['type']}:{pair['dst']}"}
+            if mapping.get("area_components") or repo_name:
+                classes.add("allocated_to")
+            if repo_name:
+                classes.add("implements")
+            if self.runs_read():
+                classes |= {"executes", "reports_defect"}
+            for artifact in artifacts:
+                artifact["attributes"]["link_classes"] = sorted(classes)
         return validate_graph({"artifacts": artifacts, "links": links})
 
     def code_evidence(

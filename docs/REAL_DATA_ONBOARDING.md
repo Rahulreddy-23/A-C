@@ -42,6 +42,9 @@ DHF_PRODUCT_NAME="<product>" DHF_RELEASE=<release> uv run dhf explore \
    Without a scope, a project larger than `ADO_MAX_ITEMS` is refused.
    - **Seeded scope** (seeds or WIQL): reads only those items. It reads no test runs unless `test_plans` is set, and the ingest report says so.
    - **Other scopes** (for example only `max_items`): read the whole project and all runs.
+   - **Default links followed:** Parent/Child, Tested By and both ends of the mapping's trace link types, such as Dependency between requirements and specifications. Leave `follow.relations` unset to get this; a list replaces it, and `[]` reads the seeds alone.
+   - **Runs:** in a seeded scope only runs holding an in-scope result are kept. Set a quoted `release:` (for example `"1.0"`) when run names carry no "Release x.y". It labels every such run of the listed test plans, so list only plans run for that release; the ingest report counts the runs it labelled.
+   - **What the scope did not read:** a scope without a repository or test plans declares that, so code and result rules read "not assessable" rather than as gaps or as zero. A seeded scope assesses only the link types it follows (Related links are not followed by default).
    - **Seed lines:** ADO URLs in any form, or a leading ID. Lines that hold no ID are counted. A scope whose seeds yield no IDs is an error, never a silent whole-project read.
 4. **Discover.** `uv run dhf discover` reads the scoped items, field and relation metadata, plan-filtered runs and the repository list. It writes a draft mapping and `.discovery.json`.
    - Check `id_field_candidates` (the field holding document IDs such as specification IDs).

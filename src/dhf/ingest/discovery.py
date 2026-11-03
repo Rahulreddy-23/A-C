@@ -4,7 +4,7 @@ import copy
 import re
 from collections import Counter, defaultdict
 
-from dhf.ingest.ado import ADO, RECIPROCAL
+from dhf.ingest.ado import ADO, reciprocal
 
 DOCUMENT_ID = re.compile(r"^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+$")
 
@@ -79,7 +79,7 @@ def discovery_report(
     )
     mapped = set(mapping.get("relations", {}).values())
     for rel in sorted(set(relation_types) - mapped):
-        if RECIPROCAL.get(rel) in mapped:
+        if reciprocal(rel) in mapped:
             continue  # ADO shows each link on both ends; the mapped end is enough
         unknowns.append(
             {

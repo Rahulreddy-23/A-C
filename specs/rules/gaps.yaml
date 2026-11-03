@@ -110,6 +110,8 @@ rules:
   types:
   - test_case
   op: outdated_verification
+  requires:  # judged on test results; not assessable where none could be read
+  - executes
   action: Rerun verification against the current requirement revision.
 - id: G12
   title: SOUP requirements or known-anomaly evaluation not recorded

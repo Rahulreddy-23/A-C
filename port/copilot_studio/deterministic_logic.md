@@ -32,7 +32,12 @@ All joins use one complete snapshot. Confirmed links have origin explicit or hum
 | L02 | Units lacking confirmed implements links are sent to proposal.orphan for a draft shall-statement; create Proposal only, never ADO requirement. | `{"id": "L02", "model_tier": "analytical", "op": "orphan_requirement", "prompt": "proposal.orphan@1"}` |
 | L03 | Group SAD component responsibility and SDD implementing unit behavior by component; include document hashes/citations; proposal.contradiction emits only likely contradictions, empty on agreement. | `{"id": "L03", "model_tier": "analytical", "op": "design_contradiction", "prompt": "proposal.contradiction@1"}` |
 
-Assessability is declared by sources: artifacts imported from documents carry `link_classes` (only `allocated_to`), and a missing_link subject whose `link_classes` exclude the rule's link is skipped; a rule is reported once as not assessable when every subject is skipped. ADO, git and fixture evidence declare no classes and are always assessed, so an ADO project with nothing linked still reports every gap.
+Assessability is declared by sources in `link_classes`. An entry is a plain link type (`allocated_to`) or a typed `link:peer_type` pair (`verifies:test_case`).
+- **Document imports** declare the profile's `provides_links` (`allocated_to`).
+- **Partially configured ADO ingests** (no repository, or no test runs read) declare their mapped trace links as `link:peer` pairs for every mapped work-item type, Related pairs as `link:peer` pairs, plain `implements` and `allocated_to` with a repository, and `executes` and `reports_defect` when runs are read.
+- **Fully configured ADO, git and fixture evidence** declare nothing and are always assessed, so a project with nothing linked still reports every gap.
+
+A missing_link subject is skipped when its `link_classes` hold neither the rule's link nor `link:peer` for one of the rule's peer types. A rule is reported once as not assessable when every subject is skipped. A seeded ADO scope declares only link types its expansion follows. When every artifact declares classes and none includes a rule's link (or a link the rule `requires`, such as `executes` for G11), a rule with no subjects is not assessable either.
 
 For missing_link the collection prototype is `Filter(Subjects As s, IsEmpty(Filter(ConfirmedLinks, If(Direction="in", dst=s.id, src=s.id) && type=LinkType)))`; production adds peer-type checks and joins in the Dataverse view. Counts and percentages use integer counts and `Round(100 * covered / total, 2)`, with zero denominator returning 0. Latest result uses completed_at then canonical ID to break ties.
 

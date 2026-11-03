@@ -84,6 +84,11 @@ def demo_configuration(root: Path, live: bool) -> dict:
             **({} if live else {"DHF_ENV_FILE": str(empty)}),
             "DHF_CACHE_ROOT": "out" if live else str(root / "llm"),
             "DHF_PROVIDER": provider,
+            # The demo owns its evidence and templates; real-project settings never apply.
+            "ADO_SCOPE": "",
+            "ADO_MAPPING": "specs/ado_mapping.yaml",
+            "ADO_READ_ONLY": "auto",
+            "DHF_TEMPLATE_SET": "",
         },
     }
 

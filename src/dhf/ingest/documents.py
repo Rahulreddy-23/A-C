@@ -14,6 +14,7 @@ from pathlib import Path
 
 import yaml
 
+from dhf.llm import canonical
 from dhf.models.evidence import validate_graph
 
 BODY_LIMIT = 6000
@@ -147,6 +148,23 @@ def one_line(text: str) -> str:
     return clean(text.replace("\n", " "))
 
 
+def family(name: str) -> str:
+    """A document's identity without its issue markers ('SDD - X_v06.docx' → 'sdd - x.docx')."""
+    return re.sub(r"[\s_]+", " ", VERSION.sub("", name.lower())).strip()
+
+
+def document_of(artifact: dict) -> str:
+    """The file an imported artifact came from (kept in its source URL, not its content)."""
+    return artifact["source"]["url"].removeprefix("file:").split("?", 1)[0].split("#", 1)[0]
+
+
+def content_revision(artifact: dict) -> str:
+    """Revision from the artifact's own content, so re-saving or re-issuing an unchanged
+    document marks nothing changed; the file digest stays in the source URL."""
+    own = {k: artifact[k] for k in ("title", "body", "attributes")}
+    return hashlib.sha256(canonical(own).encode()).hexdigest()[:12]
+
+
 def artifact(
     kind: str, ident: str, title: str, body: str, attrs: dict, source: dict, anchor: str = ""
 ) -> dict:
@@ -155,12 +173,12 @@ def artifact(
         "type": kind,
         "title": one_line(title) or ident,
         "body": body[:BODY_LIMIT],
-        "attributes": {"synthetic": False, "document": source["document"], **attrs},
+        "attributes": {"synthetic": False, **attrs},
         "source": {
             "system": "file",
-            "url": f"{source['url']}#{slug(anchor or ident)}",
+            "url": f"{source['url']}?sha256={source['revision']}#{slug(anchor or ident)}",
             "native_id": anchor or ident,
-            "revision": source["revision"],
+            "revision": source["revision"],  # replaced by the content revision on import
             "retrieved_at": source["retrieved_at"],
         },
     }
@@ -401,7 +419,7 @@ def resolve_links(artifacts: list[dict], pending: list[dict]) -> tuple[list[dict
             report["units without a matching software item"] += 1
             continue
         unit["attributes"]["component"] = target
-        links.append(edge(unit["id"], target, "allocated_to", unit["attributes"]["document"]))
+        links.append(edge(unit["id"], target, "allocated_to", document_of(unit)))
     return links, report
 
 
@@ -448,34 +466,47 @@ def csv_artifacts(rows: list[dict], spec: dict, source: dict) -> list[dict]:
 
 
 def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
-    """Every matching document in `folder` → validated graph plus an import report."""
+    """Every matching document under `folder` → validated graph plus an import report."""
     rules = yaml.safe_load(profile.read_text())
     retrieved = datetime.now(UTC).isoformat()
-    files = sorted(p for p in folder.iterdir() if p.is_file())
+    files = sorted(
+        p
+        for p in folder.rglob("*")
+        if p.is_file() and not any(part.startswith(".") for part in p.relative_to(folder).parts)
+    )
+    name = {p: p.relative_to(folder).as_posix() for p in files}
     patterns = rules.get("exclude", [])
     excluded = {p for p in files if any(matches(p.name, g) for g in patterns)}
     report: Counter = Counter()
     artifacts: list[dict] = []
     pending: list[dict] = []
     used: list[str] = []
+    older: list[str] = []
 
     def source(path: Path) -> dict:
         return {
-            "url": f"file:{path.name}",
+            "url": f"file:{name[path]}",
             "revision": hashlib.sha256(path.read_bytes()).hexdigest()[:12],
             "retrieved_at": retrieved,
-            "document": path.name,
+            "document": name[path],
         }
 
     for rule in rules.get("documents", []):
         found = [p for p in files if matches(p.name, rule["glob"]) and p not in excluded]
-        if rule.get("pick", "all") == "latest" and len(found) > 1:
-            found.sort(key=lambda p: version_key(p.name))
-            report[f"{rule['name']}: older issues skipped"] += len(found) - 1
-            if version_key(found[-1].name) == version_key(found[-2].name):
-                report[f"{rule['name']}: latest issue ambiguous (took the last by name)"] += 1
-            found = found[-1:]
+        # Several issues of one document: keep the latest per document (the whole rule for
+        # `pick: latest`, each per-item document for `pick: all`).
+        groups: dict[str, list[Path]] = {}
         for path in found:
+            key = "" if rule.get("pick", "all") == "latest" else family(path.name)
+            groups.setdefault(key, []).append(path)
+        found = []
+        for group in groups.values():
+            group.sort(key=lambda p: version_key(p.name))
+            if len(group) > 1 and version_key(group[-1].name) == version_key(group[-2].name):
+                report[f"{rule['name']}: latest issue ambiguous (took the last by name)"] += 1
+            older.extend(name[p] for p in group[:-1])
+            found.append(group[-1])
+        for path in sorted(found):
             try:
                 blocks, notes = docx_blocks(path)
             except Exception:  # encrypted or not a Word package
@@ -486,7 +517,7 @@ def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
             report.update(result["report"])
             artifacts.extend(result["artifacts"])
             pending.extend(result["pending_links"])
-            used.append(path.name)
+            used.append(name[path])
     for spec in rules.get("csv", []):
         for path in (p for p in files if matches(p.name, spec["glob"]) and p not in excluded):
             with path.open(encoding="utf-8-sig", newline="") as handle:
@@ -495,7 +526,7 @@ def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
             rows = [{k: v for k, v in row.items() if k not in dropped} for row in rows]
             report["personal columns dropped"] += len(dropped)
             artifacts.extend(csv_artifacts(rows, spec, source(path)))
-            used.append(path.name)
+            used.append(name[path])
 
     # Documents carry only the link classes the profile extracts; rules that need other
     # links (ADO Tested By, Parent/Child) are not assessable for these artifacts.
@@ -505,16 +536,20 @@ def import_folder(folder: Path, profile: Path) -> tuple[dict, dict]:
     for a in artifacts:
         a["attributes"]["link_classes"] = provides
         if a["id"] in unique:
-            duplicates.append(f"{a['id']} ({a['attributes']['document']})")
+            duplicates.append(f"{a['id']} ({document_of(a)})")
         else:
             unique[a["id"]] = a
     links, link_report = resolve_links(list(unique.values()), pending)
     report.update(link_report)
+    for a in unique.values():
+        a["source"]["revision"] = content_revision(a)
     graph = validate_graph({"artifacts": list(unique.values()), "links": links})
+    skipped = set(used) | set(older)
     summary = {
         "imported_files": used,
-        "excluded_files": sorted(p.name for p in excluded),
-        "unused_files": [p.name for p in files if p.name not in used and p not in excluded],
+        "older_issues": older,
+        "excluded_files": sorted(name[p] for p in excluded),
+        "unused_files": [name[p] for p in files if name[p] not in skipped and p not in excluded],
         "artifact_counts": dict(sorted(Counter(a["type"] for a in graph["artifacts"]).items())),
         "link_counts": dict(sorted(Counter(e["type"] for e in graph["links"]).items())),
         "notes": {k: v for k, v in sorted(report.items()) if v},

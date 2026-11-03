@@ -394,6 +394,7 @@ class ADO:
                             "ADO relation " + relation["url"],
                         )
                     )
+        outside_bugs: list[tuple[str, str]] = []
         for raw_run in self.test_runs():
             run = normalize_run(raw_run, mapping, retrieved, self.url)
             artifacts.append(run)
@@ -420,7 +421,7 @@ class ADO:
                 )
                 for bug in result.get("associatedBugs", []):
                     if str(bug["id"]) not in native_ids:
-                        self.report["associated bugs outside scope"] += 1
+                        outside_bugs.append((artifact["id"], str(bug["id"])))
                         continue
                     links.append(
                         edge(
@@ -430,6 +431,18 @@ class ADO:
                             "Associated bug",
                         )
                     )
+        # A failed result's defect is evidence of that result: read it even when the scope did
+        # not reach it, or the result would be reported as having no defect (G05).
+        missing = sorted({int(bug) for _, bug in outside_bugs})
+        for item in self.fetch(missing) if missing else []:
+            artifact = normalize_workitem(item, [item], mapping, retrieved)
+            if artifact is not None and artifact["id"] not in native_ids.values():
+                artifacts.append(artifact)
+                native_ids[str(item["id"])] = artifact["id"]
+                self.report["associated bugs read outside scope"] += 1
+        for result_id, bug in outside_bugs:
+            if bug in native_ids:
+                links.append(edge(result_id, native_ids[bug], "reports_defect", "Associated bug"))
         repo_name = (
             self.scope.get("repository", setting("ADO_DEVICE_REPO", ""))
             if self.scope

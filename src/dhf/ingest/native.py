@@ -5,6 +5,21 @@ from html import unescape
 from html.parser import HTMLParser
 from xml.etree import ElementTree as ET
 
+# Attributes the product derives itself; a mapping may never overwrite them.
+RESERVED_ATTRIBUTES = {
+    "synthetic",
+    "changed_at",
+    "state",
+    "component",
+    "severity",
+    "acceptance_criteria",
+    "risk_control",
+    "requirement_history",
+    "level",
+    "steps",
+    "residual_listed",
+    "link_classes",
+}
 HTML_TAG = re.compile(
     r"</?(p|div|br|span|table|tr|td|th|ul|ol|li|b|i|u|strong|em|h[1-6]|font|img|a)\b[^>]*>", re.I
 )
@@ -167,6 +182,8 @@ def normalize_workitem(
         "state": fields[names["state"]],
     }
     for semantic, reference in mapping.get("attribute_fields", {}).items():
+        if semantic in RESERVED_ATTRIBUTES:  # e.g. `synthetic` gates external LLM providers
+            raise ValueError(f"attribute_fields may not set the reserved attribute {semantic!r}")
         if fields.get(reference) not in (None, ""):
             attrs[semantic] = html_text(str(fields[reference]))
     area = fields.get(names.get("area", ""), "")

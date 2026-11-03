@@ -146,3 +146,13 @@ def test_metrics_detect_invented_ids_and_do_not_score_missing_impact_as_perfect(
     assert next(r for r in appendix["rows"] if r["clause"] == "IEC 62304 5.5")["status"].startswith(
         "UNCOVERED"
     )
+
+
+def test_goldens_use_the_default_templates_whatever_the_template_set(tmp_path, monkeypatch):
+    graph = ingest_fixtures()
+    result = generate_document(
+        "sstr", graph, {"release": "1.1"}, out=tmp_path, llm=LLM(root=tmp_path / "llm")
+    )
+    monkeypatch.setenv("DHF_TEMPLATE_SET", "bd")
+    metrics = evaluate(graph, graph, [result["manifest"]], {"sstr": result["markdown"]})
+    assert all(not r["mismatches"] for r in metrics["deterministic_goldens"].values())

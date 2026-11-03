@@ -52,18 +52,22 @@ def import_markdown(
     text += "".join(f"| {k} | {v} |\n" for k, v in summary["artifact_counts"].items())
     text += "".join(f"| link: {k} | {v} |\n" for k, v in summary["link_counts"].items())
     text += "\n## Files\n\n" + "".join(f"- imported: {n}\n" for n in summary["imported_files"])
+    text += "".join(f"- skipped (older issue): {n}\n" for n in summary.get("older_issues", []))
     text += "".join(f"- excluded (reference or redline): {n}\n" for n in summary["excluded_files"])
     text += "".join(f"- not imported (no extraction rule): {n}\n" for n in summary["unused_files"])
     text += "\n## Import notes\n\n" + "".join(f"- {k}: {v}\n" for k, v in summary["notes"].items())
     text += "".join(f"- duplicate ignored: {d}\n" for d in summary.get("duplicates_ignored", []))
     text += "\n## Consistency findings\n\n" + rule_table(findings, rules, unassessable)
     text += "\n| Rule | Artifact | Document | Detail |\n|---|---|---|---|\n"
+    from dhf.ingest.documents import document_of
+
     for f in findings:
-        attrs = nodes[f["artifact_id"]]["attributes"]
+        node = nodes[f["artifact_id"]]
+        attrs = node["attributes"]
         detail = "; ".join(
             attrs.get("unresolved_allocations", []) + attrs.get("missing_sections", [])
         )
-        text += f"| {f['rule']} | {f['artifact_id']} | {attrs.get('document', '')} | {detail} |\n"
+        text += f"| {f['rule']} | {f['artifact_id']} | {document_of(node)} | {detail} |\n"
     return text
 
 

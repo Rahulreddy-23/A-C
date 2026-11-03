@@ -60,6 +60,16 @@ Written by Claude. Since 2026-11-03 Claude is engineer as well as PM and reviewe
 - The watch test asserts the interval and the cycle order.
 - The onboarding guide gives the right `explore` option and states the SAD/SDD limit.
 
+**Gap sweep, also fixed:**
+- `dhf discover` works with a PAT that has no Code (Read) scope; repositories are reported as not readable.
+- Associated bugs outside the scope are read, so failed results are not reported as having no defect.
+- Mappings cannot overwrite reserved attributes such as `synthetic`.
+- `pick: all` keeps the latest issue of each per-item document.
+- Imported artifacts get content-based revisions, so re-issuing or re-saving an unchanged document changes nothing.
+- Subfolders are imported, and older issues are listed in the report.
+- Eval goldens always use the default templates; the demo pins the new settings.
+- The port check validates template overlays, and flow 05 describes heading levels and recorded templates.
+
 **Not changed:**
 - Merged-cell (vMerge) table reading is still quadratic. It is noticeable only for very large merged tables.
 - `extract_document` was not split into smaller functions.

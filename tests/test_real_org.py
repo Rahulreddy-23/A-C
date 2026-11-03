@@ -388,3 +388,71 @@ def test_outdated_verification_ignores_results_without_a_date() -> None:
         if artifact["type"] == "test_result":
             artifact["attributes"]["completed_at"] = ""
     assert not [f for f in gaps(graph) if f["rule"] == "G11"]
+
+
+def test_discovery_works_with_a_pat_that_cannot_read_code(monkeypatch) -> None:
+    from dhf.ingest.discovery import discover
+
+    ado = ADO(REAL, "Project", "placeholder", scope={"seed_ids": [1], "test_plans": []})
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        if "/_apis/git/" in request.url.path:
+            return httpx.Response(401, headers={"x-tfs-serviceerror": "TF400813"}, text="x")
+        if request.url.path.endswith("/workitemsbatch"):
+            item = {"id": 1, "rev": 1, "fields": {"System.WorkItemType": "Requirement"}}
+            return httpx.Response(200, json={"value": [item]})
+        return httpx.Response(200, json={"value": []})
+
+    offline(ado, answer)
+    report = discover(ado)
+    assert report["inventory"]["repositories"].startswith("not readable with this PAT")
+    assert report["inventory"]["work_item_types"] == {"Requirement": 1}
+
+
+def test_associated_bugs_outside_the_scope_are_read_not_reported_missing(ado_server, tmp_path):
+    from mock_ado.state import write_state
+
+    from dhf.trace import gaps
+
+    state = read_state(ado_server.root)
+    ids = state["ids"]
+    for result in state["runs"][0]["results"]:
+        if result["testCase"]["id"] == str(ids["TC-001"]):
+            result["outcome"] = "Failed"
+            result["associatedBugs"] = [{"id": ids["BUG-02"]}]
+    write_state(ado_server.root, state)
+    base = f"http://127.0.0.1:{ado_server.server_port}/kestrel-org"
+    scope = {"seed_ids": [ids["TC-001"], ids["BUG-01"]], "follow": {"depth": 0}}
+    ado = ADO(base, "Kestrel", "mock-app-token", scope=scope | {"test_plans": ["1"]})
+    try:
+        graph = ado.ingest(tmp_path / "clones")
+    finally:
+        ado.close()
+    assert "BUG-02" in {a["id"] for a in graph["artifacts"]}
+    assert ado.report["associated bugs read outside scope"] == 1
+    failed = [a["id"] for a in graph["artifacts"] if a["attributes"].get("outcome") == "Failed"]
+    assert failed and not [
+        f for f in gaps(graph) if f["rule"] == "G05" and f["artifact_id"] in failed
+    ]
+
+
+def test_mappings_cannot_overwrite_reserved_attributes() -> None:
+    mapping = {
+        "work_item_types": {"Specification": "software_req"},
+        "fields": {
+            "title": "System.Title",
+            "state": "System.State",
+            "changed_at": "System.ChangedDate",
+        },
+        "attribute_fields": {"synthetic": "Custom.SyntheticData"},
+    }
+    fields = {
+        "System.WorkItemType": "Specification",
+        "System.Title": "T",
+        "System.State": "Active",
+        "System.ChangedDate": "2026-10-01T00:00:00Z",
+        "Custom.SyntheticData": "No",
+    }
+    item = {"id": 5, "rev": 1, "fields": fields, "_links": {"html": {"href": "https://x/5"}}}
+    with pytest.raises(ValueError, match="reserved attribute 'synthetic'"):
+        normalize_workitem(item, [item], mapping, "now")

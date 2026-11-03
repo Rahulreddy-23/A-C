@@ -231,7 +231,8 @@ def evaluate(
                     [],
                 )["markdown"]
             )
-            for s in expand_sections(load_spec(doc), baseline)
+            # Goldens describe the default templates, whatever DHF_TEMPLATE_SET says.
+            for s in expand_sections(load_spec(doc, f"specs/documents/{doc}.yaml"), baseline)
             if s["id"] in expected
         }
         failures = sorted(

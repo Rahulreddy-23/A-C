@@ -129,11 +129,18 @@ def discovery_report(
 
 
 def discover(ado: ADO) -> dict:
-    return discovery_report(
+    try:
+        repos = ado.collection("/_apis/git/repositories")
+    except PermissionError:  # a Work Items + Test Management PAT has no Code (Read) scope
+        repos = None
+    report = discovery_report(
         ado.workitems(),
         ado.request("GET", ado.base + "/_apis/wit/fields")["value"],
         ado.request("GET", ado.base + "/_apis/wit/workitemrelationtypes")["value"],
         ado.test_runs(),
-        ado.collection("/_apis/git/repositories"),
+        repos or [],
         ado.mapping,
     )
+    if repos is None:
+        report["inventory"]["repositories"] = "not readable with this PAT (needs Code: Read)"
+    return report

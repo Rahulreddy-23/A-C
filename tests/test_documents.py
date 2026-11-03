@@ -107,7 +107,7 @@ def test_document_baseline_import_extracts_trace_and_flags_inconsistencies(tmp_p
         "system_req": 4,
         "test_case": 2,
     }
-    assert summary["notes"]["product requirements: older issues skipped"] == 1
+    assert summary["older_issues"] == ["Kestrel PRD #1.docx"]
     assert "Kestrel PRD #3 redlines.docx" in summary["excluded_files"]
     spec = nodes["SPEC-KS-10"]
     assert spec["title"] == "Fleet - Pump list" and spec["attributes"]["feature"] == "Fleet view"
@@ -339,3 +339,33 @@ def test_explorer_meets_the_dom_harness_contract(tmp_path) -> None:
         text=True,
     )
     assert check.returncode == 0, check.stdout + check.stderr
+
+
+def test_reissues_subfolders_and_per_item_versions(tmp_path) -> None:
+    from dhf.graph import diff_graph
+
+    (tmp_path / "v1").mkdir()
+    build(tmp_path / "v1")
+    first, _ = import_folder(tmp_path / "v1", PROFILE)
+    (tmp_path / "v2" / "Design").mkdir(parents=True)
+    build(tmp_path / "v2")
+    for path in (tmp_path / "v2").glob("*SDD*.docx"):  # designs moved into a subfolder
+        path.rename(tmp_path / "v2" / "Design" / path.name)
+    old = tmp_path / "v2" / "Kestrel Software Specification v03.docx"
+    old.rename(old.with_name("Kestrel Software Specification v04.docx"))  # re-issued unchanged
+    second, summary = import_folder(tmp_path / "v2", PROFILE)
+    changes = diff_graph(first, second)
+    assert changes == {"changed": [], "added": [], "removed": []}
+    assert "Design/Kestrel SDD - Fleet Service_v01.docx" in summary["imported_files"]
+    assert second["artifacts"][0]["source"]["url"].count("?sha256=") == 1
+
+    sdd = tmp_path / "v2" / "Design" / "Kestrel SDD - Fleet Service_v01.docx"
+    newer = Document(str(sdd))
+    newer.add_heading("Ks.Fleet.Batch", 3)
+    newer.add_heading("Software Unit Description", 4)
+    newer.add_paragraph("Batch jobs.")
+    newer.save(sdd.with_name("Kestrel SDD - Fleet Service_v02.docx"))
+    third, summary = import_folder(tmp_path / "v2", PROFILE)
+    assert "Design/Kestrel SDD - Fleet Service_v01.docx" in summary["older_issues"]
+    assert "UNIT-Shared-Libraries.Ks.Fleet.Batch" in {a["id"] for a in third["artifacts"]}
+    assert not summary["duplicates_ignored"]

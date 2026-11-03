@@ -28,6 +28,12 @@ def check_port(root: Path = Path("port/copilot_studio")) -> dict:
         if "query" in s
     } | {"proposal_pack"}
     assert set(catalog["queries"]) == queries
+    from dhf.generate import load_spec
+
+    for layout in Path("specs/documents").glob("*/*.yaml"):
+        # Template sets are overlays: loading validates they only re-present shared sections
+        # (so they add no query, prompt or rule the port must carry) or add human sections.
+        load_spec(layout.stem, layout.as_posix())
     query_text = (root / "query_catalog.md").read_text()
     assert all(f"| {q} |" in query_text for q in queries)
     assert len(catalog["flows"]) == 7

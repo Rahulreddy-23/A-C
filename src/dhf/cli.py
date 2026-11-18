@@ -933,23 +933,58 @@ def refresh_command(
 
 @app.command("serve")
 def serve_command(
-    db: str = "out/evidence.sqlite",
-    documents: str = "out/documents",
+    db: str | None = None,
+    documents: str | None = None,
     output_dir: str = "out",
     port: int = 8765,
     open_browser: bool = True,
+    project_id: str = "default",
+    member: list[str] | None = None,
+    explorer_only: bool = False,
 ) -> None:
-    """Open the explorer on this laptop only, with a Refresh from ADO button."""
+    """Open the document input workspace on this laptop."""
+    import getpass
+    import re
     import webbrowser
     from pathlib import Path
 
-    from dhf.serve import make_server
+    if explorer_only or db is not None or documents is not None:
+        from dhf.serve import make_server
 
-    server = make_server(Path(db), Path(documents), Path(output_dir), port)
-    url = f"http://127.0.0.1:{server.server_address[1]}/"
-    typer.echo(f"Workspace on {url} (this laptop only). Press Ctrl+C to stop.")
+        server = make_server(
+            Path(db or "out/evidence.sqlite"),
+            Path(documents or "out/documents"),
+            Path(output_dir),
+            port,
+        )
+        url = f"http://127.0.0.1:{server.server_address[1]}/"
+    else:
+        from dhf.workspace.server import make_workspace_server
+        from dhf.workspace.sources import WorkspaceError
+
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", project_id):
+            raise typer.BadParameter(
+                "Use letters, numbers, underscores or hyphens for --project-id."
+            )
+        owner = getpass.getuser()
+        members = [name for name in dict.fromkeys(member or []) if name != owner]
+        if any(not re.fullmatch(r"[A-Za-z0-9@_.-]{1,128}", name) for name in members):
+            raise typer.BadParameter("Use a username or email address for --member.")
+        try:
+            server, links = make_workspace_server(
+                Path(output_dir) / "workspaces" / project_id, project_id, owner, members, port
+            )
+        except WorkspaceError as error:
+            raise typer.BadParameter(str(error)) from None
+        url = links.pop(owner)
+        for person, link in links.items():
+            typer.echo(f"One-time local access for {person}: {link}")
+    typer.echo("Workspace is running on this laptop. Press Ctrl+C to stop.")
     if open_browser:
-        webbrowser.open(url)
+        if not webbrowser.open(url):
+            typer.echo(f"Open {url} in your browser.")
+    else:
+        typer.echo(f"Open {url} in your browser.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

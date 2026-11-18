@@ -510,3 +510,27 @@ The owner asked for native Windows support as a priority, and for a clear README
   - `render_ms` counts from page start and refreshes on every update. The harness read it only after its whole scripted session, so a runner stall during any interaction counted against the initial render.
   - Locally, the initial render takes 19 ms and the whole session 33 ms; 25 hash seeds all pass, so the generated page does not vary.
   - The budget now applies to the stats taken at load, and a failure reports the measured time.
+
+### Product input workspace — 2026-11-19
+
+- Added the empty product workspace, project default and document-specific Azure connections, the four requirements selectors, SSTR plan/run inputs, immutable Azure snapshots, and per-document multi-file evidence.
+- Added encrypted PAT storage, local owner/member sessions, credential activity, 401/403 recovery actions, expiry warnings and upload redaction ahead of evidence extraction.
+- Exported selected Azure evidence and uploads into a document-specific database for the existing drafting engine.
+
+Acceptance evidence:
+
+```text
+uv run --locked pytest -q --tb=short
+203 passed in 164.96s (0:02:44)
+
+ruff check .
+All checks passed!
+ruff format --check .
+141 files already formatted
+```
+
+In a clean browser workspace, selecting two SDD files together produced the message “2 file(s) added. Potential secrets were redacted in SDD-reader.txt.” With a PRD alongside them, **Save evidence for drafting** reported “Saved 3 evidence artifacts”.
+
+**Pending live verification:** run the browser workflow against the owner's Azure DevOps organization using an owner-supplied read-only PAT, confirmed work-item mapping and approved test scope. The current Azure contract checks use stubbed responses.
+
+**Deviations:** the synthetic dataset stays in the test and explicit rehearsal paths. The deployed scope here is the local browser workspace. Shared hosting, Microsoft Entra identity, managed encryption keys and browser DRR drafting remain future work.

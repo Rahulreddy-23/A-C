@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Document inputs | DHF workspace</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6f9;--surface:#fff;--text:#192538;--muted:#4d5b70;--border:#dbe2ec;--brand:#193e98;--wash:#edf3ff;--alert:#8b3416;--ok:#155c44}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;color:var(--text);background:var(--bg);font:15px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#14233e;color:#fff;padding:14px max(22px,calc((100vw - 1140px)/2));display:flex;align-items:center;gap:12px}
+header strong{font-size:16px;white-space:nowrap} header span{font-size:13px;border-left:1px solid #60728d;padding-left:12px;overflow-wrap:anywhere}
+main{max-width:1184px;margin:auto;padding:34px 22px 64px}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:25px}
+h1,h2,h3,p{margin:0} h1{font-size:clamp(24px,4vw,36px);line-height:1.18;margin:6px 0 20px;letter-spacing:-.025em}
+h2{font-size:21px;margin-bottom:12px} h3{font-size:16px;margin-bottom:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:16px;min-width:0}
+.muted,small{color:var(--muted)} small{display:block} .step{color:var(--brand);font-size:13px;font-weight:700}
+.cols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label,.field-label{display:block;font-weight:600} .field-label small,label small{font-weight:400;margin-top:4px}
+input,textarea,select,button{font:inherit}
+input:not([type=file]),textarea,select{width:100%;border:1px solid #aab6c8;background:white;color:var(--text);border-radius:7px;padding:8px 10px;min-height:40px}
+textarea{resize:vertical;min-height:72px}
+button,.file-action,.link-action{display:inline-flex;align-items:center;justify-content:center;min-height:37px;cursor:pointer;background:#fff;border:1px solid #aab6c8;color:var(--brand);padding:5px 11px;border-radius:7px;text-decoration:none;font-weight:650}
+button:hover,.file-action:hover,.link-action:hover{background:var(--wash)}
+button[aria-pressed=true]{color:var(--brand);border-color:#5275bf;background:var(--wash)}
+button:disabled{opacity:.55;cursor:default}
+.primary{background:var(--brand);border-color:var(--brand);color:#fff} .primary:hover{background:#16347c}
+button.remove{color:var(--alert);min-height:32px;font-size:13px}
+:focus-visible,.file-action:focus-within{outline:3px solid #5275bf;outline-offset:2px}
+.stack>*+*{margin-top:12px}
+.row,.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.password{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.file-action{position:relative;white-space:nowrap;font-size:13px}
+.file-action input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.upload{padding:13px 0;border-top:1px solid var(--border)} .upload:first-of-type{border-top:0}
+.upload-heading,.file-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.file-row{padding:6px 0;font-size:13px;overflow-wrap:anywhere}.file-row span{min-width:0;flex:1}
+.status:not(:empty),.warning:not(:empty){margin:8px 0;padding:10px 12px;border-radius:7px;background:var(--wash);overflow-wrap:anywhere}
+.warning:not(:empty),.status[data-error=true]:not(:empty){color:var(--alert);background:#fff2e9}
+.status[data-error=false]{color:var(--ok)}
+table{width:100%;border-collapse:collapse;text-align:left}th,td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+.table-wrap{max-height:350px;overflow:auto;margin:10px 0;max-width:100%}
+code{overflow-wrap:anywhere} details{margin-top:14px} summary{cursor:pointer;color:var(--brand)}
+@media(max-width:800px){.cols{grid-template-columns:1fr}}
+@media(max-width:460px){.fields{grid-template-columns:1fr}.card{padding:15px}main{padding:24px 14px}}
+</style>
+</head>
+<body>
+<header><strong>DHF workspace</strong><span id="project"></span></header>
+<main>
+<p class="status" id="startup" role="status">Opening workspace…</p>
+<div id="app" hidden>
+<nav id="documents" aria-label="Document type"></nav>
+<h1 id="title"></h1>
+<p class="step">Step 1</p><h2>Inputs</h2>
+<div class="cols">
+<section class="card" aria-labelledby="azure-heading">
+<h3 id="azure-heading">Azure DevOps Requirements Source</h3>
+<label for="source">Connection</label>
+<select id="source">
+<option value="default">Use project default Azure connection</option>
+<option value="override">Override for this document</option>
+<option value="none">Use uploaded inputs only</option>
+</select>
+<p id="source-status" class="status" role="status"></p>
+<p id="default-note" class="muted"></p>
+<form class="stack" id="connection" autocomplete="off">
+<div class="fields">
+<label for="org">Organization URL<input id="org" type="url" required placeholder="https://dev.azure.com/your-org"></label>
+<label for="project-name">Project name<input id="project-name" required maxlength="128"></label>
+</div>
+<label for="query-type">Requirements selector
+<select id="query-type">
+<option value="saved_query">Saved Query ID</option><option value="wiql">WIQL</option>
+<option value="area_path">Area Path</option><option value="work_item_ids">Work Item IDs</option>
+</select></label>
+<label for="query" id="query-label">Selection value</label>
+<textarea id="query" required maxlength="40000" aria-labelledby="query-label"></textarea>
+<div class="fields" id="tests" hidden>
+<label for="plans">Test Plan IDs<input id="plans" placeholder="Optional, comma-separated"></label>
+<label for="runs">Test Run IDs<input id="runs" placeholder="Optional, comma-separated"></label>
+</div>
+<div>
+<label for="pat">Personal Access Token</label>
+<div class="password">
+<input id="pat" type="password" maxlength="256" autocomplete="new-password" spellcheck="false" aria-describedby="scopes saved-pat">
+<button type="button" id="toggle-pat" aria-pressed="false">Show</button>
+</div>
+<small id="scopes"></small><small id="saved-pat"></small>
+<p id="expiry-warning" class="warning" role="status"></p>
+</div>
+<label for="expiry">PAT expiry <small>Optional. Enter the expiry shown in Azure DevOps when saving a new PAT.</small>
+<input id="expiry" type="datetime-local" disabled></label>
+<div class="actions">
+<button class="primary" type="submit">Save connection</button>
+<button id="test" type="button">Test Connection</button>
+<button id="fetch" type="button">Fetch Requirements</button>
+<button id="remove" class="remove" type="button">Remove PAT</button>
+</div>
+<p id="connection-status" class="status" role="status"></p>
+<button id="update" type="button" hidden>Update PAT</button>
+</form>
+</section>
+<section class="card" aria-labelledby="upload-heading">
+<h3 id="upload-heading">Document and evidence files</h3>
+<small id="file-types"></small>
+<div id="uploads"></div>
+<p id="upload-status" class="status" role="status"></p>
+</section>
+</div>
+<p class="step">Step 2</p><h2>Requirements Snapshot</h2>
+<section class="card" aria-labelledby="snapshot-heading">
+<h3 id="snapshot-heading">Evidence for this document</h3>
+<p id="snapshot-summary" class="muted"></p>
+<div id="results"></div>
+<div class="actions">
+<a id="explore" class="link-action" target="_blank" rel="noopener" hidden>Open evidence explorer</a>
+<button id="save-evidence" type="button">Save evidence for drafting</button>
+</div>
+<p id="evidence-status" class="status" role="status"></p>
+<details id="audit" hidden><summary>PAT activity</summary><ul id="audit-events"></ul></details>
+</section>
+</div>
+</main>
+<script>
+'use strict';
+const el = id => document.getElementById(id);
+let profile, fileTypes, project, doc = 'sad', state, busy = false;
+const types = {
+  saved_query: ['Saved Query ID', 'GUID of a saved query'],
+  wiql: ['WIQL', 'SELECT [System.Id] FROM WorkItems WHERE …'],
+  area_path: ['Area Path', 'Project\\Area'],
+  work_item_ids: ['Work Item IDs', '1201, 1202, 1215']
+};
+const fields = ['org', 'project-name', 'query-type', 'query', 'plans', 'runs', 'pat', 'expiry'];
+const date = value => new Date(value).toLocaleString();
+function notice(id, text = '', error = false) {
+  el(id).textContent = text;
+  el(id).dataset.error = error;
+}
+function node(tag, text) {
+  const item = document.createElement(tag);
+  if (text !== undefined) item.textContent = text;
+  return item;
+}
+async function api(path, options = {}) {
+  const response = await fetch(path, options);
+  const result = await response.json();
+  if (!response.ok) throw Object.assign(new Error(result.error), {action: result.action});
+  return result;
+}
+function json(method, value) {
+  return {method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(value)};
+}
+const base = () => '/api/projects/' + encodeURIComponent(project);
+const documentRoute = () => base() + '/documents/' + doc;
+const connectionRoute = (cid, action) => base() + '/azure-connections/' + cid + '/' + action;
+const selected = () => state.connections.find(item =>
+  item.document_type === (state.source === 'default' ? null : doc));
+function connectionError(error) {
+  notice('connection-status', error.message, true);
+  el('update').hidden = error.action !== 'Update PAT';
+}
+async function act(fn, errorHandler) {
+  if (busy) return;
+  busy = true;
+  el('app').inert = true;
+  el('app').setAttribute('aria-busy', 'true');
+  try { await fn(); }
+  catch (error) { errorHandler(error); }
+  finally {
+    busy = false;
+    el('app').inert = false;
+    el('app').removeAttribute('aria-busy');
+  }
+}
+function selectMode() {
+  const mode = el('source').value;
+  return act(async () => {
+    await api(documentRoute() + '/source', json('POST', {mode}));
+    clearNotices();
+    await load();
+  }, error => {
+    el('source').value = state.source;
+    notice('source-status', error.message, true);
+  });
+}
+function queryHelp() {
+  const [label, placeholder] = types[el('query-type').value];
+  el('query-label').textContent = label;
+  el('query').placeholder = placeholder;
+}
+function clearNotices() {
+  for (const id of ['source-status', 'connection-status', 'upload-status', 'evidence-status']) notice(id);
+  el('update').hidden = true;
+}
+function passwordMask() {
+  el('pat').type = 'password';
+  el('toggle-pat').textContent = 'Show';
+  el('toggle-pat').setAttribute('aria-pressed', 'false');
+}
+function paintConnection() {
+  const c = selected();
+  el('connection').hidden = state.source === 'none';
+  el('default-note').textContent = state.source === 'default'
+    ? 'Saved settings are shared by documents using the project default.' : '';
+  el('org').value = c?.org_url || '';
+  el('project-name').value = c?.project_name || '';
+  el('query-type').value = c?.query_type || 'saved_query';
+  el('query').value = c?.query_value || '';
+  el('plans').value = c?.test_plan_ids?.join(', ') || '';
+  el('runs').value = c?.test_run_ids?.join(', ') || '';
+  el('tests').hidden = doc !== 'sstr';
+  el('pat').value = '';
+  el('expiry').value = '';
+  el('expiry').disabled = true;
+  passwordMask();
+  el('scopes').textContent = 'Required PAT scopes: Work Items (Read)' +
+    (doc === 'sstr' ? ' and Test Management (Read).' : '.');
+  el('saved-pat').textContent = c?.pat_mask
+    ? c.pat_mask + ' · Saved ' + date(c.pat_saved_at) +
+      (c.pat_expiry ? ' · Expires ' + date(c.pat_expiry) : ' · Expiry unknown')
+    : 'Enter a PAT and save the connection before testing or fetching.';
+  const remaining = c?.pat_expiry ? Date.parse(c.pat_expiry) - Date.now() : Infinity;
+  el('expiry-warning').textContent = remaining <= 0 ? 'The saved PAT has expired. Update it to fetch again.'
+    : remaining <= 7 * 86400000 ? 'The saved PAT expires within seven days.' : '';
+  el('remove').disabled = !c?.pat_mask;
+  setDirty(false);
+  queryHelp();
+}
+function setDirty(dirty) {
+  el('test').disabled = el('fetch').disabled = dirty || !selected()?.pat_mask;
+}
+function drawUploads() {
+  const list = el('uploads');
+  list.replaceChildren();
+  for (const role of profile.documents[doc].inputs) {
+    const card = node('div'); card.className = 'upload';
+    const top = node('div'); top.className = 'upload-heading';
+    const label = profile.inputs[role].label;
+    const title = node('strong', label);
+    const file = node('input');
+    file.type = 'file'; file.multiple = true; file.accept = fileTypes.join(',');
+    file.setAttribute('aria-label', 'Add files for ' + label);
+    file.addEventListener('change', () => upload(role, Array.from(file.files)));
+    const action = node('label', 'Add files'); action.className = 'file-action';
+    action.append(file); top.append(title, action); card.append(top);
+    if (role === 'requirements') card.append(node('small', state.snapshot?.requirements
+      ? 'Optional. Azure requirements are available.'
+      : 'Supply an SRD or PRD if Azure requirements are unavailable.'));
+    for (const entry of state.uploads.filter(item => item.role === role)) {
+      const row = node('div'); row.className = 'file-row';
+      const remove = node('button', 'Remove'); remove.type = 'button'; remove.className = 'remove';
+      remove.setAttribute('aria-label', 'Remove ' + entry.filename);
+      remove.addEventListener('click', () => act(async () => {
+        await api(documentRoute() + '/uploads/' + entry.id, {method: 'DELETE'});
+        await load(false);
+        notice('upload-status', 'File removed.');
+      }, error => notice('upload-status', error.message, true)));
+      row.append(node('span', entry.filename + (entry.redactions ? ' · Secrets redacted' : '')), remove);
+      card.append(row);
+    }
+    list.append(card);
+  }
+}
+function drawSnapshot() {
+  const snapshot = state.snapshot;
+  const files = state.uploads.length;
+  const results = el('results');
+  results.replaceChildren();
+  el('snapshot-summary').textContent =
+    (snapshot ? snapshot.requirements + ' Azure requirements · ' + snapshot.items.length +
+      ' artifacts · Fetched ' + date(snapshot.created_at) : 'No Azure requirements fetched for this selection.') +
+    (files ? ' · ' + files + (files === 1 ? ' input file' : ' input files') : '');
+  if (snapshot?.items.length) {
+    const wrap = node('div'); wrap.className = 'table-wrap';
+    const table = node('table'); const head = node('thead'); const heading = node('tr');
+    for (const name of ['ID', 'Type', 'Title']) {
+      const cell = node('th', name); cell.scope = 'col'; heading.append(cell);
+    }
+    head.append(heading); table.append(head);
+    const body = node('tbody');
+    for (const item of snapshot.items) {
+      const row = node('tr');
+      row.append(node('td', item.id), node('td', item.type.replaceAll('_', ' ')), node('td', item.title));
+      body.append(row);
+    }
+    table.append(body); wrap.append(table); results.append(wrap);
+  }
+  el('explore').href = documentRoute() + '/evidence';
+  el('explore').hidden = !snapshot && !files;
+  el('save-evidence').disabled = (!snapshot && !files) || !!profile.documents[doc].future;
+  el('audit').hidden = !state.audit.length;
+  el('audit-events').replaceChildren(...state.audit.map(entry =>
+    node('li', entry.action.replaceAll('_', ' ') + ' · ' + entry.actor + ' · ' + date(entry.at))));
+}
+async function load(connection = true) {
+  state = await api(documentRoute() + '/inputs');
+  const details = profile.documents[doc];
+  el('title').textContent = details.title + (details.future ? ' (future)' : '');
+  for (const button of el('documents').children)
+    button.setAttribute('aria-pressed', String(button.dataset.doc === doc));
+  el('source').value = state.source;
+  if (connection) paintConnection();
+  drawUploads();
+  drawSnapshot();
+}
+function planIds(id) {
+  const value = el(id).value.trim();
+  if (!value) return [];
+  const parts = value.split(',').map(item => item.trim());
+  if (!parts.every(item => /^\d{1,10}$/.test(item)))
+    throw new Error('Enter comma-separated Test Plan or Test Run IDs.');
+  return parts.map(Number);
+}
+function saveConnection(event) {
+  event.preventDefault();
+  return act(async () => {
+    const input = {
+      document_type: state.source === 'override' ? doc : null,
+      org_url: el('org').value,
+      project_name: el('project-name').value,
+      query_type: el('query-type').value,
+      query_value: el('query').value,
+      test_plan_ids: planIds('plans'), test_run_ids: planIds('runs')
+    };
+    if (el('pat').value) input.pat = el('pat').value.trim();
+    if (input.pat && el('expiry').value) input.pat_expiry = new Date(el('expiry').value).toISOString();
+    await api(base() + '/azure-connections', json('POST', input));
+    await load();
+    notice('connection-status', 'Connection saved.');
+    el('update').hidden = true;
+  }, connectionError);
+}
+function azure(action) {
+  return act(async () => {
+    notice('connection-status', action === 'fetch' ? 'Reading work items…' : 'Checking access…');
+    el('update').hidden = true;
+    const result = await api(connectionRoute(selected().id, action), json('POST', {document_type: doc}));
+    if (action === 'fetch') {
+      await load(false);
+      notice('connection-status', 'Snapshot created. ' + result.requirements + ' requirements fetched.');
+    } else notice('connection-status', 'Connection successful. Verified access: ' +
+      result.verified_access.join(', ') +
+      (result.pat_expiry ? '. Saved expiry ' + date(result.pat_expiry) + '.' : '. PAT expiry unavailable.'));
+  }, connectionError);
+}
+function upload(role, files) {
+  return act(async () => {
+    const warnings = [], failed = [];
+    for (const file of files) {
+      notice('upload-status', 'Reading ' + file.name + '…');
+      try {
+        const saved = await api(documentRoute() + '/uploads/' + role, {
+          method: 'POST', headers: {'Content-Type': 'application/octet-stream',
+            'X-Input-Filename': encodeURIComponent(file.name)}, body: file
+        });
+        if (saved.redactions) warnings.push(saved.filename);
+      } catch (error) { failed.push(error.message); }
+    }
+    await load(false);
+    const messages = [files.length - failed.length + ' file(s) added.'];
+    if (warnings.length) messages.push('Potential secrets were redacted in ' + warnings.join(', ') + '.');
+    if (failed.length) messages.push([...new Set(failed)].join(' '));
+    notice('upload-status', messages.join(' '), !!(warnings.length || failed.length));
+  }, error => notice('upload-status', error.message, true));
+}
+async function start() {
+  const grant = new URLSearchParams(location.hash.slice(1)).get('access');
+  if (grant) {
+    history.replaceState(null, '', location.pathname);
+    await api('/api/session', {method: 'POST', headers: {Authorization: 'Bearer ' + grant}});
+  }
+  const session = await api('/api/session');
+  ({profile, file_types: fileTypes, project_id: project} = session);
+  el('project').textContent = project;
+  el('file-types').textContent = 'Upload one or more files per input. ' +
+    fileTypes.join(', ') + ' · 12 MB per file.';
+  for (const type of Object.keys(profile.documents)) {
+    const button = node('button', type.toUpperCase());
+    button.dataset.doc = type; button.type = 'button';
+    button.addEventListener('click', () => act(async () => {
+      const previous = doc;
+      doc = type;
+      clearNotices();
+      try { await load(); }
+      catch (error) { doc = previous; throw error; }
+    }, error => notice('source-status', error.message, true)));
+    el('documents').append(button);
+  }
+  el('source').addEventListener('change', selectMode);
+  el('connection').addEventListener('submit', saveConnection);
+  for (const id of fields) el(id).addEventListener('input', () => setDirty(true));
+  el('query-type').addEventListener('change', queryHelp);
+  el('pat').addEventListener('input', () => el('expiry').disabled = !el('pat').value);
+  el('toggle-pat').addEventListener('click', () => {
+    if (el('pat').type === 'text') passwordMask();
+    else {
+      el('pat').type = 'text';
+      el('toggle-pat').textContent = 'Hide';
+      el('toggle-pat').setAttribute('aria-pressed', 'true');
+    }
+  });
+  el('test').addEventListener('click', () => azure('test'));
+  el('fetch').addEventListener('click', () => azure('fetch'));
+  el('update').addEventListener('click', () => el('pat').focus());
+  el('remove').addEventListener('click', () => act(async () => {
+    await api(connectionRoute(selected().id, 'pat'), {method: 'DELETE'});
+    await load();
+    el('update').hidden = true;
+    notice('connection-status', 'Saved PAT removed.');
+  }, connectionError));
+  el('save-evidence').addEventListener('click', () => act(async () => {
+    const result = await api(documentRoute() + '/snapshot', json('POST', {}));
+    notice('evidence-status', 'Saved ' + result.artifacts + ' evidence artifacts to ' + result.path + '.');
+  }, error => notice('evidence-status', error.message, true)));
+  await load();
+  el('startup').hidden = true;
+  el('app').hidden = false;
+}
+start().catch(error => notice('startup', error.message, true));
+</script>
+</body>
+</html>

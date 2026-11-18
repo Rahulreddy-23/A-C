@@ -197,6 +197,8 @@ def create_explorer(
     reports: list[dict] | None = None,
     baselines: list[dict] | None = None,
     refreshes: list[dict] | None = None,
+    *,
+    workspace_name: str | None = None,
 ) -> str:
     import yaml
 
@@ -219,12 +221,14 @@ def create_explorer(
     reports = reports if reports is not None else [impact(graph, d) for d in documents]
     synthetic = all(a["attributes"].get("synthetic") for a in graph["artifacts"])
     presentation = {
-        "release": setting("DHF_RELEASE", "1.1"),
+        "release": setting("DHF_RELEASE", "1.1") if workspace_name is None else "",
         "not_assessable": blind,
         "refreshes": refreshes or [],
         "product": {
-            "name": setting("DHF_PRODUCT_NAME", "Kestrel"),
-            "subject": setting("DHF_PRODUCT_SUBJECT", "Infusion Controller"),
+            "name": workspace_name or setting("DHF_PRODUCT_NAME", "Kestrel"),
+            "subject": "Document evidence"
+            if workspace_name
+            else setting("DHF_PRODUCT_SUBJECT", "Infusion Controller"),
             "evidence": "Synthetic evidence" if synthetic else "Confidential evidence, local only",
         },
         "rules": [rule for group in rules.values() for rule in group],

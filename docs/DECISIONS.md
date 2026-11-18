@@ -314,3 +314,14 @@ On Windows, Python reads and writes text in the ANSI code page (usually cp1252) 
 - **CI runs the tests and the offline demo on `ubuntu-latest` and `windows-latest`.**
 
 Consequences: Windows needs only Git for Windows and uv, and the commands are the same as on macOS. `scripts/demo.sh` remains a macOS/Linux convenience; `uv run python tools/demo.py` works everywhere.
+
+## ADR-046 — Project inputs and scoped snapshots in the local workspace
+
+2026-11-19 · Product input workflow
+
+The default browser entry point starts an empty project. Azure connections and uploaded evidence are scoped to the local project and document type. A document can use the project connection, its own override, or uploaded inputs. Fetch creates a versioned Azure requirements snapshot. Saving evidence combines the selected snapshot with that document's uploads and produces a canonical evidence database for existing trace and generation commands.
+
+- `cryptography` provides Fernet authenticated encryption for PATs. The key comes from `APP_ENCRYPTION_KEY`. The API exposes the last four characters in a mask, the saved date and a supplied expiry. Credential mutations record the project, connection, actor, operation and timestamp. PAT-based access checks report verified capabilities. Microsoft Entra identity and managed key storage belong to a hosted deployment.
+- The local owner provisions per-launch browser access for authorized members. The server listens on loopback and checks project binding, session membership and the request origin before mutations. Azure requests use the selected cloud organization over HTTPS and the existing read-only adapter.
+- Uploads are decoded in memory. Likely secrets are redacted from extracted Word text or decoded UTF-8 before evidence extraction. SQLite stores sanitized blocks and their digest. The existing structured document profile is matched by the checklist role and all explicitly supplied documents are kept.
+- The browser workspace uses a general Azure work-item mapping with a configuration override for custom processes. No fixture dataset or demo project configuration is loaded into this entry point.

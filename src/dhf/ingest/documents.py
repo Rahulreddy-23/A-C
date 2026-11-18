@@ -9,8 +9,10 @@ import fnmatch
 import hashlib
 import re
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import BinaryIO
 
 import yaml
 
@@ -63,14 +65,16 @@ def visible_text(element) -> str:
     return "".join(parts)
 
 
-def docx_blocks(path: Path) -> tuple[list[dict], Counter]:
+def docx_blocks(
+    path: Path | BinaryIO, redact: Callable[[str], str] | None = None
+) -> tuple[list[dict], Counter]:
     """Body order: headings with level, paragraphs, tables as rows of cell text.
 
     Content controls are entered; cell text keeps one line per paragraph or break."""
     from docx import Document
     from docx.table import Table
 
-    document = Document(str(path))
+    document = Document(str(path) if isinstance(path, Path) else path)
     styles = {s.style_id: s.name or "" for s in document.styles if s.style_id}
     body = document.element.body
     notes: Counter = Counter()
@@ -88,13 +92,17 @@ def docx_blocks(path: Path) -> tuple[list[dict], Counter]:
                 yield child
 
     def cell_text(tc) -> str:
-        lines = (clean(line) for p in tc.iter(W + "p") for line in visible_text(p).split("\n"))
+        lines = (clean(line) for p in tc.iter(W + "p") for line in paragraph(p).split("\n"))
         return "\n".join(line for line in lines if line)
+
+    def paragraph(element) -> str:
+        text = visible_text(element)
+        return redact(text) if redact is not None else text
 
     blocks: list[dict] = []
     for child in children(body):
         if child.tag == W + "p":
-            text = clean(visible_text(child))
+            text = clean(paragraph(child))
             style = child.find(f"{W}pPr/{W}pStyle")
             name = styles.get(style.get(W + "val"), "") if style is not None else ""
             level = re.match(r"(?i)heading\s*(\d)", name)

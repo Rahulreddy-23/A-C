@@ -149,9 +149,11 @@ def plain_body(text: str) -> str:
 
 
 def workitem_kind(fields: dict, mapping: dict) -> str | None:
-    tags = [t.strip() for t in fields.get(mapping["fields"].get("tags", ""), "").split(";")]
+    tags = [t.strip() for t in (fields.get(mapping["fields"].get("tags", "")) or "").split(";")]
     kind = mapping["work_item_types"].get(fields["System.WorkItemType"])
-    return next((kind[t] for t in tags if t in kind), None) if isinstance(kind, dict) else kind
+    if isinstance(kind, dict):
+        kind = next((kind[t] for t in tags if t in kind), None)
+    return kind or mapping.get("default_work_item_type")
 
 
 def native_identifier(item: dict, kind: str, tags: list[str], mapping: dict) -> str:
@@ -173,9 +175,9 @@ def normalize_workitem(
     kind = workitem_kind(fields, mapping)
     if kind is None:
         return None
-    tags = [t.strip() for t in fields.get(names.get("tags", ""), "").split(";")]
+    tags = [t.strip() for t in (fields.get(names.get("tags", "")) or "").split(";")]
     marker_tags = mapping.get("tags", {})
-    description = fields.get(names.get("body", ""), "")
+    description = fields.get(names.get("body", "")) or ""
     attrs = {
         "synthetic": synthetic_marker(description, tags, mapping),
         "changed_at": fields[names["changed_at"]],

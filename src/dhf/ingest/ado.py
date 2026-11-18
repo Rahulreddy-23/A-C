@@ -205,6 +205,9 @@ class ADO:
         project: str | None = None,
         token: str | None = None,
         scope: dict | None = None,
+        *,
+        trust_env: bool = True,
+        mapping: dict | None = None,
     ) -> None:
         self.base = (
             base_url or setting("ADO_BASE_URL", "http://localhost:8089/kestrel-org")
@@ -221,10 +224,15 @@ class ADO:
             base_url=self.url,
             auth=("", self.token),
             timeout=60,
+            trust_env=trust_env,
             event_hooks={"request": [self.guard]},
         )
-        self.mapping = yaml.safe_load(
-            Path(setting("ADO_MAPPING", "specs/ado_mapping.yaml")).read_text(encoding="utf-8")
+        self.mapping = (
+            mapping
+            if mapping is not None
+            else yaml.safe_load(
+                Path(setting("ADO_MAPPING", "specs/ado_mapping.yaml")).read_text(encoding="utf-8")
+            )
         )
 
     def close(self) -> None:

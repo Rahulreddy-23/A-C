@@ -104,12 +104,7 @@ def manifest_template(manifest: dict) -> str:
 def require_synthetic(graph: dict, llm: LLM) -> None:
     """External providers draft only from fully synthetic evidence. Facts derive from the
     whole graph, so a pack with no evidence items must not slip past the per-item check."""
-    if (
-        llm.provider != "mock"
-        and not llm.real_data_approval
-        and not all(a["attributes"].get("synthetic") is True for a in graph["artifacts"])
-    ):
-        raise ValueError("External APIs require exclusively synthetic evidence")
+    llm.require_evidence_access(graph["artifacts"])
 
 
 def load_prompt(reference: str) -> dict:
@@ -462,6 +457,8 @@ def generate_section(section: dict, graph: dict, params: dict, llm: LLM) -> dict
     if llm.provider == "copilotstudio":
         model["requested_tier"] = tier
         model["tier"] = "basic"
+        if section["mode"] == "ai" and llm.real_data_approval:
+            model["real_data_approval"] = llm.real_data_approval
     if section["mode"] == "ai":
         prompt = load_prompt(section["prompt"])
         prompts = [{k: prompt[k] for k in ("id", "version", "sha256")}]

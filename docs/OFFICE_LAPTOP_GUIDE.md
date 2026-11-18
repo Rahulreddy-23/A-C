@@ -69,7 +69,7 @@ Expect every test to pass.
 Create it from the template:
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 notepad .env
 ```
 
@@ -83,7 +83,7 @@ APP_ADO_PAT=<read-only PAT>
 ADO_READ_ONLY=auto
 ADO_SCOPE=out/real/scope.yaml
 # After Part 4 point this at the reviewed real mapping:
-ADO_MAPPING=out/real/ado_mapping.yaml
+# ADO_MAPPING=out/real/ado_mapping.yaml
 
 # Labels and document structure
 DHF_PRODUCT_NAME=<product>
@@ -96,10 +96,11 @@ DHF_PROVIDER=copilotstudio
 DHF_COPILOT_MODE=http
 DHF_COPILOT_FLOW_URL=<filled in Part 6>
 DHF_COPILOT_USAGE=estimated
-DHF_REAL_DATA_APPROVAL=<clearance reference, e.g. "BD approval email 2026-11-17">
+DHF_REAL_DATA_APPROVAL=<clearance reference>
+DHF_REAL_DATA_DESTINATION_SHA256=<filled in Part 6>
 ```
 
-- `DHF_REAL_DATA_APPROVAL` is what lets company evidence reach the Copilot flow. Every manifest records it, so an auditor can see under which approval a draft was written. Leave it empty and the tool refuses to draft from real data.
+- Company evidence requires both the clearance reference and the fingerprint of the approved destination. Draft manifests record the clearance reference.
 - Do **not** put `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` on this laptop.
 
 ## Part 4. Tell the tool what to read (scope and mapping)
@@ -121,7 +122,7 @@ Fill in:
 **4b. Check the settings.**
 
 ```powershell
-uv run python tools/office_check.py --online
+uv run python tools/office_check.py --ado-only --online
 ```
 
 Every line should say `OK`. A `FIX` line says what to change. `--online` makes one read-only request to prove the PAT and project are right.
@@ -136,6 +137,8 @@ Open `out/real/ado_mapping.yaml` together with `out/real/ado_mapping.discovery.j
 - `id_fields`: the field that holds the document IDs (for example the specification ID that differs from the ADO number). Discovery lists candidates under `id_field_candidates`.
 - Work-item types: which ADO type is a requirement, a specification, a test case or a bug.
 - `unknowns`: every unknown needs a decision. Ask Rahul if one is unclear.
+
+Once the mapping is reviewed, set `ADO_MAPPING=out/real/ado_mapping.yaml` in `.env`.
 
 ## Part 5. First real run, no AI
 
@@ -164,7 +167,7 @@ If step 1 prints skipped classes (unmapped types, out-of-scope results), fix the
 
 **6b. The flow.** In Power Automate, create an instant cloud flow:
 1. Trigger **When an HTTP request is received**. Use `tests/fixtures/copilot_request.json` to generate its schema.
-2. **Run a prompt**: pick `DHF section drafter` and bind each of the eight inputs to the trigger field with the same name.
+2. **Run a prompt**: pick `DHF section drafter` and bind each of the eight inputs to the trigger field with the same name. Use `string(triggerBody()?['prompt_version'])` and `string(triggerBody()?['max_claims'])` for the two numeric fields.
 3. **Response**, status 200, body:
    ```json
    {
@@ -176,7 +179,15 @@ If step 1 prints skipped classes (unmapped types, out-of-scope results), fix the
    If the prompt fails or refuses, respond with `{"request_id": "...", "status": "failed"}` (or `"refused"`). The tool then puts a "write this section by hand" placeholder in the draft instead of crashing.
 4. Save, then copy the trigger's **HTTP URL** into `.env` as `DHF_COPILOT_FLOW_URL`. That URL is a secret: never put it in chat, screenshots or git.
 
-If your tenant blocks the HTTP trigger, use the OneDrive folder mode instead: set `DHF_COPILOT_MODE=folder` and `DHF_COPILOT_EXCHANGE_DIR`, and ask Rahul for the folder-flow recipe.
+If your tenant blocks the HTTP trigger, use the OneDrive folder mode. Set `DHF_COPILOT_MODE=folder` and `DHF_COPILOT_EXCHANGE_DIR` to the dedicated folder synced to the approved BD account, and ask Rahul for the folder-flow recipe.
+
+**6c. Record the approved destination.** Verify the exact flow or synced folder with the BD owner under the clearance reference. Then run:
+
+```powershell
+uv run python tools/office_check.py --destination-fingerprint
+```
+
+Copy the fingerprint it prints to `DHF_REAL_DATA_DESTINATION_SHA256` in `.env`. Run `uv run python tools/office_check.py --online` before continuing. If the trigger URL or folder changes, verify the new destination with the BD owner before recording its fingerprint.
 
 ## Part 7. Test one section before the whole document
 
@@ -186,7 +197,7 @@ If your tenant blocks the HTTP trigger, use the OneDrive folder mode instead: se
 uv run dhf copilot-request sstr anomaly_assessment --release <release> --db out/real/evidence.sqlite
 ```
 
-You can paste this output into the prompt builder's test pane to see the prompt work.
+The preview contains company evidence. Open it locally and use it only in the approved BD sandbox.
 
 **7b. One real call:**
 
@@ -194,9 +205,9 @@ You can paste this output into the prompt builder's test pane to see the prompt 
 uv run dhf generate-section sstr anomaly_assessment --release <release> --db out/real/evidence.sqlite --debug
 ```
 
-- `N validated claims` means the flow, prompt and validator all work.
+- A positive validated claim count shows that the flow returned claims that passed local validation. For zero claims, check the run output for a drafting failure and inspect the generated result.
 - `reason=provider_error` means the flow URL is wrong or the flow failed. Check the run history in Power Automate.
-- `reason=timeout` means the flow took over 120 seconds. Set `DHF_COPILOT_TIMEOUT_S=300` in `.env`.
+- For timeouts, check the flow run history. The local timeout defaults to 120 seconds. Set `DHF_COPILOT_TIMEOUT_S=300` in `.env` if the flow needs longer.
 - Compare the credit use with the tenant **Monitor** tab. The local credit count is an estimate.
 
 ## Part 8. Full run
@@ -223,7 +234,7 @@ Save as **CSV** (keep the name), then score it:
 uv run python tools/review_sheet.py score
 ```
 
-This writes `out/real/findings_score.md` with the percentage correct per rule. That's the accuracy number for the demo. Each false alarm points at a mapping or scope fix (Part 4), so fix it, rerun, and your verdicts are kept.
+This writes `out/real/findings_score.md` with the percentage correct per rule. Report it as the share of reviewed findings confirmed, with the sample size. After a mapping or scope fix, rerun the check. Verdicts carry over for findings with the same rule, item, source and revision.
 
 **9b. Check the drafts.** Open each `.docx` and check:
 - Every sentence has links to evidence. Click a few and confirm the item says what the sentence says.

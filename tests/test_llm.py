@@ -457,3 +457,13 @@ def test_anthropic_prices_are_per_model_and_unknown_models_are_refused(tmp_path,
     assert llm.prices("claude-sonnet-5-5") == (2.00, 10.00)
     with pytest.raises(ValueError, match="model-specific prices"):
         llm.prices("claude-unpriced-model")
+
+
+@pytest.mark.parametrize("invalid", ("nan", "inf", "-1", "0"))
+def test_nonfinite_or_nonpositive_anthropic_prices_are_rejected(tmp_path, monkeypatch, invalid):
+    from dhf.llm.adapters.mock import MockAdapter
+
+    monkeypatch.setenv("DHF_ANTHROPIC_INPUT_PER_MILLION", invalid)
+    llm = LLM("anthropic", tmp_path, MockAdapter())
+    with pytest.raises(ValueError, match="Positive finite model-specific prices"):
+        llm.prices("claude-haiku-5-5")

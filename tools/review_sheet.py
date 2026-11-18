@@ -12,6 +12,7 @@ import argparse
 import csv
 import json
 import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -22,6 +23,7 @@ COLUMNS = [
     "rule",
     "rule_title",
     "item_id",
+    "revision",
     "finding",
     "suggested_action",
     "source_link",
@@ -40,6 +42,17 @@ def read_sheet(path: Path) -> list[dict]:
         return list(csv.DictReader(handle))
 
 
+def spreadsheet_text(value: str) -> str:
+    """Keep text from an evidence source from becoming an Excel formula."""
+    if value.startswith(("\t", "\r", "\n")) or value.lstrip().startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
+
+def finding_key(row: dict) -> tuple[str, ...]:
+    return tuple(row.get(name, "") for name in ("rule", "item_id", "revision", "source_link"))
+
+
 def make(root: Path) -> None:
     source = root / "gaps.json"
     if not source.exists():
@@ -47,35 +60,49 @@ def make(root: Path) -> None:
     findings = json.loads(source.read_text(encoding="utf-8"))["findings"]
     titles = {rule["id"]: rule["title"] for rule in gap_rules()}
     sheet = root / "findings_review.csv"
-    kept = {(row["rule"], row["item_id"]): row for row in read_sheet(sheet)}
+    kept = {finding_key(row): row for row in read_sheet(sheet)}
     rows = []
     for number, finding in enumerate(findings, 1):
-        old = kept.get((finding["rule"], finding["artifact_id"]), {})
-        rows.append(
-            {
-                "no": number,
-                "rule": finding["rule"],
-                "rule_title": titles.get(finding["rule"], ""),
-                "item_id": finding["artifact_id"],
-                "finding": finding["message"],
-                "suggested_action": finding.get("action", ""),
-                "source_link": finding.get("source_url", ""),
-                **{name: old.get(name, "") for name in HUMAN},
-            }
-        )
-    # utf-8-sig lets Excel open the file with the right characters.
-    with sheet.open("w", encoding="utf-8-sig", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+        evidence = {
+            "rule": finding["rule"],
+            "rule_title": titles.get(finding["rule"], ""),
+            "item_id": finding["artifact_id"],
+            "revision": str(finding.get("revision", "")),
+            "finding": finding["message"],
+            "suggested_action": finding.get("action", ""),
+            "source_link": finding.get("source_url", ""),
+        }
+        row = {name: spreadsheet_text(value) for name, value in evidence.items()}
+        old = kept.get(finding_key(row), {})
+        rows.append({"no": number, **row, **{name: old.get(name, "") for name in HUMAN}})
+    # Close before replace for Windows. Preserve the previous sheet if Excel has it open.
+    handle = tempfile.NamedTemporaryFile(
+        dir=root,
+        prefix=".findings-review-",
+        suffix=".tmp",
+        delete=False,
+        mode="w",
+        encoding="utf-8-sig",
+        newline="",
+    )
+    temp = Path(handle.name)
+    try:
+        with handle:
+            writer = csv.DictWriter(handle, fieldnames=COLUMNS)
+            writer.writeheader()
+            writer.writerows(rows)
+        temp.replace(sheet)
+    finally:
+        temp.unlink(missing_ok=True)
     marked = sum(1 for row in rows if row["verdict"])
     print(f"{len(rows)} findings -> {sheet} ({marked} already marked)")
 
 
 def score(root: Path) -> None:
-    rows = read_sheet(root / "findings_review.csv")
-    if not rows:
+    sheet = root / "findings_review.csv"
+    if not sheet.is_file():
         sys.exit("No review sheet yet; run the make step first")
+    rows = read_sheet(sheet)
     bad = [r["no"] for r in rows if r["verdict"] and r["verdict"].strip().upper() not in VERDICTS]
     if bad:
         sys.exit(f"Rows {', '.join(bad)} have a verdict other than {', '.join(VERDICTS)}")

@@ -163,6 +163,14 @@ def regenerate(
         "generated_at": datetime.now(UTC).isoformat(),
         "template": manifest_template(manifest),
         "template_sha256": template_digest(manifest_template(manifest)),
+        "model": {
+            **{
+                key: value
+                for key, value in manifest["model"].items()
+                if key != "real_data_approval"
+            },
+            **({"real_data_approval": llm.real_data_approval} if llm.real_data_approval else {}),
+        },
         "llm_cost_usd": 0 if llm.provider == "copilotstudio" else llm.run_spend - cost,
         **({"copilot_credits": llm.run_spend - cost} if llm.provider == "copilotstudio" else {}),
         "telemetry": {

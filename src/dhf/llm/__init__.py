@@ -143,6 +143,20 @@ class LLM:
                 raise ValueError("Unknown provider")
         self.adapter = adapter
 
+    def require_evidence_access(self, artifacts: list[dict]) -> None:
+        if self.provider == "mock" or all(
+            artifact.get("attributes", {}).get("synthetic") is True for artifact in artifacts
+        ):
+            return
+        if not self.real_data_approval:
+            raise ValueError("External APIs require exclusively synthetic evidence")
+        from dhf.llm.adapters.copilotstudio import destination_fingerprint
+
+        if destination_fingerprint() != setting("DHF_REAL_DATA_DESTINATION_SHA256").strip().lower():
+            raise ValueError(
+                "Copilot destination does not match the recorded company-data approval"
+            )
+
     def model_for(self, tier: str = "default") -> str:
         if tier not in ("default", "analytical"):
             raise ValueError("Unknown model tier")
@@ -191,9 +205,13 @@ class LLM:
             )
             for direction, field in (("INPUT", "input"), ("OUTPUT", "output"))
         ]
-        if any(not value or float(value) <= 0 for value in values):
-            raise ValueError("Positive model-specific prices required")
-        return float(values[0]), float(values[1])
+        try:
+            input_price, output_price = map(float, values)
+        except ValueError:
+            raise ValueError("Positive finite model-specific prices required") from None
+        if not (0 < input_price < float("inf") and 0 < output_price < float("inf")):
+            raise ValueError("Positive finite model-specific prices required")
+        return input_price, output_price
 
     def budget_status(self) -> dict:
         """Read cumulative headroom without credentials or provider payloads."""
@@ -258,6 +276,14 @@ class LLM:
                     "output_schema": output_schema,
                     "schema": schema,
                     "pack": pack,
+                    **(
+                        {
+                            "real_data_approval": self.real_data_approval,
+                            "real_data_destination": setting("DHF_REAL_DATA_DESTINATION_SHA256"),
+                        }
+                        if self.real_data_approval
+                        else {}
+                    ),
                 }
             ).encode()
         ).hexdigest()
@@ -276,10 +302,7 @@ class LLM:
 
         if self.provider != "copilotstudio":
             raise ValueError("Copilot request preview requires copilotstudio provider")
-        if not self.real_data_approval and any(
-            not a.get("attributes", {}).get("synthetic", False) for a in pack.get("evidence", [])
-        ):
-            raise ValueError("External APIs require exclusively synthetic evidence")
+        self.require_evidence_access(pack.get("evidence", []))
         schema = strict_output_schema("claims.v1")
         model = self.model_for(model_tier)
         limit = self.completion_limit(model, max_output_tokens)
@@ -303,17 +326,7 @@ class LLM:
             from dhf.llm.errors import DraftingUnavailable
 
             raise DraftingUnavailable("unsupported_schema", "copilotstudio")
-        if (
-            self.provider != "mock"
-            and not self.real_data_approval
-            and (
-                any(
-                    not a.get("attributes", {}).get("synthetic", False)
-                    for a in pack.get("evidence", [])
-                )
-            )
-        ):
-            raise ValueError("External APIs require exclusively synthetic evidence")
+        self.require_evidence_access(pack.get("evidence", []))
         schema = strict_output_schema(output_schema)
         response_model = output_model(output_schema)
         model = self.model_for(model_tier)

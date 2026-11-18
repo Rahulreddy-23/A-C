@@ -7,6 +7,9 @@ Steps: read-only ADO ingest -> gaps -> RTM -> AI drafts (Copilot Studio) -> expl
 """
 
 import argparse
+import json
+import math
+import os
 import shutil
 import subprocess
 import sys
@@ -19,12 +22,13 @@ DB = str(OUT / "evidence.sqlite")
 DOCS = str(OUT / "docs")
 
 
-def step(title: str, args: list[str]) -> None:
+def step(title: str, args: list[str], **settings: str) -> None:
     print(f"\n=== {title} ===", flush=True)
     dhf = shutil.which("dhf")
     if dhf is None:
         sys.exit("dhf command not found; run this with: uv run python tools/real_run.py")
-    if subprocess.run([dhf, *args]).returncode != 0:
+    env = {**os.environ, **settings, "ADO_READ_ONLY": "1"}
+    if subprocess.run([dhf, *args], env=env).returncode != 0:
         sys.exit(f"\nStopped: '{title}' failed. Fix the message above, then run again.")
 
 
@@ -34,6 +38,11 @@ def main() -> None:
     parser.add_argument("--no-ai", action="store_true", help="skip AI drafting")
     parser.add_argument("--skip-ingest", action="store_true", help="reuse the last snapshot")
     options = parser.parse_args()
+    docs = [doc.strip() for doc in options.docs.split(",") if doc.strip()]
+    if not options.no_ai and (
+        not docs or any(doc not in ("sstr", "sad", "sdd", "rtm") for doc in docs)
+    ):
+        parser.error("--docs must list one or more of sstr,sad,sdd,rtm")
     release = setting("DHF_RELEASE", "1.0")
     OUT.mkdir(parents=True, exist_ok=True)
 
@@ -44,11 +53,33 @@ def main() -> None:
     if not options.no_ai:
         if setting("DHF_PROVIDER") != "copilotstudio":
             sys.exit("\nStopped: DHF_PROVIDER must be copilotstudio for company data.")
-        for doc in [d.strip() for d in options.docs.split(",") if d.strip()]:
+        try:
+            run_cap = float(setting("DHF_COPILOT_CREDITS_PER_RUN", "250"))
+        except ValueError:
+            run_cap = -1
+        if not math.isfinite(run_cap) or run_cap < 0:
+            parser.error("DHF_COPILOT_CREDITS_PER_RUN must be finite and nonnegative")
+
+        remaining = run_cap
+        for doc in dict.fromkeys(docs):
             step(
                 f"4. Draft {doc.upper()} (Copilot Studio)",
-                ["generate", doc, "--release", release, "--db", DB, "--documents", DOCS],
+                [
+                    "generate",
+                    doc,
+                    "--provider",
+                    "copilotstudio",
+                    "--release",
+                    release,
+                    "--db",
+                    DB,
+                    "--documents",
+                    DOCS,
+                ],
+                DHF_COPILOT_CREDITS_PER_RUN=str(remaining),
             )
+            manifest = json.loads((Path(DOCS) / f"{doc}.manifest.json").read_text(encoding="utf-8"))
+            remaining = max(0.0, remaining - manifest["copilot_credits"])
     step(
         "5. Evidence explorer",
         ["explore", "--db", DB, "--documents", DOCS, "--output", str(OUT / "explorer.html")],

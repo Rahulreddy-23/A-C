@@ -54,6 +54,8 @@ Settings are read from `.env`, which git ignores. Create it from the template:
 
 The defaults point at the local ADO mock and need no changes. Put real ADO credentials and AI keys only in `.env`.
 
+To run the real project on the office laptop (read-only ADO, drafting through the BD Copilot flow), follow [docs/OFFICE_LAPTOP_GUIDE.md](docs/OFFICE_LAPTOP_GUIDE.md).
+
 ## Commands
 
 Run every command from the repository root. `uv run dhf --help` lists all commands, and `uv run dhf <command> --help` shows the options of one.
@@ -88,7 +90,7 @@ The tool never merges PRs and never writes to ADO work items or source repositor
 
 ## AI providers
 
-Choose a provider per command with `--provider`. The default is `mock`.
+Set `DHF_PROVIDER` in `.env` or choose a provider per command with `--provider`. The default is `mock`.
 
 | Provider | Use |
 |---|---|
@@ -96,7 +98,7 @@ Choose a provider per command with `--provider`. The default is `mock`.
 | `copilotstudio` | The approved path, through the BD tenant. Set `DHF_COPILOT_MODE=http` with `DHF_COPILOT_FLOW_URL`, or `folder` with `DHF_COPILOT_EXCHANGE_DIR`. |
 | `openai`, `anthropic` | Development rehearsals on **synthetic data only**. Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. |
 
-Paid calls go through a cost ledger (`out/ledger.json`) with per-run and total spending caps. Responses are cached, and cache hits are free. A guard blocks company evidence from external AI providers.
+Paid calls go through a cost ledger (`out/ledger.json`) with per-run and total spending caps. Responses are cached, and cache hits are free. Company evidence requires a recorded clearance and verified destination for the BD Copilot flow. Personal API providers require synthetic evidence.
 
 ## Real projects
 

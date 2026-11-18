@@ -432,3 +432,38 @@ def test_model_tiers_prices_reasoning_reservation_and_cache(tmp_path, monkeypatc
     monkeypatch.setenv("DHF_MODEL_OPENAI_ANALYTICAL", "gpt-5.4-nano")
     with pytest.raises(ValueError, match="Nano"):
         llm.generate("tier", 1, "p", PACK, model_tier="analytical")
+
+
+def test_cli_provider_defaults_to_env_file_and_flag_wins(tmp_path, monkeypatch) -> None:
+    from dhf.cli import resolve_provider
+
+    assert resolve_provider(None) == "mock"
+    path = tmp_path / "provider.env"
+    path.write_text("DHF_PROVIDER=anthropic\n", encoding="utf-8", newline="\n")
+    monkeypatch.setenv("DHF_ENV_FILE", str(path))
+    assert resolve_provider(None) == "anthropic"
+    assert resolve_provider("openai") == "openai"
+
+
+def test_anthropic_prices_are_per_model_and_unknown_models_are_refused(tmp_path, monkeypatch):
+    from dhf.llm.adapters.mock import MockAdapter
+
+    llm = LLM("anthropic", tmp_path, MockAdapter())
+    assert llm.prices("claude-haiku-5-5") == (0.10, 0.50)
+    assert llm.prices("claude-sonnet-5-5") == (2.00, 10.00)
+    # The provider-wide keys price only the default model, never a costlier one.
+    monkeypatch.setenv("DHF_ANTHROPIC_INPUT_PER_MILLION", "0.01")
+    assert llm.prices("claude-haiku-5-5") == (0.01, 0.50)
+    assert llm.prices("claude-sonnet-5-5") == (2.00, 10.00)
+    with pytest.raises(ValueError, match="model-specific prices"):
+        llm.prices("claude-unpriced-model")
+
+
+@pytest.mark.parametrize("invalid", ("nan", "inf", "-1", "0"))
+def test_nonfinite_or_nonpositive_anthropic_prices_are_rejected(tmp_path, monkeypatch, invalid):
+    from dhf.llm.adapters.mock import MockAdapter
+
+    monkeypatch.setenv("DHF_ANTHROPIC_INPUT_PER_MILLION", invalid)
+    llm = LLM("anthropic", tmp_path, MockAdapter())
+    with pytest.raises(ValueError, match="Positive finite model-specific prices"):
+        llm.prices("claude-haiku-5-5")

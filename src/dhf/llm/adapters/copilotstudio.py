@@ -1,5 +1,6 @@
 """BD-tenant prompt transport; never sends data to a personal model API."""
 
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -33,6 +34,36 @@ def request_payload(
         "output_schema_json": canonical(schema),
         "max_claims": int(pack.get("max_claims", 6)),
     }
+
+
+def destination_fingerprint() -> str:
+    """Identify the configured Power Automate trigger or resolved OneDrive folder."""
+    mode = setting("DHF_COPILOT_MODE", "http")
+    if mode == "http":
+        value = setting("DHF_COPILOT_FLOW_URL")
+        try:
+            parsed = urlsplit(value)
+            host = parsed.hostname or ""
+            trusted_host = host.endswith((".api.powerplatform.com", ".logic.azure.com"))
+            if (
+                parsed.scheme != "https"
+                or not trusted_host
+                or parsed.username is not None
+                or parsed.port not in (None, 443)
+                or parsed.fragment
+                or not parsed.path
+            ):
+                raise ValueError
+        except ValueError:
+            raise ValueError("Company evidence requires a Power Automate HTTPS trigger") from None
+    elif mode == "folder":
+        folder = setting("DHF_COPILOT_EXCHANGE_DIR")
+        if not folder or not Path(folder).is_dir():
+            raise ValueError("Company evidence requires an existing approved OneDrive folder")
+        value = str(Path(folder).resolve())
+    else:
+        raise ValueError("DHF_COPILOT_MODE must be http or folder")
+    return hashlib.sha256(f"{mode}\0{value}".encode()).hexdigest()
 
 
 def usage_mode() -> str:
@@ -89,9 +120,9 @@ class CopilotStudioAdapter:
         try:
             if self.client is None:
                 with httpx.Client(timeout=float(setting("DHF_COPILOT_TIMEOUT_S", "120"))) as client:
-                    response = client.post(url, json=request)
+                    response = client.post(url, json=request, follow_redirects=False)
             else:
-                response = self.client.post(url, json=request)
+                response = self.client.post(url, json=request, follow_redirects=False)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as exc:

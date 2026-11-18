@@ -106,6 +106,11 @@ class LLM:
                 )
             ),
         )
+        # A recorded clearance reference unlocks company evidence for the BD tenant only;
+        # personal model APIs never receive it.
+        self.real_data_approval = (
+            setting("DHF_REAL_DATA_APPROVAL").strip() if provider == "copilotstudio" else ""
+        )
         self.run_spend = 0.0
         self.hits = 0
         self.calls = 0
@@ -138,6 +143,20 @@ class LLM:
                 raise ValueError("Unknown provider")
         self.adapter = adapter
 
+    def require_evidence_access(self, artifacts: list[dict]) -> None:
+        if self.provider == "mock" or all(
+            artifact.get("attributes", {}).get("synthetic") is True for artifact in artifacts
+        ):
+            return
+        if not self.real_data_approval:
+            raise ValueError("External APIs require exclusively synthetic evidence")
+        from dhf.llm.adapters.copilotstudio import destination_fingerprint
+
+        if destination_fingerprint() != setting("DHF_REAL_DATA_DESTINATION_SHA256").strip().lower():
+            raise ValueError(
+                "Copilot destination does not match the recorded company-data approval"
+            )
+
     def model_for(self, tier: str = "default") -> str:
         if tier not in ("default", "analytical"):
             raise ValueError("Unknown model tier")
@@ -166,31 +185,33 @@ class LLM:
     def prices(self, model: str) -> tuple[float, float]:
         if self.provider == "mock":
             return 0.0, 0.0
-        if self.provider == "openai":
-            defaults = yaml.safe_load(Path("specs/llm/prices.yaml").read_text(encoding="utf-8"))[
-                "openai"
-            ].get(model, {})
-            key = "DHF_OPENAI_" + re.sub(r"[^A-Za-z0-9]", "_", model).upper()
-            legacy = model == "gpt-4.1-mini"
-            values = [
-                setting(
-                    key + "_" + direction + "_PER_MILLION",
-                    setting(
-                        "DHF_OPENAI_" + direction + "_PER_MILLION", str(defaults.get(field, ""))
-                    )
-                    if legacy
-                    else str(defaults.get(field, "")),
-                )
-                for direction, field in (("INPUT", "input"), ("OUTPUT", "output"))
-            ]
-        else:
-            values = [
-                setting("DHF_" + self.provider.upper() + "_INPUT_PER_MILLION", "0.10"),
-                setting("DHF_" + self.provider.upper() + "_OUTPUT_PER_MILLION", "0.50"),
-            ]
-        if any(not value or float(value) <= 0 for value in values):
-            raise ValueError("Positive model-specific prices required")
-        return float(values[0]), float(values[1])
+        # Prices are per model; the provider-wide legacy keys price only its default model.
+        prefix = "DHF_" + self.provider.upper() + "_"
+        defaults = (
+            yaml.safe_load(Path("specs/llm/prices.yaml").read_text(encoding="utf-8"))
+            .get(self.provider, {})
+            .get(model, {})
+        )
+        key = prefix + re.sub(r"[^A-Za-z0-9]", "_", model).upper()
+        legacy = model == {"openai": "gpt-4.1-mini", "anthropic": "claude-haiku-5-5"}.get(
+            self.provider
+        )
+        values = [
+            setting(
+                key + "_" + direction + "_PER_MILLION",
+                setting(prefix + direction + "_PER_MILLION", str(defaults.get(field, "")))
+                if legacy
+                else str(defaults.get(field, "")),
+            )
+            for direction, field in (("INPUT", "input"), ("OUTPUT", "output"))
+        ]
+        try:
+            input_price, output_price = map(float, values)
+        except ValueError:
+            raise ValueError("Positive finite model-specific prices required") from None
+        if not (0 < input_price < float("inf") and 0 < output_price < float("inf")):
+            raise ValueError("Positive finite model-specific prices required")
+        return input_price, output_price
 
     def budget_status(self) -> dict:
         """Read cumulative headroom without credentials or provider payloads."""
@@ -255,6 +276,14 @@ class LLM:
                     "output_schema": output_schema,
                     "schema": schema,
                     "pack": pack,
+                    **(
+                        {
+                            "real_data_approval": self.real_data_approval,
+                            "real_data_destination": setting("DHF_REAL_DATA_DESTINATION_SHA256"),
+                        }
+                        if self.real_data_approval
+                        else {}
+                    ),
                 }
             ).encode()
         ).hexdigest()
@@ -273,10 +302,7 @@ class LLM:
 
         if self.provider != "copilotstudio":
             raise ValueError("Copilot request preview requires copilotstudio provider")
-        if any(
-            not a.get("attributes", {}).get("synthetic", False) for a in pack.get("evidence", [])
-        ):
-            raise ValueError("External APIs require exclusively synthetic evidence")
+        self.require_evidence_access(pack.get("evidence", []))
         schema = strict_output_schema("claims.v1")
         model = self.model_for(model_tier)
         limit = self.completion_limit(model, max_output_tokens)
@@ -300,13 +326,7 @@ class LLM:
             from dhf.llm.errors import DraftingUnavailable
 
             raise DraftingUnavailable("unsupported_schema", "copilotstudio")
-        if self.provider != "mock" and (
-            any(
-                not a.get("attributes", {}).get("synthetic", False)
-                for a in pack.get("evidence", [])
-            )
-        ):
-            raise ValueError("External APIs require exclusively synthetic evidence")
+        self.require_evidence_access(pack.get("evidence", []))
         schema = strict_output_schema(output_schema)
         response_model = output_model(output_schema)
         model = self.model_for(model_tier)

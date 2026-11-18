@@ -323,6 +323,60 @@ def test_external_providers_never_draft_from_company_evidence(tmp_path) -> None:
     assert Recorder.calls == 0
 
 
+def test_recorded_clearance_unlocks_company_evidence_for_the_bd_tenant_only(
+    tmp_path, monkeypatch
+) -> None:
+    import pytest
+
+    from dhf.generate import generate_document
+    from dhf.llm import LLM
+    from dhf.llm.adapters.copilotstudio import destination_fingerprint
+
+    class Tenant:
+        calls = 0
+
+        def complete_request(self, request):
+            Tenant.calls += 1
+            return {
+                "claims": [],
+                "_model": "tenant-basic-gpt",
+                "_usage": {"input_tokens": 10, "output_tokens": 5},
+            }
+
+    class Personal:
+        def complete(self, *args, **kwargs):
+            raise AssertionError("company evidence reached a personal model API")
+
+    (tmp_path / "docs").mkdir()
+    build(tmp_path / "docs")
+    graph, _ = import_folder(tmp_path / "docs", PROFILE)
+    monkeypatch.setenv("DHF_REAL_DATA_APPROVAL", "BD-CLEARANCE-TEST")
+    for provider in ("anthropic", "openai"):
+        llm = LLM(provider, tmp_path / provider, Personal())
+        with pytest.raises(ValueError, match="exclusively synthetic"):
+            generate_document("sstr", graph, {"release": "1"}, out=tmp_path / "out", llm=llm)
+    llm = LLM("copilotstudio", tmp_path / "tenant", Tenant())
+    approved_url = "https://test.api.powerplatform.com/approved-flow"
+    monkeypatch.setenv("DHF_COPILOT_FLOW_URL", approved_url)
+    with pytest.raises(ValueError, match="does not match"):
+        generate_document("sstr", graph, {"release": "1"}, out=tmp_path / "out", llm=llm)
+    assert Tenant.calls == 0
+
+    monkeypatch.setenv("DHF_REAL_DATA_DESTINATION_SHA256", destination_fingerprint())
+    monkeypatch.setenv("DHF_COPILOT_FLOW_URL", "https://test.api.powerplatform.com/other-flow")
+    with pytest.raises(ValueError, match="does not match"):
+        generate_document("sstr", graph, {"release": "1"}, out=tmp_path / "out", llm=llm)
+    assert Tenant.calls == 0
+
+    monkeypatch.setenv("DHF_COPILOT_FLOW_URL", approved_url)
+    result = generate_document("sstr", graph, {"release": "1"}, out=tmp_path / "out", llm=llm)
+    assert Tenant.calls > 0
+    assert result["manifest"]["model"]["real_data_approval"] == "BD-CLEARANCE-TEST"
+    drafted = [s for s in result["manifest"]["sections"] if s["mode"] == "ai"]
+    assert all(s["status"] == "draft" for s in drafted)
+    assert all(s["model"]["real_data_approval"] == "BD-CLEARANCE-TEST" for s in drafted)
+
+
 def test_explorer_meets_the_dom_harness_contract(tmp_path) -> None:
     import shutil
     import subprocess

@@ -1,4 +1,4 @@
-# Standard text token prices per million USD, verified 2026-10-13.
+# Standard text token prices per million USD, verified 2026-10-13 (Anthropic 2026-11-18).
 # https://developers.openai.com/api/docs/models/gpt-4.1-mini
 # https://developers.openai.com/api/docs/models/gpt-5.4-mini
 # https://developers.openai.com/api/docs/models/gpt-5.5
@@ -7,3 +7,8 @@ openai:
   gpt-4.1-mini: {input: 0.40, output: 1.60}
   gpt-5.4-mini: {input: 0.75, output: 4.50}
   gpt-5.5: {input: 5.00, output: 30.00}
+# https://platform.claude.com/docs/en/about-claude/pricing (prompts up to 100K tokens)
+anthropic:
+  claude-haiku-5-5: {input: 0.10, output: 0.50}
+  claude-sonnet-5-5: {input: 2.00, output: 10.00}
+  claude-opus-5-5: {input: 4.00, output: 20.00}

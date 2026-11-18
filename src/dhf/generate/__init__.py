@@ -104,8 +104,10 @@ def manifest_template(manifest: dict) -> str:
 def require_synthetic(graph: dict, llm: LLM) -> None:
     """External providers draft only from fully synthetic evidence. Facts derive from the
     whole graph, so a pack with no evidence items must not slip past the per-item check."""
-    if llm.provider != "mock" and not all(
-        a["attributes"].get("synthetic") is True for a in graph["artifacts"]
+    if (
+        llm.provider != "mock"
+        and not llm.real_data_approval
+        and not all(a["attributes"].get("synthetic") is True for a in graph["artifacts"])
     ):
         raise ValueError("External APIs require exclusively synthetic evidence")
 
@@ -637,6 +639,7 @@ def generate_document(
             "provider": llm.provider,
             "name": llm.last_model or llm.model,
             **({"tier": "basic"} if llm.provider == "copilotstudio" else {}),
+            **({"real_data_approval": llm.real_data_approval} if llm.real_data_approval else {}),
         },
         "llm_cost_usd": 0 if llm.provider == "copilotstudio" else llm.run_spend - initial_cost,
         **(

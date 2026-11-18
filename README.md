@@ -54,6 +54,8 @@ Settings are read from `.env`, which git ignores. Create it from the template:
 
 The defaults point at the local ADO mock and need no changes. Put real ADO credentials and AI keys only in `.env`.
 
+To run the real project on the office laptop (read-only ADO, drafting through the BD Copilot flow), follow [docs/OFFICE_LAPTOP_GUIDE.md](docs/OFFICE_LAPTOP_GUIDE.md).
+
 ## Commands
 
 Run every command from the repository root. `uv run dhf --help` lists all commands, and `uv run dhf <command> --help` shows the options of one.

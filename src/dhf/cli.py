@@ -12,6 +12,13 @@ app = typer.Typer(
 )
 
 
+def resolve_provider(provider: str | None) -> str:
+    """An explicit --provider wins; otherwise DHF_PROVIDER from the environment or .env."""
+    from dhf.config import setting
+
+    return provider or setting("DHF_PROVIDER", "mock")
+
+
 @app.command()
 def version() -> None:
     """Show the reference implementation version."""
@@ -216,7 +223,7 @@ def rtm_command(
 def generate(
     doc: str,
     release: str = "1.1",
-    provider: str = "mock",
+    provider: str | None = None,
     db: str = "out/evidence.sqlite",
     open_pr: bool = False,
     debug: bool = False,
@@ -226,6 +233,7 @@ def generate(
     impact_file: str | None = None,
 ) -> None:
     """Generate a typed, cited DHF draft from its YAML document specification."""
+    provider = resolve_provider(provider)
     from pathlib import Path
 
     from dhf.generate import generate_document
@@ -392,11 +400,12 @@ def generate_section_command(
     doc: str,
     section: str,
     release: str = "1.1",
-    provider: str = "mock",
+    provider: str | None = None,
     db: str = "out/evidence.sqlite",
     debug: bool = False,
 ) -> None:
     """Run one bounded section for the owner's cross-provider quality check."""
+    provider = resolve_provider(provider)
     import json
     from pathlib import Path
 
@@ -660,9 +669,10 @@ def watch_command(
 
 @app.command("propose")
 def propose_command(
-    db: str = "out/evidence.sqlite", documents: str = "out/documents", provider: str = "mock"
+    db: str = "out/evidence.sqlite", documents: str = "out/documents", provider: str | None = None
 ) -> None:
     """Draft L01–L03 review proposals locally, without source writes."""
+    provider = resolve_provider(provider)
     import json
     from pathlib import Path
 
@@ -800,11 +810,12 @@ def discover_command(output: str = "out/discovery/ado_mapping.yaml") -> None:
 def verify_support_command(
     doc: str | None = None,
     sample: int = 5,
-    provider: str = "mock",
+    provider: str | None = None,
     db: str = "out/evidence.sqlite",
     documents: str = "out/documents",
 ) -> None:
     """Assess sourced/inferred claims; flags and Word comments are advisory only."""
+    provider = resolve_provider(provider)
     import hashlib
     import json
     from pathlib import Path

@@ -323,6 +323,45 @@ def test_external_providers_never_draft_from_company_evidence(tmp_path) -> None:
     assert Recorder.calls == 0
 
 
+def test_recorded_clearance_unlocks_company_evidence_for_the_bd_tenant_only(
+    tmp_path, monkeypatch
+) -> None:
+    import pytest
+
+    from dhf.generate import generate_document
+    from dhf.llm import LLM
+
+    class Tenant:
+        calls = 0
+
+        def complete_request(self, request):
+            Tenant.calls += 1
+            return {
+                "request_id": request["request_id"],
+                "claims_json": '{"claims":[]}',
+                "model": "tenant-basic-gpt",
+                "input_tokens": 10,
+                "output_tokens": 5,
+            }
+
+    class Personal:
+        def complete(self, *args, **kwargs):
+            raise AssertionError("company evidence reached a personal model API")
+
+    (tmp_path / "docs").mkdir()
+    build(tmp_path / "docs")
+    graph, _ = import_folder(tmp_path / "docs", PROFILE)
+    monkeypatch.setenv("DHF_REAL_DATA_APPROVAL", "BD-CLEARANCE-TEST")
+    for provider in ("anthropic", "openai"):
+        llm = LLM(provider, tmp_path / provider, Personal())
+        with pytest.raises(ValueError, match="exclusively synthetic"):
+            generate_document("sstr", graph, {"release": "1"}, out=tmp_path / "out", llm=llm)
+    llm = LLM("copilotstudio", tmp_path / "tenant", Tenant())
+    result = generate_document("sstr", graph, {"release": "1"}, out=tmp_path / "out", llm=llm)
+    assert Tenant.calls > 0
+    assert result["manifest"]["model"]["real_data_approval"] == "BD-CLEARANCE-TEST"
+
+
 def test_explorer_meets_the_dom_harness_contract(tmp_path) -> None:
     import shutil
     import subprocess

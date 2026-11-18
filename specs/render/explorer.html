@@ -18,13 +18,69 @@
 :root{--nav:#f0f2f5;--nav-text:#263241;--nav-muted:#566274;--nav-active:#e1e7f0;--info-fill:#edf3fe;--warning:#935015;--warning-fill:#fff1df}
 :root[data-theme="dark"]{--nav:#242a33;--nav-text:#e0e5ed;--nav-muted:#b6c0cf;--nav-active:#363f4d;--info-fill:#2d3e5b;--warning:#f0c38c;--warning-fill:#453928}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--info-fill:#2d3e5b;--warning:#f0c38c;--warning-fill:#453928}}
-.workspace{grid-template-columns:184px minmax(0,1fr)}.workspace.inspector-open{grid-template-columns:184px minmax(0,1fr) 292px}.sidebar{background:var(--nav);color:var(--nav-text);border:0;padding:20px 12px}.project-name{font-size:13px;font-weight:650;margin:0 7px 3px}.project-meta{font-size:11px;color:var(--nav-muted);margin:0 7px 24px}.app-nav{display:grid;gap:4px}.nav-item{display:flex;justify-content:space-between;align-items:center;text-align:left;color:var(--nav-muted);font-size:13px;min-height:38px;padding:8px 11px;white-space:normal}.nav-item:hover{background:var(--nav-active);color:var(--nav-text)}.nav-item[aria-current="page"]{background:var(--nav-active);color:var(--nav-text);font-weight:600}.nav-count{font-size:11px;font-weight:400}.nav-footnote{margin:auto 7px 0;padding-top:20px;color:var(--nav-muted);font-size:11px;line-height:1.7}.page-title{font-size:14px}.app-content{height:100%;overflow:auto;padding:24px 28px;background:var(--paper)}.page-heading{margin-bottom:22px}.page-heading h2{font-size:22px;letter-spacing:-.025em;margin-bottom:5px}.page-heading p{font-size:13px;color:var(--secondary);max-width:75ch}.report-columns{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(250px,1fr);gap:28px}.report-section{margin-bottom:28px}.report-section h3{font-size:14px;margin-bottom:12px}.release-band{background:var(--info-fill);padding:18px 20px;margin-bottom:24px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:20px}.release-band h3{font-size:16px;margin-bottom:4px}.release-band p{font-size:12px;color:var(--secondary)}.state-tag{display:inline-block;font-size:11px;font-weight:600;padding:4px 7px;border-radius:4px;background:var(--chrome);color:var(--secondary)}.state-tag.warning{background:var(--warning-fill);color:var(--warning)}.state-tag.danger{background:var(--gap-fill);color:var(--gap)}.state-tag.success{background:var(--success-fill);color:var(--success)}.state-tag.stale{background:var(--stale-fill);color:var(--stale)}.coverage-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 15px;padding:13px 0;border-bottom:1px solid var(--soft-line)}.coverage-value{font:600 14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}.coverage-label{font-size:13px}.coverage-line{height:4px;background:var(--soft-line);grid-column:1/-1;border-radius:2px;overflow:hidden}.coverage-line span{display:block;height:100%;background:var(--accent)}.coverage-row.missing .coverage-line span{background:var(--warning)}.verification-bar{height:12px;display:flex;gap:2px;margin:13px 0;border-radius:3px;overflow:hidden}.verification-bar span{display:block;background:var(--success)}.verification-bar .failed{background:var(--gap)}.verification-bar .other{background:var(--warning)}.legend-row{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px}.legend-row .passed{color:var(--success)}.legend-row .failed{color:var(--gap)}.attention-list{display:grid;gap:5px}.attention-row{width:100%;display:flex;justify-content:space-between;gap:15px;align-items:center;text-align:left;padding:11px 12px;background:var(--surface);border:1px solid var(--soft-line);border-radius:6px;font-size:12px;white-space:normal}.attention-row:hover{border-color:var(--line)}.report-note{font-size:12px;color:var(--secondary);line-height:1.65;margin:12px 0}.document-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:12px 0;border-bottom:1px solid var(--soft-line)}.document-row button{padding:0;white-space:normal;text-align:left;font-size:13px;color:var(--accent)}.document-row span{font-size:11px;color:var(--secondary)}.inline-action{color:var(--accent);font-size:12px;padding:5px 0}.report-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}.report-toolbar label{font-size:12px;color:var(--secondary)}.report-toolbar select{width:270px;margin-left:7px}.report-table{width:100%;border-collapse:collapse;font-size:12px}.report-table th{text-align:left;background:var(--chrome);color:var(--secondary);font-size:11px;font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line)}.report-table td{padding:12px;vertical-align:top;border-bottom:1px solid var(--soft-line);line-height:1.65}.report-table button{color:var(--accent);font-size:12px;white-space:normal;padding:0;text-align:left}.artifact-links{display:flex;flex-wrap:wrap;gap:5px 10px}.report-table td:nth-child(1){white-space:nowrap}.table-scroller{overflow:auto}.doc-layout{display:grid;grid-template-columns:215px minmax(0,1fr);gap:24px}.doc-picker{display:grid;gap:5px;align-content:start}.doc-picker button{text-align:left;white-space:normal;padding:11px 12px;border:1px solid var(--soft-line);background:var(--surface)}.doc-picker button[aria-pressed="true"]{background:var(--selection);border-color:var(--accent);color:var(--accent)}.doc-picker small{display:block;font-size:11px;color:var(--secondary);font-weight:400;margin-top:4px}.doc-reader{max-width:900px;min-width:0}.document-heading{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}.document-heading h3{font-size:20px;margin-bottom:8px}.doc-section{margin-bottom:24px}.doc-section summary{font-size:14px;font-weight:600;cursor:pointer;padding:9px 0;line-height:1.5}.doc-section .state-tag{margin-left:7px;vertical-align:middle}.claim{margin:14px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--soft-line);border-radius:6px}.claim p{font-size:13px;line-height:1.7;margin:7px 0}.claim-citations{display:flex;flex-wrap:wrap;gap:10px}.claim button{font-size:11px;padding:2px 0;color:var(--accent)}.document-text{font-size:13px;line-height:1.7;overflow-wrap:anywhere}.document-text p{margin:10px 0}.document-text h3{font-size:14px;margin:15px 0 8px}.document-text table{width:100%;border-collapse:collapse;font-size:12px}.document-text th,.document-text td{padding:8px;text-align:left;border-bottom:1px solid var(--soft-line);vertical-align:top}.artifact-browse{position:absolute;inset:0 auto 0 0;width:248px;z-index:2;background:var(--chrome);border-right:1px solid var(--line);display:flex;flex-direction:column;box-shadow:3px 0 10px rgb(20 35 55 / .08)}.edge-label{position:absolute;font-size:11px;line-height:16px;color:var(--secondary);background:var(--paper);padding:1px 4px;white-space:nowrap;transform:translate(-50%,-50%);pointer-events:none}.edge-label.active{color:var(--accent)}.node[data-type="hazard"] .node-type,.node[data-type="risk_control"] .node-type{color:var(--warning)}.node[data-type="test_case"] .node-type,.node[data-type="test_result"] .node-type{color:var(--success)}
-@media(max-width:1100px){.workspace{grid-template-columns:160px minmax(0,1fr)}.workspace.inspector-open{grid-template-columns:160px minmax(0,1fr) 280px}.sidebar{display:flex;padding:18px 8px}.workspace.browse-open{grid-template-columns:160px minmax(0,1fr)}.workspace.browse-open.inspector-open{grid-template-columns:160px minmax(0,1fr) 280px}.workspace.browse-open.inspector-open .inspector{position:static;width:auto}.mobile-browse{display:none}.report-columns{grid-template-columns:minmax(0,1fr)}.doc-layout{grid-template-columns:175px minmax(0,1fr)}.app-content{padding:22px}}
-@media(max-width:760px){.workspace,.workspace.inspector-open{grid-template-columns:minmax(0,1fr)}.sidebar{display:none}.mobile-browse{display:inline-block}.workspace.browse-open{grid-template-columns:minmax(0,1fr)}.workspace.browse-open .sidebar{display:flex;position:absolute;left:0;top:52px;bottom:30px;width:184px;z-index:4}.workspace.inspector-open .inspector{position:absolute;right:0;top:52px;bottom:30px;width:min(310px,90vw);z-index:3}.workspace.browse-open.inspector-open{grid-template-columns:minmax(0,1fr)}.workspace.browse-open.inspector-open .inspector{position:absolute;width:min(310px,90vw)}.app-content{padding:20px 16px}.doc-layout{grid-template-columns:minmax(0,1fr)}.doc-picker{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.release-band{align-items:start;flex-direction:column;gap:12px}.page-heading h2{font-size:20px}.report-toolbar select{width:230px}.page-title{font-size:13px}}
+.workspace{grid-template-columns:184px minmax(0,1fr)}.workspace.inspector-open{grid-template-columns:184px minmax(0,1fr) 292px}.sidebar{background:var(--nav);color:var(--nav-text);border:0;padding:20px 12px}.project-name{font-size:13px;font-weight:650;margin:0 7px 3px}.project-meta{font-size:11px;color:var(--nav-muted);margin:0 7px 24px}.app-nav{display:grid;gap:4px}.nav-item{display:flex;justify-content:space-between;align-items:center;text-align:left;color:var(--nav-muted);font-size:13px;min-height:38px;padding:8px 11px;white-space:normal}.nav-item:hover{background:var(--nav-active);color:var(--nav-text)}.nav-item[aria-current="page"]{background:var(--nav-active);color:var(--nav-text);font-weight:600}.nav-count{font-size:11px;font-weight:400}.nav-footnote{margin:auto 7px 0;padding-top:20px;color:var(--nav-muted);font-size:11px;line-height:1.7}.page-title{font-size:14px}.app-content{height:100%;overflow:auto;padding:24px 28px;background:var(--paper)}.page-heading{margin-bottom:22px}.page-heading h2{font-size:22px;letter-spacing:-.025em;margin-bottom:5px}.page-heading p{font-size:13px;color:var(--secondary);max-width:75ch}.report-columns{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(250px,1fr);gap:28px}.report-section{margin-bottom:28px}.report-section h3{font-size:14px;margin-bottom:12px}.release-band{background:var(--info-fill);padding:18px 20px;margin-bottom:24px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;gap:20px}.release-band h3{font-size:16px;margin-bottom:4px}.release-band p{font-size:12px;color:var(--secondary)}.state-tag{display:inline-block;font-size:11px;font-weight:600;padding:4px 7px;border-radius:4px;background:var(--chrome);color:var(--secondary)}.state-tag.warning{background:var(--warning-fill);color:var(--warning)}.state-tag.danger{background:var(--gap-fill);color:var(--gap)}.state-tag.success{background:var(--success-fill);color:var(--success)}.state-tag.stale{background:var(--stale-fill);color:var(--stale)}.coverage-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 15px;padding:13px 0;border-bottom:1px solid var(--soft-line)}.coverage-value{font:600 14px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}.coverage-label{font-size:13px}.coverage-line{height:4px;background:var(--soft-line);grid-column:1/-1;border-radius:2px;overflow:hidden}.coverage-line span{display:block;height:100%;background:var(--accent)}.coverage-row.missing .coverage-line span{background:var(--warning)}.verification-bar{height:12px;display:flex;gap:2px;margin:13px 0;border-radius:3px;overflow:hidden}.verification-bar span{display:block;background:var(--success)}.verification-bar .failed{background:var(--gap)}.verification-bar .other{background:var(--warning)}.legend-row{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px}.legend-row .passed{color:var(--success)}.legend-row .failed{color:var(--gap)}.attention-list{display:grid;gap:5px}.attention-row{width:100%;display:flex;justify-content:space-between;gap:15px;align-items:center;text-align:left;padding:11px 12px;background:var(--surface);border:1px solid var(--soft-line);border-radius:6px;font-size:12px;white-space:normal}.attention-row:hover{border-color:var(--line)}.report-note{font-size:12px;color:var(--secondary);line-height:1.65;margin:12px 0}.document-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:12px 0;border-bottom:1px solid var(--soft-line)}.document-row button{padding:0;white-space:normal;text-align:left;font-size:13px;color:var(--accent)}.document-row span{font-size:11px;color:var(--secondary)}.inline-action{color:var(--accent);font-size:12px;padding:5px 0}.report-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}.report-toolbar label{font-size:12px;color:var(--secondary)}.report-toolbar select{width:270px;margin-left:7px}.report-table{width:100%;border-collapse:collapse;font-size:12px}.report-table th{text-align:left;background:var(--chrome);color:var(--secondary);font-size:11px;font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line)}.report-table td{padding:12px;vertical-align:top;border-bottom:1px solid var(--soft-line);line-height:1.65}.report-table button{color:var(--accent);font-size:12px;white-space:normal;padding:0;text-align:left}.artifact-links{display:flex;flex-wrap:wrap;gap:5px 10px}.report-table td:nth-child(1){white-space:nowrap}.table-scroller{overflow:auto}.artifact-browse{position:absolute;inset:0 auto 0 0;width:248px;z-index:2;background:var(--chrome);border-right:1px solid var(--line);display:flex;flex-direction:column;box-shadow:3px 0 10px rgb(20 35 55 / .08)}.edge-label{position:absolute;font-size:11px;line-height:16px;color:var(--secondary);background:var(--paper);padding:1px 4px;white-space:nowrap;transform:translate(-50%,-50%);pointer-events:none}.edge-label.active{color:var(--accent)}.node[data-type="hazard"] .node-type,.node[data-type="risk_control"] .node-type{color:var(--warning)}.node[data-type="test_case"] .node-type,.node[data-type="test_result"] .node-type{color:var(--success)}
+@media(max-width:1100px){.workspace{grid-template-columns:160px minmax(0,1fr)}.workspace.inspector-open{grid-template-columns:160px minmax(0,1fr) 280px}.sidebar{display:flex;padding:18px 8px}.workspace.browse-open{grid-template-columns:160px minmax(0,1fr)}.workspace.browse-open.inspector-open{grid-template-columns:160px minmax(0,1fr) 280px}.workspace.browse-open.inspector-open .inspector{position:static;width:auto}.mobile-browse{display:none}.report-columns{grid-template-columns:minmax(0,1fr)}.app-content{padding:22px}}
+@media(max-width:760px){.workspace,.workspace.inspector-open{grid-template-columns:minmax(0,1fr)}.sidebar{display:none}.mobile-browse{display:inline-block}.workspace.browse-open{grid-template-columns:minmax(0,1fr)}.workspace.browse-open .sidebar{display:flex;position:absolute;left:0;top:52px;bottom:30px;width:184px;z-index:4}.workspace.inspector-open .inspector{position:absolute;right:0;top:52px;bottom:30px;width:min(310px,90vw);z-index:3}.workspace.browse-open.inspector-open{grid-template-columns:minmax(0,1fr)}.workspace.browse-open.inspector-open .inspector{position:absolute;width:min(310px,90vw)}.app-content{padding:20px 16px}.release-band{align-items:start;flex-direction:column;gap:12px}.page-heading h2{font-size:20px}.report-toolbar select{width:230px}.page-title{font-size:13px}}
 
 
 /* Compact light review surface; colour identifies evidence, not page chrome. */
 .viewport{background-image:none}.viewport:focus-visible{outline:1px solid var(--line);outline-offset:-1px}.sidebar{border-right:1px solid var(--line)}.nav-item[aria-current="page"]{color:var(--accent)}.node.selected{outline:none;border:2px solid var(--accent);padding:10px 11px}.node{box-shadow:none}.node-type{display:inline-block;align-self:flex-start;border-radius:3px;background:var(--chrome);padding:1px 4px;font-size:11px}.node[data-type="software_req"] .node-type{background:var(--selection);color:var(--accent)}.node[data-type="test_result"] .node-type,.node[data-type="test_case"] .node-type{background:var(--chrome);color:var(--secondary)}.node[data-type="risk_control"] .node-type,.node[data-type="hazard"] .node-type{background:var(--warning-fill);color:var(--warning)}.node-relation{font-size:11px;font-weight:500;color:var(--secondary);margin-top:3px}.flag.failed{background:var(--gap-fill);color:var(--gap)}.flag.neutral{background:var(--warning-fill);color:var(--warning)}.edge-label{font-size:12px;line-height:18px;background:var(--paper);padding:1px 4px}.layer-label{display:none}
+
+/* The document reader keeps navigation available while the selected section scrolls. */
+.app-content.documents-view{padding:0;container-type:inline-size}
+.doc-layout{display:grid;grid-template-rows:auto minmax(0,1fr);height:100%;min-height:0}
+.doc-toolbar{display:flex;align-items:end;justify-content:space-between;gap:20px;padding:18px 28px;background:var(--surface);border-bottom:1px solid var(--line)}
+.doc-heading{min-width:0;overflow-wrap:anywhere}
+.doc-heading h2{font-size:23px;line-height:1.25}
+.doc-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-top:7px;color:var(--secondary);font-size:12px}
+.doc-control{display:grid;gap:4px;color:var(--secondary);font-size:12px;min-width:0}
+.doc-control select,.doc-control input{color:var(--ink);font-size:13px}
+.doc-switcher{flex:0 1 255px}
+.doc-body{display:grid;grid-template-columns:minmax(170px,224px) minmax(0,1fr);min-height:0}
+.doc-outline{display:flex;flex-direction:column;min-height:0;min-width:0;border-right:1px solid var(--line);background:var(--paper)}
+.doc-outline-header{padding:16px 14px 8px}
+.doc-outline-header h3{font-size:13px;margin-bottom:8px}
+.doc-outline-list{overflow:auto;padding:0 8px 12px;scroll-padding-block:6px}
+.doc-outline-item{width:100%;display:block;text-align:left;white-space:normal;overflow-wrap:anywhere;line-height:1.45;color:var(--secondary);padding:8px 10px;margin:1px 0}
+.doc-outline-item[aria-current="location"]{background:var(--selection);color:var(--accent);font-weight:650}
+.doc-outline-item:focus-visible{outline-offset:-2px}
+.doc-outline-empty{padding:8px 10px;color:var(--secondary)}
+.doc-section-select{display:none}
+.doc-scroll{min-width:0;min-height:0;overflow:auto;background:var(--surface)}
+.doc-reader{min-width:0;width:100%;max-width:1180px;margin-inline:auto;padding:26px 24px 36px;padding-inline:clamp(16px,3.5cqi,48px)}
+.doc-section-header{margin-bottom:20px}
+.doc-section-header h3{font-size:24px;line-height:1.25;overflow-wrap:anywhere}
+.doc-section-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-top:7px;font-size:12px;color:var(--secondary)}
+.doc-section-actions{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:26px;padding-top:12px}
+.doc-section-actions button{border-color:var(--line);white-space:normal}
+.doc-section-content{min-width:0}
+.document-text{font-size:14px;line-height:1.65;overflow-wrap:anywhere}
+.document-text p,.document-text li,.claim p{max-width:72ch}
+.document-text p{margin:10px 0}
+.document-text h4{font-size:15px;margin:14px 0 7px}
+.document-text pre{overflow:auto;background:var(--paper);padding:12px;max-width:100%;white-space:pre}
+.document-text .table-scroller{margin:12px 0;border:1px solid var(--line);border-radius:6px;scrollbar-color:var(--line) var(--paper)}
+.document-text table{width:100%;border-collapse:collapse;table-layout:auto;font-size:13px;line-height:1.5}
+.document-text th,.document-text td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--soft-line);vertical-align:top;overflow-wrap:break-word}
+.document-text th{background:var(--chrome);color:var(--ink);min-width:7.5rem;font-weight:650}
+.document-text tr:last-child td{border-bottom:0}
+.document-text .compact-column{width:1%;min-width:4.5rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.document-text .document-citation,.claim-citations .document-citation{min-height:0;padding:0;border:0;color:var(--accent);font:inherit;font-weight:550;text-align:left;text-decoration:underline;text-underline-offset:2px;white-space:normal;overflow-wrap:anywhere}
+.doc-claims-heading{font-size:15px;margin:24px 0 7px}
+.claim{padding:14px 0;border-top:1px solid var(--soft-line);overflow-wrap:anywhere}
+.claim p{font-size:14px;line-height:1.65;margin:7px 0}
+.claim .claim-confidence{color:var(--secondary);font-size:12px;margin-bottom:0}
+.claim-citations{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px}
+.doc-empty{padding:24px 28px;max-width:72ch}
+@container (max-width:700px){
+  .doc-body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  .doc-outline{display:none}
+  .doc-section-select{display:grid;padding:9px 16px;border-bottom:1px solid var(--line);background:var(--paper)}
+  .doc-toolbar{padding:12px 16px;gap:10px 16px;flex-wrap:wrap}
+  .doc-heading h2{font-size:19px}
+  .doc-switcher{flex-basis:100%}
+  .doc-section-header h3{font-size:21px}
+}
 
 </style>
 </head>
@@ -80,12 +136,252 @@ function currentFindings(){return data.findings.filter(f=>f.scope!=='baseline')}
 function documentList(){const host=el('div','');(data.documents||[]).forEach(d=>{const row=el('div','document-row');row.append(button(d.title,()=>{chosenDoc=d.id;setPage('documents')}),el('span','',`${d.sections.length} sections`));host.append(row)});if(!host.childNodes.length)host.append(el('p','report-note','No generated document manifests are included in this snapshot.'));return host}
 function overviewPage(){const host=$('page-content');host.append(heading('Evidence overview',`Review verification, trace gaps and document evidence for the ${product.name||'Kestrel'} ${product.subject||'Infusion Controller'}.`));const band=el('div','release-band'),info=el('div','');const reqs=data.nodes.filter(n=>n.type==='software_req').length,tests=Object.values(data.verification||{}).reduce((a,b)=>a+b,0);info.append(el('h3','',`Release ${data.release||'1.1'} evidence`),el('p','',`${reqs} software requirements / ${tests} latest test results / ${(data.documents||[]).length} generated documents`));band.append(info,tag('Human review required','warning'));host.append(band);const columns=el('div','report-columns'),left=el('div',''),right=el('div','');const coverageSection=el('section','report-section');coverageSection.append(el('h3','','Trace coverage'));[['srs_to_test','Requirements with verification','G01'],['srs_to_code','Requirements with code changes','G02'],['hazard_to_control_to_verification','Hazards with control and verification paths','']].forEach(([key,label,rule])=>{const c=data.coverage?.[key];if(!c)return;const blind=!!rule&&(data.not_assessable||[]).includes(rule);const row=el('div','coverage-row'+(!blind&&c.covered<c.total?' missing':'')),meter=el('div','coverage-line'),fill=el('span','');fill.style.width=(blind?0:c.percent)+'%';meter.append(fill);row.append(el('span','coverage-label',label),el('span','coverage-value',blind?'not assessable':`${c.covered}/${c.total} (${c.percent}%)`),meter);coverageSection.append(row)});coverageSection.append(button('Inspect traceability',()=>setPage('trace'),'inline-action'));left.append(coverageSection);const verify=el('section','report-section');verify.append(el('h3','','Latest verification results'));const bar=el('div','verification-bar'),legend=el('div','legend-row');Object.entries(data.verification||{}).forEach(([name,count])=>{const kind=name==='Passed'?'passed':name==='Failed'?'failed':'other',segment=el('span',kind);segment.style.width=(tests?count/tests*100:0)+'%';segment.setAttribute('aria-label',`${count} ${name}`);bar.append(segment);legend.append(el('span',kind,`${count} ${name.toLowerCase()}`))});verify.append(bar,legend,el('p','report-note','These counts come from the latest recorded result for each test case.'));left.append(verify);const docs=el('section','report-section');docs.append(el('h3','','Generated documents'),documentList());left.append(docs);const attention=el('section','report-section');attention.append(el('h3','','Review work'));const list=el('div','attention-list');const allSections=(data.documents||[]).flatMap(d=>d.sections);[[`${currentFindings().length} current findings`,'findings','warning'],[`${data.stale_sections.length} directly stale sections`,'impact','stale'],[`${allSections.filter(s=>s.mode==='human').length} human-authoring sections`,'documents',''],[`${allSections.reduce((sum,s)=>sum+(s.claims||[]).filter(c=>c.kind==='suggested').length,0)} suggested claims`,'documents','warning']].forEach(([label,target,state])=>{const row=button('',()=>setPage(target),'attention-row');row.append(el('span','',label),tag('Review',state));list.append(row)});attention.append(list,el('p','report-note','Draft sections, proposed text and residual-risk decisions remain subject to human review.'));right.append(attention);const risk=el('section','report-section');risk.append(el('h3','','Risk evidence'),el('p','report-note',`${(data.risk||[]).length} hazards with recorded control, requirement and verification traces.`),button('Review hazard paths',()=>setPage('risk'),'inline-action'));right.append(risk);const provenance=el('section','report-section');provenance.append(el('h3','','Evidence provenance'),el('p','report-note',`${data.nodes.length} artifacts and ${data.links.length} confirmed links. Each artifact retains its source, revision, retrieval timestamp and content hash.`),button('Browse source evidence',()=>{setPage('trace');view='index';render()},'inline-action'));right.append(provenance);columns.append(left,right);host.append(columns)}
 function findingsPage(){const host=$('page-content');host.append(heading('Findings','Recorded trace gaps, document consistency findings and risk-analysis gaps.'));if((data.not_assessable||[]).length)host.append(el('p','report-note',`Not assessable from these sources: ${data.not_assessable.join(', ')}. No link of that kind exists in the ingested evidence, so these rules are not listed per artifact.`));const controls=el('div','report-toolbar'),label=el('label','','Rule'),select=el('select','');select.id='finding-filter';const all=el('option','','All rules');all.value='';select.append(all);[...new Set(data.findings.map(f=>f.rule))].sort().forEach(id=>{const option=el('option','',`${id}: ${ruleIndex.get(id)?.title||'Recorded finding'}`);option.value=id;select.append(option)});select.value=findingRule;select.addEventListener('change',()=>{findingRule=select.value;renderPage()});label.append(select);controls.append(label);const findings=data.findings.filter(f=>!findingRule||f.rule===findingRule);controls.append(el('span','report-note',`${findings.length} findings; ${data.findings.filter(f=>f.scope==='baseline').length} from baseline comparison`));host.append(controls,reportTable(['Rule','Artifact','Finding','Recommended action'],findings.map(f=>[tag(f.rule,f.rule.startsWith('F')?'danger':'warning'),artifactLinks(sourceFinding(f)),el('span','',(f.message||ruleIndex.get(f.rule)?.title||f.rule)+(f.document?` (${f.document}${f.section?' / '+f.section:''}${f.scope==='baseline'?' baseline':''})`:'')),f.action||ruleIndex.get(f.rule)?.action||'Review the cited document section and source revision.'])))}
-function inlineMarkdown(text){const host=el('span','');const clean=text.replace(/\*\*|`/g,'');const pattern=/\[([^\]]+)\]\(([^)]+)\)/g;let start=0,match;while((match=pattern.exec(clean))){host.append(el('span','',clean.slice(start,match.index)));const id=match[1].split('@')[0];if(nodes.has(id))host.append(artifactLink(id,match[1]));else host.append(el('span','',match[1]));start=pattern.lastIndex}host.append(el('span','',clean.slice(start)));return host}
-function markdownBody(markdown){const box=el('div','document-text');const lines=String(markdown||'').replace(/<!--[\s\S]*?-->/g,'').split('\n');let i=0;while(i<lines.length){const line=lines[i].trim();if(!line){i++;continue}if(line.startsWith('|')&&i+1<lines.length&&/^\|[\s:|\-]+\|$/.test(lines[i+1].trim())){const table=el('table',''),head=el('thead',''),tr=el('tr',''),cells=value=>value.trim().replace(/^\||\|$/g,'').split('|');cells(line).forEach(value=>{const th=el('th','');th.append(inlineMarkdown(value.trim()));tr.append(th)});head.append(tr);table.append(head);i+=2;const body=el('tbody','');while(i<lines.length&&lines[i].trim().startsWith('|')){const row=el('tr','');cells(lines[i]).forEach(value=>{const td=el('td','');td.append(inlineMarkdown(value.trim()));row.append(td)});body.append(row);i++}table.append(body);const scroll=el('div','table-scroller');scroll.append(table);box.append(scroll)}else if(/^#{1,6} /.test(line)){box.append(el('h3','',line.replace(/^#{1,6} /,'')));i++}else {const p=el('p','');p.append(inlineMarkdown(line));box.append(p);i++}}return box}
-function documentsPage(){const host=$('page-content');host.append(heading('Documents','Generated sections, typed claims and cited source revisions.'));const documents=data.documents||[];if(!documents.length){host.append(el('p','report-note','This snapshot has no generated document manifests. Generate documents with the CLI, then include their directory when exporting the workspace.'));return}const layout=el('div','doc-layout'),picker=el('div','doc-picker'),reader=el('div','doc-reader');documents.forEach(d=>{const item=button(d.title,()=>{chosenDoc=d.id;renderPage()});item.setAttribute('aria-pressed',String(d.id===chosenDoc));item.append(el('small','',`${d.sections.length} sections`));picker.append(item)});const doc=documents.find(d=>d.id===chosenDoc)||documents[0],title=el('div','document-heading');const provider=doc.model?.provider;title.append(el('h3','',doc.title),tag(provider==='mock'?'Structural mock draft':provider==='copilotstudio'?'Tenant-provider draft':'Development draft','warning'),el('p','report-note',`${doc.sections.length} sections. Generated ${String(doc.generated_at||'').slice(0,10)}. Version ${doc.version||'draft'}.`));reader.append(title);doc.sections.forEach((s,index)=>{const detail=el('details','doc-section'),summary=el('summary','',s.title);summary.append(tag(s.mode==='human'?'Human input':s.status||'Draft',s.mode==='human'?'warning':s.status==='ai_unavailable'?'danger':''));detail.append(summary);detail.open=index===0;if((s.claims||[]).length){s.claims.forEach(c=>{const claim=el('div','claim');claim.append(tag(c.kind,c.kind==='suggested'?'warning':c.kind==='inferred'?'stale':''),el('p','',c.text));const citations=el('div','claim-citations');(c.citations||[]).forEach(id=>{const b=button(`${id} @ ${s.cited_revisions?.[id]||'recorded revision'}`,()=>selectNode(id,s.cited_revisions?.[id]));citations.append(b)});claim.append(citations);if(c.kind!=='sourced'&&c.confidence!==undefined)claim.append(el('p','report-note',`Recorded confidence: ${c.confidence}`));detail.append(claim)})}else detail.append(markdownBody(s.markdown));reader.append(detail)});layout.append(picker,reader);host.append(layout)}
+function documentCitation(id,label,revisions){
+  if(!nodes.has(id))return el('span','',label);
+  return button(label,()=>selectNode(id,revisions?.[id]),'document-citation');
+}
+function inlineMarkdown(text,revisions){
+  const host=el('span','');
+  const tokens=/<br\s*\/?>|\[([^\]]+)\]\([^)]+\)|\*\*([^*]+)\*\*|`([^`]+)`/gi;
+  let start=0;
+  for(const match of text.matchAll(tokens)){
+    if(match.index>start)host.append(el('span','',text.slice(start,match.index)));
+    if(match[1])host.append(documentCitation(match[1].split('@')[0],match[1],revisions));
+    else if(match[2])host.append(el('strong','',match[2]));
+    else if(match[3])host.append(el('code','',match[3]));
+    else host.append(el('br',''));
+    start=match.index+match[0].length;
+  }
+  if(start<text.length)host.append(el('span','',text.slice(start)));
+  return host;
+}
+function documentTable(lines,start,revisions){
+  const cells=line=>line.trim().slice(1).replace(/(?<!\\)\|$/,'').split(/(?<!\\)\|/)
+    .map(cell=>cell.trim().replaceAll('\\|','|'));
+  const headers=cells(lines[start]);
+  const compact=headers.map(label=>/^(rule|count|rev(?:ision)?|total|passed|failed|blocked|not run|severity)$/i.test(label));
+  const table=el('table',''),head=el('thead',''),body=el('tbody','');
+  const header=el('tr','');
+  headers.forEach((label,index)=>{
+    const cell=el('th',compact[index]?'compact-column':'');
+    cell.setAttribute('scope','col');
+    cell.append(inlineMarkdown(label,revisions));
+    header.append(cell);
+  });
+  head.append(header);
+  let end=start+2;
+  while(end<lines.length&&lines[end].trim().startsWith('|')){
+    const row=el('tr','');
+    cells(lines[end]).forEach((value,index)=>{
+      const cell=el('td',compact[index]?'compact-column':'');
+      cell.append(inlineMarkdown(value,revisions));
+      row.append(cell);
+    });
+    body.append(row);
+    end++;
+  }
+  table.append(head,body);
+  const scroll=el('div','table-scroller');
+  scroll.setAttribute('role','region');
+  scroll.setAttribute('aria-label',`Table with columns ${headers.join(', ')}`);
+  scroll.setAttribute('tabindex','0');
+  scroll.append(table);
+  return {scroll,end};
+}
+function markdownBody(markdown,title,revisions){
+  const box=el('div','document-text');
+  const lines=String(markdown||'').replace(/<!--[\s\S]*?-->/g,'').split('\n');
+  let titleShown=false;
+  for(let i=0;i<lines.length;){
+    const line=lines[i].trim();
+    if(!line){i++;continue;}
+    if(line.startsWith('|')&&/^\|[\s:|\-]+\|$/.test(lines[i+1]?.trim()||'')){
+      const {scroll,end}=documentTable(lines,i,revisions);
+      box.append(scroll);
+      i=end;
+      continue;
+    }
+    const heading=line.match(/^#{1,6}\s+(.+)$/);
+    if(heading){
+      if(!titleShown&&heading[1]===title)titleShown=true;
+      else box.append(el('h4','',heading[1]));
+      i++;
+      continue;
+    }
+    if(line.startsWith('```')){
+      const code=[];
+      for(i++;i<lines.length&&!lines[i].trim().startsWith('```');i++)code.push(lines[i]);
+      const pre=el('pre','');
+      pre.append(el('code','',code.join('\n')));
+      box.append(pre);
+      i++;
+      continue;
+    }
+    const paragraph=el('p','');
+    paragraph.append(inlineMarkdown(line,revisions));
+    box.append(paragraph);
+    i++;
+  }
+  return box;
+}
+function sectionState(doc,section){
+  if(data.stale_sections.some(item=>item.document===doc.id&&item.id===section.id))return ['Out of date','stale'];
+  if(section.status==='ai_unavailable')return ['AI drafting unavailable','danger'];
+  if(section.status==='human_input_required'||(!section.status&&section.mode==='human'))return ['Human input required','warning'];
+  return null;
+}
+function matchesGeneratedClaim(paragraph,claim){
+  const prefix=claim.kind==='inferred'?'**[Inferred]** ':claim.kind==='suggested'?'**[Suggested — review required]** ':'';
+  const original=prefix+claim.text;
+  if(!paragraph.startsWith(original))return false;
+  const suffix=paragraph.slice(original.length).replace(/\[\^[^\]]+\]$/,'').trim();
+  const citations=[...suffix.matchAll(/\[([^\]]+)\]\([^)]+\)/g)];
+  const uncited=suffix.replace(/\[[^\]]+\]\([^)]+\)/g,'').trim();
+  const expected=claim.citations||[];
+  return !uncited&&citations.length===expected.length&&citations.every((citation,index)=>citation[1].split('@r')[0]===expected[index]);
+}
+function sectionContent(section){
+  const content=el('div','doc-section-content');
+  const claims=section.claims||[];
+  const markdown=String(section.markdown||'');
+  // Paragraph claims have a standalone marker. Keep table claims in their original cells.
+  const claimParagraph=/^<!-- dhf-claim:[a-f0-9]+ -->[ \t]*\r?\n((?:(?!^[ \t]*(?:\r?$|<!--|\||#)).*\r?\n?)+)/gm;
+  const paragraphs=[...markdown.matchAll(claimParagraph)];
+  // Reviewed Markdown can retain its claim markers after the text has changed.
+  const useStructuredClaims=claims.length>0&&(!markdown||(
+    paragraphs.length===claims.length&&paragraphs.every((match,index)=>matchesGeneratedClaim(match[1].trim(),claims[index]))
+  ));
+  const body=markdownBody(useStructuredClaims?markdown.replace(claimParagraph,'').replace(/^\[\^[^\]]+\]:.*$/gm,''):markdown,section.title,section.cited_revisions);
+  if(body.childNodes.length)content.append(body);
+  if(useStructuredClaims){
+    if(body.childNodes.length)content.append(el('h4','doc-claims-heading','Draft commentary'));
+    claims.forEach(claim=>{
+      const block=el('div','claim');
+      block.append(tag(claim.kind,claim.kind==='suggested'?'warning':claim.kind==='inferred'?'stale':''),el('p','',claim.text));
+      if(claim.citations?.length){
+        const citations=el('div','claim-citations');
+        claim.citations.forEach(id=>citations.append(documentCitation(id,`${id} @ ${section.cited_revisions?.[id]||'recorded revision'}`,section.cited_revisions)));
+        block.append(citations);
+      }
+      if(claim.kind!=='sourced'&&claim.confidence!=null)block.append(el('p','claim-confidence',`Recorded confidence ${claim.confidence}`));
+      content.append(block);
+    });
+  }
+  if(!content.childNodes.length)content.append(el('p','report-note','No section content is recorded.'));
+  return content;
+}
+const docPositions=new Map();
+function documentsPage({focusPicker=false}={}){
+  const host=$('page-content');
+  const documents=data.documents||[];
+  if(!documents.length){
+    const empty=el('div','doc-empty');
+    empty.append(heading('No generated documents','Include the generated document manifests when exporting this workspace.'));
+    host.append(empty);
+    return;
+  }
+  const doc=documents.find(item=>item.id===chosenDoc)||documents[0];
+  chosenDoc=doc.id;
+  const layout=el('div','doc-layout'),toolbar=el('header','doc-toolbar');
+  const identity=el('div','doc-heading'),metadata=el('div','doc-meta');
+  const provider=doc.model?.provider;
+  metadata.append(tag(provider==='mock'?'Structural mock draft':provider==='copilotstudio'?'Tenant-provider draft':'Development draft','warning'));
+  if(doc.version)metadata.append(el('span','',`Version ${doc.version}`));
+  if(doc.generated_at)metadata.append(el('span','',`Generated ${String(doc.generated_at).slice(0,10)}`));
+  identity.append(el('h2','',doc.title),metadata);
+  const pickerLabel=el('label','doc-control doc-switcher','Document'),picker=el('select','');
+  documents.forEach(item=>{
+    const option=el('option','',item.title);
+    option.value=item.id;
+    picker.append(option);
+  });
+  picker.value=doc.id;
+  picker.addEventListener('change',()=>{
+    chosenDoc=picker.value;
+    host.replaceChildren();
+    documentsPage({focusPicker:true});
+  });
+  pickerLabel.append(picker);
+  toolbar.append(identity,pickerLabel);
+  const body=el('div','doc-body');
+  const sections=doc.sections||[];
+  if(!sections.length){
+    layout.append(toolbar,el('p','doc-empty','No sections are recorded for this document.'));
+    host.append(layout);
+    if(focusPicker)picker.focus?.();
+    return;
+  }
+  const outline=el('nav','doc-outline'),outlineHeader=el('div','doc-outline-header');
+  outline.setAttribute('aria-label','Document sections');
+  outlineHeader.append(el('h3','','Sections'));
+  const list=el('div','doc-outline-list');
+  outline.append(outlineHeader,list);
+  const sectionLabel=el('label','doc-control doc-section-select','Section'),sectionPicker=el('select','');
+  sectionLabel.append(sectionPicker);
+  const scroll=el('div','doc-scroll'),reader=el('article','doc-reader');
+  scroll.append(reader);
+  let selectedSection=Math.max(0,sections.findIndex(section=>section.id===docPositions.get(doc.id)));
+  const outlineButtons=sections.map((section,index)=>{
+    const item=button(section.title,()=>showSection(index,true),'doc-outline-item');
+    const option=el('option','',section.title);
+    option.value=String(index);
+    sectionPicker.append(option);
+    const state=sectionState(doc,section);
+    if(state)item.append(el('span','sr-only',` (${state[0]})`));
+    return item;
+  });
+  list.append(...outlineButtons);
+  if(sections.length>12){
+    const label=el('label','doc-control','Find a section'),search=el('input','');
+    search.type='search';
+    const empty=el('p','doc-outline-empty','No matching sections.');
+    empty.hidden=true;
+    list.append(empty);
+    search.addEventListener('input',()=>{
+      const query=search.value.trim().toLowerCase();
+      outlineButtons.forEach((item,index)=>{
+        const section=sections[index];
+        item.hidden=!`${section.title} ${section.id}`.toLowerCase().includes(query);
+      });
+      empty.hidden=outlineButtons.some(item=>!item.hidden);
+    });
+    label.append(search);
+    outlineHeader.append(label);
+  }
+  sectionPicker.addEventListener('change',()=>showSection(Number(sectionPicker.value)));
+  function showSection(index,moveFocus=false){
+    const section=sections[index];
+    if(!section)return;
+    selectedSection=index;
+    docPositions.set(doc.id,section.id);
+    sectionPicker.value=String(index);
+    outlineButtons.forEach((item,position)=>item.setAttribute('aria-current',position===index?'location':'false'));
+    const state=sectionState(doc,section);
+    const header=el('header','doc-section-header'),title=el('h3','',section.title);
+    title.setAttribute('tabindex','-1');
+    const meta=el('div','doc-section-meta');
+    meta.append(el('span','',`Section ${index+1} of ${sections.length}`));
+    if(state)meta.append(tag(...state));
+    header.append(title,meta);
+    const actions=el('div','doc-section-actions');
+    const previous=button('Previous section',()=>showSection(index-1,true));
+    const next=button('Next section',()=>showSection(index+1,true));
+    previous.disabled=index===0;
+    next.disabled=index===sections.length-1;
+    actions.append(previous,next);
+    reader.replaceChildren(header,sectionContent(section),actions);
+    scroll.scrollTop=0;
+    if(moveFocus)title.focus?.({preventScroll:true});
+  }
+  body.append(outline,sectionLabel,scroll);
+  layout.append(toolbar,body);
+  host.append(layout);
+  showSection(selectedSection);
+  if(focusPicker)picker.focus?.();
+}
 function impactPage(){const host=$('page-content');host.append(heading('Change impact','Section staleness computed from source revisions and recorded dependencies.'));const reports=data.impact_reports||[];if(!reports.length){host.append(el('p','report-note','No document impact reports are included in this snapshot.'));return}const rows=reports.flatMap(report=>report.sections.map(section=>({document:report.document,...section})));if(!rows.length){host.append(tag('No affected sections','success'),el('p','report-note','The included impact assessments contain no directly stale or possibly affected sections.'));return}const counts=new Map();rows.forEach(s=>counts.set(s.status,(counts.get(s.status)||0)+1));const summary=el('div','legend-row');counts.forEach((count,status)=>summary.append(tag(`${count} ${status.replaceAll('_',' ')}`,status==='stale'?'stale':status==='possibly_affected'?'warning':'success')));host.append(summary,el('p','report-note','Directly stale and possibly affected sections are distinct states; neither is an approval decision.'),reportTable(['Document','Section','Evidence state','Recorded cause'],rows.map(s=>{const causes=el('div','');(s.causes||[]).forEach(c=>{const p=el('p','');if(c.artifact)p.append(artifactLink(c.artifact),el('span','',': '));p.append(el('span','',String(c.reason||'').replaceAll('_',' ')));causes.append(p)});if(!causes.childNodes.length)causes.textContent='No changed dependency recorded';return [s.document.toUpperCase(),s.id,tag(s.status.replaceAll('_',' '),s.status==='stale'?'stale':s.status==='possibly_affected'?'warning':''),causes]})))}
 function riskPage(){const host=$('page-content');host.append(heading('Risk evidence','Recorded hazards, controls, realizing requirements and verification evidence.'));host.append(el('p','report-note','Source severity is shown as recorded. Residual-risk assessment and acceptance remain human decisions.'),reportTable(['Hazard','Severity','Controls','Requirements','Verification'],(data.risk||[]).map(r=>{const hazard=el('div','');hazard.append(artifactLink(r.hazard),el('p','',r.hazard_name));const controls=el('div','');r.controls.forEach(c=>{controls.append(artifactLink(c.id),el('p','',c.title))});return [hazard,tag(r.severity,r.severity===5?'danger':'warning'),controls,artifactLinks(r.requirements),artifactLinks(r.verification)]})))}
-function renderPage(){Object.keys(pageNames).forEach(key=>$('nav-'+key).setAttribute('aria-current',key===page?'page':'false'));$('page-title').textContent=pageNames[page];$('graph-toolbar').hidden=page!=='trace';$('back').hidden=page!=='trace';$('selection-bar').hidden=page!=='trace';$('page-content').hidden=page==='trace';$('nav-doc-count').textContent=(data.documents||[]).length;$('nav-finding-count').textContent=data.findings.length;$('page-content').replaceChildren();if(page==='overview')overviewPage();else if(page==='documents')documentsPage();else if(page==='findings')findingsPage();else if(page==='impact')impactPage();else if(page==='risk')riskPage();updateStats()}
+function renderPage(){Object.keys(pageNames).forEach(key=>$('nav-'+key).setAttribute('aria-current',key===page?'page':'false'));$('page-title').textContent=pageNames[page];$('graph-toolbar').hidden=page!=='trace';$('back').hidden=page!=='trace';$('selection-bar').hidden=page!=='trace';$('page-content').hidden=page==='trace';$('nav-doc-count').textContent=(data.documents||[]).length;$('nav-finding-count').textContent=data.findings.length;$('page-content').className='app-content'+(page==='documents'?' documents-view':'');$('page-content').replaceChildren();if(page==='overview')overviewPage();else if(page==='documents')documentsPage();else if(page==='findings')findingsPage();else if(page==='impact')impactPage();else if(page==='risk')riskPage();updateStats()}
 Object.keys(pageNames).forEach(key=>$('nav-'+key).addEventListener('click',()=>setPage(key)));
 $('artifact-toggle').addEventListener('click',()=>{$('artifact-browse').hidden=!$('artifact-browse').hidden;if(!$('artifact-browse').hidden)$('search').focus?.()});$('close-artifacts').addEventListener('click',()=>{$('artifact-browse').hidden=true});
 

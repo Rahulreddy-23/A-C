@@ -227,16 +227,30 @@ function markdownBody(markdown,title,revisions){
 function sectionState(doc,section){
   if(data.stale_sections.some(item=>item.document===doc.id&&item.id===section.id))return ['Out of date','stale'];
   if(section.status==='ai_unavailable')return ['AI drafting unavailable','danger'];
-  if(section.mode==='human'||section.status==='human_input_required')return ['Human input required','warning'];
+  if(section.status==='human_input_required'||(!section.status&&section.mode==='human'))return ['Human input required','warning'];
   return null;
+}
+function matchesGeneratedClaim(paragraph,claim){
+  const prefix=claim.kind==='inferred'?'**[Inferred]** ':claim.kind==='suggested'?'**[Suggested — review required]** ':'';
+  const original=prefix+claim.text;
+  if(!paragraph.startsWith(original))return false;
+  const suffix=paragraph.slice(original.length).replace(/\[\^[^\]]+\]$/,'').trim();
+  const citations=[...suffix.matchAll(/\[([^\]]+)\]\([^)]+\)/g)];
+  const uncited=suffix.replace(/\[[^\]]+\]\([^)]+\)/g,'').trim();
+  const expected=claim.citations||[];
+  return !uncited&&citations.length===expected.length&&citations.every((citation,index)=>citation[1].split('@r')[0]===expected[index]);
 }
 function sectionContent(section){
   const content=el('div','doc-section-content');
   const claims=section.claims||[];
   const markdown=String(section.markdown||'');
   // Paragraph claims have a standalone marker. Keep table claims in their original cells.
-  const claimParagraph=/^<!-- dhf-claim:[a-f0-9]+ -->[ \t]*\r?\n(?:(?!^[ \t]*(?:\r?$|<!--|\||#)).*\r?\n?)+/gm;
-  const useStructuredClaims=claims.length>0&&(!markdown||[...markdown.matchAll(claimParagraph)].length===claims.length);
+  const claimParagraph=/^<!-- dhf-claim:[a-f0-9]+ -->[ \t]*\r?\n((?:(?!^[ \t]*(?:\r?$|<!--|\||#)).*\r?\n?)+)/gm;
+  const paragraphs=[...markdown.matchAll(claimParagraph)];
+  // Reviewed Markdown can retain its claim markers after the text has changed.
+  const useStructuredClaims=claims.length>0&&(!markdown||(
+    paragraphs.length===claims.length&&paragraphs.every((match,index)=>matchesGeneratedClaim(match[1].trim(),claims[index]))
+  ));
   const body=markdownBody(useStructuredClaims?markdown.replace(claimParagraph,'').replace(/^\[\^[^\]]+\]:.*$/gm,''):markdown,section.title,section.cited_revisions);
   if(body.childNodes.length)content.append(body);
   if(useStructuredClaims){

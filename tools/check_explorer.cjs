@@ -28,6 +28,13 @@ if (formattingProbe) {
     id: 'formatting-probe', title: 'Formatting probe', claims: [], cited_revisions: { 'SRS-021': 'older-revision' },
     markdown: '## Parent heading\n### Formatting probe\n| Rule | Evidence |\n| --- | --- |\n' +
       '| G01 | A \\| B<br />[SRS-021](https://invalid.example/ignored) <em>literal markup</em> |',
+  }, {
+    id: 'reviewed-claim', title: 'Reviewed claim', mode: 'ai', status: 'draft',
+    claims: [{ kind: 'sourced', text: 'Original draft statement.', citations: [] }],
+    markdown: '## Reviewed claim\n\n<!-- dhf-claim:abcdef1234567890 -->\nOriginal draft statement. Reviewer added essential context.\n',
+  }, {
+    id: 'completed-authorship', title: 'Completed authorship', mode: 'human', status: 'human_authored', claims: [],
+    markdown: '## Completed authorship\n\nThe reviewer supplied this section.',
   });
 }
 const byId = new Map();
@@ -88,6 +95,10 @@ if (payload.documents.some(d => d.id === 'drr')) {
   if (!reader.textContent.includes('Parent heading') || !cells[1].textContent.includes('<em>literal markup</em>') || walk(cells[1], n => n.tagName === 'em').length) throw Error('Parent heading or safe literal text was lost');
   click(walk(cells[1], n => n.tagName === 'button' && n.textContent === 'SRS-021')[0]);
   if (!get('detail').textContent.includes('Document cited revision older-revision')) throw Error('Table citation lost its recorded revision');
+  reader = jumpToSection('drr', 'reviewed-claim');
+  if (!reader.textContent.includes('Reviewer added essential context.')) throw Error('Reader replaced reviewer-edited text with an earlier draft');
+  reader = jumpToSection('drr', 'completed-authorship');
+  if (!reader.textContent.includes('The reviewer supplied this section.') || reader.textContent.includes('Human input required')) throw Error('Completed manual authorship was still marked incomplete');
 }
 if (payload.documents.some(d => d.id === 'sdd')) {
   switchDocument('sdd');

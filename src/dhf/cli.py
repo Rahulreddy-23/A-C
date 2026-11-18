@@ -114,8 +114,7 @@ def gaps_command(db: str = "out/evidence.sqlite", output_dir: str = "out") -> No
     from pathlib import Path
 
     from dhf.graph import Store
-    from dhf.trace import coverage, gaps, unassessable_rules
-    from dhf.trace.reports import gap_rules, gaps_markdown
+    from dhf.trace.reports import gap_report
 
     store = Store(Path(db))
     try:
@@ -124,23 +123,18 @@ def gaps_command(db: str = "out/evidence.sqlite", output_dir: str = "out") -> No
         store.close()
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence first")
-    rules = gap_rules()
-    findings = gaps(graph)
-    blind = unassessable_rules(graph, rules)
+    report, markdown = gap_report(graph)
+    blind = report["not_assessable"]
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / "gaps.json").write_text(
-        json.dumps(
-            {"findings": findings, "coverage": coverage(graph), "not_assessable": blind}, indent=2
-        ),
+        json.dumps(report, indent=2),
         encoding="utf-8",
         newline="\n",
     )
-    (out / "gaps.md").write_text(
-        gaps_markdown(findings, rules, blind), encoding="utf-8", newline="\n"
-    )
+    (out / "gaps.md").write_text(markdown, encoding="utf-8", newline="\n")
     typer.echo(
-        f"{len(findings)} deterministic gaps"
+        f"{len(report['findings'])} deterministic gaps"
         + (f" ({len(blind)} rules not assessable from these sources)" if blind else "")
         + f" → {out / 'gaps.md'} + {out / 'gaps.json'}"
     )
@@ -878,7 +872,9 @@ def explore_command(
 
     store = Store(Path(db))
     try:
+        store.db.execute("BEGIN")
         graph = store.graph()
+        refreshes = store.refresh_history(limit=10)
     finally:
         store.close()
     if not graph["artifacts"]:
@@ -896,9 +892,70 @@ def explore_command(
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
-        create_explorer(graph, manifests, reports, baselines), encoding="utf-8", newline="\n"
+        create_explorer(graph, manifests, reports, baselines, refreshes),
+        encoding="utf-8",
+        newline="\n",
     )
     typer.echo(f"Explorer: {len(graph['artifacts'])} artifacts → {target}; offline HTML")
+
+
+@app.command("refresh")
+def refresh_command(
+    db: str = "out/evidence.sqlite",
+    documents: str = "out/documents",
+    output_dir: str = "out",
+) -> None:
+    """Read ADO now: new snapshot, what changed, stale sections, gaps and explorer."""
+    from pathlib import Path
+
+    from dhf.refresh import refresh
+
+    record = refresh(Path(db), Path(documents), Path(output_dir))
+    typer.echo(
+        f"Snapshot {record['snapshot']} read in {record['seconds']} s: "
+        f"{record['artifacts']} artifacts, {record['links']} links"
+    )
+    if record["changed"] or record["added"] or record["removed"]:
+        for kind in ("changed", "added", "removed"):
+            if ids := record[kind]:
+                more = f" and {len(ids) - 10} more" if len(ids) > 10 else ""
+                typer.echo(f"  {len(ids)} {kind}: {', '.join(ids[:10])}{more}")
+    else:
+        typer.echo("  No changes since the previous snapshot")
+    if record["stale_sections"]:
+        typer.echo(
+            f"{record['stale_sections']} document sections are stale; review them in the "
+            "explorer's Change impact view before regenerating"
+        )
+    typer.echo(f"{record['findings']} deterministic gaps → {Path(output_dir) / 'gaps.md'}")
+    typer.echo(f"Explorer → {Path(output_dir) / 'explorer.html'}; log → refresh_log.jsonl")
+
+
+@app.command("serve")
+def serve_command(
+    db: str = "out/evidence.sqlite",
+    documents: str = "out/documents",
+    output_dir: str = "out",
+    port: int = 8765,
+    open_browser: bool = True,
+) -> None:
+    """Open the explorer on this laptop only, with a Refresh from ADO button."""
+    import webbrowser
+    from pathlib import Path
+
+    from dhf.serve import make_server
+
+    server = make_server(Path(db), Path(documents), Path(output_dir), port)
+    url = f"http://127.0.0.1:{server.server_address[1]}/"
+    typer.echo(f"Workspace on {url} (this laptop only). Press Ctrl+C to stop.")
+    if open_browser:
+        webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        typer.echo("Stopped")
+    finally:
+        server.server_close()
 
 
 @app.command("export-snapshot")

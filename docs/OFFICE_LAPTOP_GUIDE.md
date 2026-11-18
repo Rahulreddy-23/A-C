@@ -242,16 +242,27 @@ This writes `out/real/findings_score.md` with the percentage correct per rule. R
 - In the manifest, `validation.rejected` lists sentences the checker removed for citing unknown IDs. A few are normal. Many in one section mean its prompt needs work.
 - Sections saying `AI drafting unavailable` must be written by hand. The reason is in the run output.
 
-## Part 10. The change story for the demo
+## Part 10. Keep it fresh (refresh from ADO)
 
-The drafts remember the exact ADO revisions they cited. After real items change in ADO (they do every day), read ADO again and ask what went stale:
+A refresh reads ADO again (read-only), saves a new snapshot, and shows **what changed since the last read** and **which document sections are now stale**. It never rewrites a document: regenerating stays a human decision.
+
+From the command line:
 
 ```powershell
-uv run dhf ingest --source ado --db out/real/evidence.sqlite
-uv run dhf impact --db out/real/evidence.sqlite --documents out/real/docs
+uv run dhf refresh --db out/real/evidence.sqlite --documents out/real/docs --output-dir out/real
 ```
 
-`out/impact.md` lists the stale sections and which work items changed. Draft on Thursday and re-read on Monday, and you have a real change story.
+Or open the workspace with a **Refresh from ADO** button:
+
+```powershell
+uv run dhf serve --db out/real/evidence.sqlite --documents out/real/docs --output-dir out/real
+```
+
+- The page opens at `http://127.0.0.1:8765/`. It is reachable from this laptop only. Use the button to create the first snapshot if the workspace is empty. Stop it with Ctrl+C.
+- The Overview shows an **ADO refresh** card: when ADO was last read, the changed and added items (click to inspect), the stale sections, and earlier refreshes.
+- Both paths refresh `gaps.md`, `gaps.json` and the offline explorer. Every successful ADO snapshot is recorded in the database and exported to `out/real/refresh_log.jsonl` with the time, snapshot number and changed IDs. That is your audit trail of when evidence was checked.
+
+**The change story for the demo:** draft on Thursday, then press Refresh on Monday or live on stage. Real items change in ADO every day, so the card shows real changes and the sections they made stale. If nothing changed, the card says so. That is a valid result too.
 
 ## Troubleshooting
 

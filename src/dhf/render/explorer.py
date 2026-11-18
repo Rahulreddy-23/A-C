@@ -179,6 +179,7 @@ def explorer_payload(
         "findings": findings,
         "not_assessable": presentation.get("not_assessable", []),
         "product": presentation.get("product", {}),
+        "refreshes": presentation.get("refreshes", []),
         "stale_sections": stale,
         "notice": "Read-only evidence snapshot; human review required.",
     }
@@ -195,6 +196,7 @@ def create_explorer(
     documents: list[dict],
     reports: list[dict] | None = None,
     baselines: list[dict] | None = None,
+    refreshes: list[dict] | None = None,
 ) -> str:
     import yaml
 
@@ -219,6 +221,7 @@ def create_explorer(
     presentation = {
         "release": setting("DHF_RELEASE", "1.1"),
         "not_assessable": blind,
+        "refreshes": refreshes or [],
         "product": {
             "name": setting("DHF_PRODUCT_NAME", "Kestrel"),
             "subject": setting("DHF_PRODUCT_SUBJECT", "Infusion Controller"),

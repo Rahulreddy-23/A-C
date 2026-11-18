@@ -22,6 +22,14 @@ class Element {
 const html = fs.readFileSync(process.argv[2], 'utf8');
 const encoded = html.match(/atob\('([A-Za-z0-9+/=]+)'\)/);
 const payload = encoded ? JSON.parse(Buffer.from(encoded[1], 'base64').toString()) : null;
+const formattingProbe = payload?.documents.find(d => d.id === 'drr');
+if (formattingProbe) {
+  formattingProbe.sections.push({
+    id: 'formatting-probe', title: 'Formatting probe', claims: [], cited_revisions: { 'SRS-021': 'older-revision' },
+    markdown: '## Parent heading\n### Formatting probe\n| Rule | Evidence |\n| --- | --- |\n' +
+      '| G01 | A \\| B<br />[SRS-021](https://invalid.example/ignored) <em>literal markup</em> |',
+  });
+}
 const byId = new Map();
 const markupIDs = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]));
 const document = {
@@ -32,7 +40,8 @@ const document = {
     if (!byId.has(id)) byId.set(id, new Element(id)); return byId.get(id);
   },
 };
-const context = { document, performance, atob: value => Buffer.from(value, 'base64').toString('binary'), TextDecoder, Uint8Array, URL, window: {}, requestAnimationFrame: fn => fn() };
+const decodeEvidence = value => formattingProbe ? Buffer.from(JSON.stringify(payload)).toString('binary') : Buffer.from(value, 'base64').toString('binary');
+const context = { document, performance, atob: decodeEvidence, TextDecoder, Uint8Array, URL, window: {}, requestAnimationFrame: fn => fn() };
 vm.runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], context);
 const get = id => byId.get(id);
 if (!payload) {
@@ -47,6 +56,48 @@ if (initialApp.page !== 'overview' || !get('page-content').textContent.includes(
 click(get('nav-documents'));
 if (stats().page !== 'documents' || stats().documents !== payload.documents.length) throw Error('Documents view missing');
 if (payload.documents.length && !get('page-content').textContent.includes('Structural mock draft')) throw Error('Mock provenance not labeled');
+const documentView = get('page-content');
+const changeSelect = (select, value) => { select.value = value; select.listeners.change(); };
+const findClass = (root, name) => walk(root, n => n.className === name)[0];
+const switchDocument = id => changeSelect(findClass(documentView, 'doc-control doc-switcher').children[0], id);
+const jumpToSection = (docID, sectionID) => {
+  const index = payload.documents.find(d => d.id === docID).sections.findIndex(s => s.id === sectionID);
+  changeSelect(findClass(documentView, 'doc-control doc-section-select').children[0], String(index));
+  return findClass(documentView, 'doc-reader');
+};
+if (payload.documents.some(d => d.id === 'drr')) {
+  switchDocument('drr');
+  let reader = jumpToSection('drr', 'identification');
+  if (!walk(reader, n => n.tagName === 'br').length || reader.textContent.includes('<br>')) throw Error('Document line breaks are printed as markup');
+  reader = jumpToSection('drr', 'findings_table');
+  const compact = walk(reader, n => n.tagName === 'th' && n.className === 'compact-column');
+  if (!compact.some(n => n.textContent === 'Rule') || !compact.some(n => n.textContent === 'Count')) throw Error('Findings table lost its readable short columns');
+  const matchingHeadings = walk(reader, n => /^h[1-6]$/.test(n.tagName) && n.textContent === 'Complete deterministic pre-review findings');
+  if (matchingHeadings.length !== 1) throw Error('Document section title was repeated');
+  const source = walk(reader, n => n.tagName === 'button' && n.textContent === 'SRS-012')[0];
+  click(source);
+  if (!stats().inspector || stats().page !== 'documents' || stats().selected !== 'SRS-012') throw Error('Document citation lost the reader or evidence inspector');
+  switchDocument('sstr');
+  reader = jumpToSection('sstr', 'anomaly_assessment');
+  if (!walk(reader, n => n.tagName === 'table').length || !findClass(reader, 'claim')) throw Error('Mixed evidence table and commentary must both be readable');
+  switchDocument('drr');
+  if (!findClass(documentView, 'doc-reader').textContent.includes('Complete deterministic pre-review findings')) throw Error('Document switch lost the last-read section');
+  reader = jumpToSection('drr', 'formatting-probe');
+  const cells = walk(reader, n => n.tagName === 'td');
+  if (cells.length !== 2 || !cells[1].textContent.includes('A | B') || !walk(cells[1], n => n.tagName === 'br').length) throw Error('Escaped pipe or break corrupted a document cell');
+  if (!reader.textContent.includes('Parent heading') || !cells[1].textContent.includes('<em>literal markup</em>') || walk(cells[1], n => n.tagName === 'em').length) throw Error('Parent heading or safe literal text was lost');
+  click(walk(cells[1], n => n.tagName === 'button' && n.textContent === 'SRS-021')[0]);
+  if (!get('detail').textContent.includes('Document cited revision older-revision')) throw Error('Table citation lost its recorded revision');
+}
+if (payload.documents.some(d => d.id === 'sdd')) {
+  switchDocument('sdd');
+  const filter = walk(documentView, n => n.tagName === 'input' && n.type === 'search')[0];
+  if (!filter) throw Error('Long document has no section search');
+  filter.value = 'no matching section 7bdc'; filter.listeners.input();
+  if (findClass(documentView, 'doc-outline-empty').hidden) throw Error('Empty section search has no feedback');
+  filter.value = ''; filter.listeners.input();
+  if (walk(documentView, n => n.className === 'doc-outline-item' && !n.hidden).length !== payload.documents.find(d => d.id === 'sdd').sections.length) throw Error('Section search failed to restore the outline');
+}
 click(get('nav-findings'));
 const ruleFilter = walk(get('page-content'), n => n.tagName === 'select')[0];
 ruleFilter.value = 'G06'; ruleFilter.listeners.change();

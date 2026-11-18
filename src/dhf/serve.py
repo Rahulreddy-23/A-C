@@ -1,9 +1,4 @@
-"""Local-only review server: the explorer plus a "Refresh from ADO" action.
-
-Binds to 127.0.0.1 only. Every request must name this server as its Host, and a refresh
-must come from this server's own page (Origin), so other websites open in the same
-browser cannot trigger ADO reads.
-"""
+"""Serve the selected explorer and its refresh action on loopback only."""
 
 import json
 import threading
@@ -11,14 +6,15 @@ from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from dhf.refresh import EmptyRefresh, workspace_page
 from dhf.refresh import refresh as run_refresh
 
-# The offline explorer contains no network code. Only the served page gets this button
-# script, which calls back to this server alone.
+# The standalone explorer keeps its stricter CSP and has no network script.
 REFRESH_SCRIPT = """<script>
-(()=>{const button=document.getElementById('refresh'),notice=document.getElementById('notice');
+(()=>{const button=document.getElementById('refresh');
+const notice=document.getElementById('refresh-status');
 button.hidden=false;button.addEventListener('click',async()=>{button.disabled=true;
-button.textContent='Reading ADO\u2026';notice.textContent='Reading Azure DevOps (read-only)\u2026';
+button.textContent='Reading ADO…';notice.hidden=false;notice.textContent='Reading Azure DevOps…';
 try{const response=await fetch('/api/refresh',{method:'POST'}),result=await response.json();
 if(!response.ok)throw Error(result.error||'Refresh failed');location.reload()}
 catch(error){notice.textContent=String(error.message||error);button.disabled=false;
@@ -26,8 +22,19 @@ button.textContent='Refresh from ADO'}})})();
 </script>
 """
 
-# Messages from these are written for people and carry no secrets; others report the class.
-READABLE = (PermissionError, ValueError, FileNotFoundError)
+EMPTY_PAGE = """<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DHF workspace</title><main><h1>DHF workspace</h1>
+<p>Read Azure DevOps to create the first evidence snapshot.</p>
+<button type="button" id="refresh" hidden>Refresh from ADO</button>
+<p id="refresh-status" role="status" hidden></p></main></body></html>
+"""
+
+PAGE_POLICY = (
+    "frame-ancestors 'none'; default-src 'none'; script-src 'unsafe-inline'; "
+    "style-src 'unsafe-inline'; img-src data:; connect-src 'self'; "
+    "base-uri 'none'; form-action 'none'"
+)
 
 
 def make_server(
@@ -49,6 +56,10 @@ def make_server(
             self.send_header("Content-Type", kind)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Security-Policy", PAGE_POLICY)
+            self.send_header("X-Frame-Options", "DENY")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
             self.end_headers()
             self.wfile.write(body)
 
@@ -60,19 +71,12 @@ def make_server(
                 return self.json(403, {"error": "Unexpected host"})
             if self.path not in ("/", "/index.html"):
                 return self.json(404, {"error": "Not found"})
-            page = output_dir / "explorer.html"
-            if not page.exists():
-                return self.reply(
-                    200,
-                    b"<!doctype html><meta charset='utf-8'><title>DHF workspace</title>"
-                    b"<p>No explorer yet. Run <code>uv run dhf refresh</code> first.</p>",
-                    "text/html; charset=utf-8",
-                )
-            # The offline file forbids all connections; the served page may call this server.
-            html = (
-                page.read_text(encoding="utf-8")
-                .replace("connect-src 'none'", "connect-src 'self'", 1)
-                .replace("</body>", REFRESH_SCRIPT + "</body>", 1)
+            try:
+                page = workspace_page(db, documents) or EMPTY_PAGE
+            except Exception:
+                return self.json(500, {"error": "Could not read the local evidence or drafts."})
+            html = page.replace("connect-src 'none'", "connect-src 'self'", 1).replace(
+                "</body>", REFRESH_SCRIPT + "</body>", 1
             )
             self.reply(200, html.encode(), "text/html; charset=utf-8")
 
@@ -86,15 +90,21 @@ def make_server(
                 return self.json(409, {"error": "A refresh is already running"})
             try:
                 record = refresh(db, documents, output_dir)
-            except READABLE as exc:
-                return self.json(502, {"error": f"{type(exc).__name__}: {exc}"})
-            except Exception as exc:  # Class only: messages can echo request details.
-                return self.json(502, {"error": f"Refresh failed ({type(exc).__name__})"})
+            except EmptyRefresh as exc:
+                return self.json(502, {"error": str(exc)})
+            except PermissionError:
+                return self.json(
+                    502, {"error": "Check Azure DevOps access and local file permissions."}
+                )
+            except Exception:
+                return self.json(
+                    502, {"error": "Refresh failed. Check the ADO and workspace settings."}
+                )
             finally:
                 lock.release()
             self.json(200, record)
 
-        def log_message(self, *args) -> None:
+        def log_message(self, *args: object) -> None:
             pass
 
     return ThreadingHTTPServer(("127.0.0.1", port), Handler)

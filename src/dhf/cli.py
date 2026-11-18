@@ -114,8 +114,7 @@ def gaps_command(db: str = "out/evidence.sqlite", output_dir: str = "out") -> No
     from pathlib import Path
 
     from dhf.graph import Store
-    from dhf.trace import coverage, gaps, unassessable_rules
-    from dhf.trace.reports import gap_rules, gaps_markdown
+    from dhf.trace.reports import gap_report
 
     store = Store(Path(db))
     try:
@@ -124,23 +123,18 @@ def gaps_command(db: str = "out/evidence.sqlite", output_dir: str = "out") -> No
         store.close()
     if not graph["artifacts"]:
         raise typer.BadParameter("Ingest evidence first")
-    rules = gap_rules()
-    findings = gaps(graph)
-    blind = unassessable_rules(graph, rules)
+    report, markdown = gap_report(graph)
+    blind = report["not_assessable"]
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / "gaps.json").write_text(
-        json.dumps(
-            {"findings": findings, "coverage": coverage(graph), "not_assessable": blind}, indent=2
-        ),
+        json.dumps(report, indent=2),
         encoding="utf-8",
         newline="\n",
     )
-    (out / "gaps.md").write_text(
-        gaps_markdown(findings, rules, blind), encoding="utf-8", newline="\n"
-    )
+    (out / "gaps.md").write_text(markdown, encoding="utf-8", newline="\n")
     typer.echo(
-        f"{len(findings)} deterministic gaps"
+        f"{len(report['findings'])} deterministic gaps"
         + (f" ({len(blind)} rules not assessable from these sources)" if blind else "")
         + f" → {out / 'gaps.md'} + {out / 'gaps.json'}"
     )
@@ -874,12 +868,13 @@ def explore_command(
     from pathlib import Path
 
     from dhf.graph import Store
-    from dhf.refresh import read_log
     from dhf.render.explorer import create_explorer
 
     store = Store(Path(db))
     try:
+        store.db.execute("BEGIN")
         graph = store.graph()
+        refreshes = store.refresh_history(limit=10)
     finally:
         store.close()
     if not graph["artifacts"]:
@@ -897,7 +892,7 @@ def explore_command(
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
-        create_explorer(graph, manifests, reports, baselines, read_log(target.parent)),
+        create_explorer(graph, manifests, reports, baselines, refreshes),
         encoding="utf-8",
         newline="\n",
     )
@@ -932,7 +927,7 @@ def refresh_command(
             f"{record['stale_sections']} document sections are stale; review them in the "
             "explorer's Change impact view before regenerating"
         )
-    gaps_command(db=db, output_dir=output_dir)
+    typer.echo(f"{record['findings']} deterministic gaps → {Path(output_dir) / 'gaps.md'}")
     typer.echo(f"Explorer → {Path(output_dir) / 'explorer.html'}; log → refresh_log.jsonl")
 
 

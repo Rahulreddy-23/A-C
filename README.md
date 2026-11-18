@@ -74,6 +74,8 @@ Run every command from the repository root. `uv run dhf --help` lists all comman
 | `uv run dhf impact --since baseline` | Reports which sections are stale after evidence changes. |
 | `uv run dhf regenerate --stale --open-pr` | Regenerates only the stale sections. |
 | `uv run dhf explore` | Writes the offline evidence explorer to `out/explorer.html`. |
+| `uv run dhf refresh` | Reads ADO again, records changes and stale sections, and updates the gap reports and explorer. |
+| `uv run dhf serve` | Opens a local browser workspace with a **Refresh from ADO** button. |
 | `uv run dhf audit-pack` | Exports drafts, provenance and verified hashes as a ZIP. |
 
 ## Review workflow

@@ -75,6 +75,19 @@ def gap_rules() -> list[dict]:
     return yaml.safe_load(Path("specs/rules/gaps.yaml").read_text(encoding="utf-8"))["rules"]
 
 
+def gap_report(graph: dict) -> tuple[dict, str]:
+    from dhf.trace import coverage, gaps, unassessable_rules
+
+    rules = gap_rules()
+    findings = gaps(graph)
+    blind = unassessable_rules(graph, rules)
+    return {
+        "findings": findings,
+        "coverage": coverage(graph),
+        "not_assessable": blind,
+    }, gaps_markdown(findings, rules, blind)
+
+
 def rtm_markdown(graph: dict, rows: list[dict]) -> str:
     nodes = {a["id"]: a for a in graph["artifacts"]}
 

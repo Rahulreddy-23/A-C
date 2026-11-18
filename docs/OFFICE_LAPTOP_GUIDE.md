@@ -258,9 +258,9 @@ Or open the workspace with a **Refresh from ADO** button:
 uv run dhf serve --db out/real/evidence.sqlite --documents out/real/docs --output-dir out/real
 ```
 
-- The page opens at `http://127.0.0.1:8765/`. It is reachable from this laptop only. Stop it with Ctrl+C.
+- The page opens at `http://127.0.0.1:8765/`. It is reachable from this laptop only. Use the button to create the first snapshot if the workspace is empty. Stop it with Ctrl+C.
 - The Overview shows an **ADO refresh** card: when ADO was last read, the changed and added items (click to inspect), the stale sections, and earlier refreshes.
-- Every refresh is recorded in `out/real/refresh_log.jsonl` with the time, snapshot number and changed IDs. That is your audit trail of when evidence was checked.
+- Both paths refresh `gaps.md`, `gaps.json` and the offline explorer. Every successful ADO snapshot is recorded in the database and exported to `out/real/refresh_log.jsonl` with the time, snapshot number and changed IDs. That is your audit trail of when evidence was checked.
 
 **The change story for the demo:** draft on Thursday, then press Refresh on Monday or live on stage. Real items change in ADO every day, so the card shows real changes and the sections they made stale. If nothing changed, the card says so. That is a valid result too.
 

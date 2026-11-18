@@ -2,6 +2,8 @@
 
 import json
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -52,6 +54,10 @@ class Store:
             "CREATE TABLE IF NOT EXISTS snapshots "
             "(id INTEGER PRIMARY KEY, at TEXT NOT NULL, graph TEXT NOT NULL, changes TEXT NOT NULL)"
         )
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS ado_refreshes "
+            "(snapshot INTEGER PRIMARY KEY REFERENCES snapshots(id), record TEXT NOT NULL)"
+        )
         self.db.commit()
 
     def close(self) -> None:
@@ -66,19 +72,41 @@ class Store:
         return json.loads(row[0]) if row else {"artifacts": [], "links": []}
 
     def ingest(self, graph: dict) -> dict:
+        with self.ingest_transaction(graph) as (snapshot, _):
+            return snapshot
+
+    @contextmanager
+    def ingest_transaction(self, graph: dict) -> Iterator[tuple[dict, dict]]:
+        """Compare and insert under one writer lock, with room for related audit records."""
         graph = validate_graph(graph)
-        changes = diff_graph(self.graph(), graph)
         with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            changes = diff_graph(self.graph(), graph)
             cursor = self.db.execute(
                 "INSERT INTO snapshots(at,graph,changes) VALUES(?,?,?)",
                 (datetime.now(UTC).isoformat(), canonical(graph), canonical(changes)),
             )
-        return {
-            "snapshot": cursor.lastrowid,
-            **changes,
-            "artifacts": len(graph["artifacts"]),
-            "links": len(graph["links"]),
-        }
+            yield (
+                {
+                    "snapshot": cursor.lastrowid,
+                    **changes,
+                    "artifacts": len(graph["artifacts"]),
+                    "links": len(graph["links"]),
+                },
+                graph,
+            )
+
+    def record_refresh(self, record: dict) -> None:
+        self.db.execute(
+            "INSERT INTO ado_refreshes(snapshot, record) VALUES(?, ?)",
+            (record["snapshot"], canonical(record)),
+        )
+
+    def refresh_history(self, limit: int = -1) -> list[dict]:
+        rows = self.db.execute(
+            "SELECT record FROM ado_refreshes ORDER BY snapshot DESC LIMIT ?", (limit,)
+        )
+        return [json.loads(row[0]) for row in rows]
 
     def last_changes(self) -> dict:
         row = self.db.execute("SELECT changes FROM snapshots ORDER BY id DESC LIMIT 1").fetchone()

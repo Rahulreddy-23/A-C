@@ -571,3 +571,23 @@ The browser workspace uses a fresh local project and real Azure DevOps Services 
 - The Azure source supports an organization URL, project name, write-only PAT and saved query ID, WIQL, area path or work item IDs. Each document can select the project default or save an override. Test Connection verifies access, and Fetch Requirements creates the Step 2 snapshot. Fetched Azure requirements make SRD/PRD optional for SAD and SDD.
 - The project owner and authorized local members may save, replace or remove a PAT. Store PATs with authenticated encryption and a deployment-supplied key. Show the last four characters only, the save date and a known expiry. Guide users to Work Items (Read), plus Test Management (Read) for SSTR. Map invalid/expired credentials and insufficient access to actionable errors. Warn seven days ahead of a known expiry. Keep the secret out of responses, logs, evidence and model requests.
 - Accept multiple files per role and redact likely secrets before evidence extraction or indexing. The input workspace feeds the existing evidence graph and drafting engine. Product acceptance includes selector coverage, connection isolation, encrypted persistence and credential error mapping, upload redaction and a multi-file SDD snapshot.
+
+## 20. Product workspace UI — 2026-11-19
+
+`dhf serve` is the product front end (ADR-047). It is one local page with six areas:
+
+| Area | Content |
+|---|---|
+| Dashboard | Total requirements; coverage by architecture, design, code, verification and risk; documentation and traceability completeness; gaps by category; each document's review stage |
+| Projects | Create, open and archive; name, product, version, release, repository URL, ADO project, business unit, description |
+| Documents | SAD, SDD, SSTR, DRR (inputs only), sFMEA: requirements source, input checklist, evidence summary, draft and update, Word and Markdown download |
+| Traceability | Requirements, design, code, verification and risk coverage with a filterable RTM and drill-down IDs; gap analysis by requirement, design, implementation, verification, risk and document consistency; the trace graph |
+| Review Center | AI suggestions with sources, confidence and an accept/reject rationale; sections to write; validator rejections; tracked changes; review queue; approval workflow with the eQMS reference |
+| Settings | Azure DevOps connection and PAT; AI provider, model, data clearance and budget |
+
+Acceptance:
+- Every number comes from code.
+- Review decisions produce the same Markdown markers as the docs PR, so `readiness()` agrees.
+- A document becomes ready only when `readiness()` reports no blocker.
+- An update after an evidence change redrafts only stale sections and shows Word tracked changes.
+- The page loads nothing external.

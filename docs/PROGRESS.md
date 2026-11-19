@@ -534,3 +534,41 @@ In a clean browser workspace, selecting two SDD files together produced the mess
 **Pending live verification:** run the browser workflow against the owner's Azure DevOps organization using an owner-supplied read-only PAT, confirmed work-item mapping and approved test scope. The current Azure contract checks use stubbed responses.
 
 **Deviations:** the synthetic dataset stays in the test and explicit rehearsal paths. The deployed scope here is the local browser workspace. Shared hosting, Microsoft Entra identity, managed encryption keys and browser DRR drafting remain future work.
+
+### Product workspace UI — 2026-11-19
+
+The owner judged the front end confusing, outdated and demo-only. A colleague's platform specification was the input. Its information architecture and workflow were adopted on our stack (ADR-047, brief §20).
+
+- **One workspace:** Dashboard, Projects, Documents (SAD, SDD, SSTR, DRR inputs, sFMEA), Traceability (five coverage views plus gap analysis), Review Center (suggestions, tracked changes, queue, approval) and Settings (Azure DevOps, AI).
+- **Computed views:** `src/dhf/workspace/insights.py` computes every number. `specs/rules/categories.yaml` groups each finding rule under one gap category.
+- **Drafting from the browser:** the first draft is generated in full. Later updates redraft only stale sections and redline the Word file against the reviewed version. One draft runs at a time.
+- **Review in the browser:** accept/reject with a rationale, writing human or AI-failed sections, and reviewing validator rejections. Each writes the same markers as the docs PR, through pure functions in `dhf.review`.
+- **Approval:** the workspace records the eQMS reference for a ready version, which becomes the baseline. A later change needs approval again.
+- **Projects:** one server serves every project the user owns, with create, edit, archive and restore. sFMEA joins the input checklist.
+
+Acceptance evidence:
+
+```text
+uv run pytest -q
+209 passed in 167.68s (0:02:47)
+ruff check .  →  All checks passed!
+ruff format --check .  →  143 files already formatted
+uv run python tools/demo.py  →  exit 0; unknown IDs 0; gaps P/R 1.00;
+  deterministic impact exact (51 records); audit pack 33 verified files
+```
+
+Browser walkthrough (synthetic Kestrel fixtures loaded as an Azure snapshot, mock provider; scratch copy, not committed):
+- **Dashboard:** 56 requirements; traceability 88.6% (31 of 35 software requirements allocated and verified); 30 gaps in 4 categories before drafting.
+- **SSTR first draft:** v1 in about 6 s with 9 review blockers.
+  - Three suggestions resolved (2 accepted, 1 rejected), and the human Approvals section written; the SSTR became ready for approval.
+  - Approval recorded against reference DCR-0001.
+- **SSTR update:** after SRS-021 changed in a newer snapshot, **Update draft** redrafted 2 stale sections into v2. The Word file holds 2 `w:ins` and 2 `w:del` tracked changes, and the document needs approval again.
+- **sFMEA:** draft v1 with 61 sections.
+- **Projects:** created, switched and archived.
+- **Mobile:** at 375 px the navigation drawer works and nothing scrolls sideways. Light and dark themes were both checked.
+
+**Pending live verification:** the browser drafting path with `copilotstudio` against the owner's project. Tests and the walkthrough use the mock provider.
+
+**Known issues:**
+- **Bulk review:** sFMEA drafts carry many suggested analysis cells (151 in the synthetic run), each resolved one at a time; bulk review is a follow-up.
+- **Release changes:** changing a project's release after drafting needs a fresh draft, because updates keep the recorded parameters.

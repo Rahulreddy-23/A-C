@@ -33,7 +33,16 @@ uv sync
 uv run dhf serve --project-id my-project
 ```
 
-The browser workspace starts empty for a new project. Choose SAD, SDD or SSTR. DRR is available for input collection as a future document type.
+`dhf serve` opens the DHF workspace in your browser. It runs only on this computer and starts with an empty project.
+
+| Area | What you do there |
+|---|---|
+| **Dashboard** | See total requirements, coverage at each trace level, documentation and traceability completeness, gaps by category, and each document's review status. |
+| **Projects** | Create, open and archive projects. Each keeps its own Azure DevOps connections, inputs, drafts and approvals. |
+| **Documents** | For SAD, SDD, SSTR, DRR and sFMEA: choose the requirements source, add existing documents and evidence, then **Generate draft** and download Word. DRR collects inputs only for now. |
+| **Traceability** | Check requirements, design, code, verification and risk coverage in a filterable RTM, gaps grouped by what is missing, and the trace graph. |
+| **Review Center** | Accept or reject each AI suggestion with a rationale, write the sections only people can write, see tracked changes, and record the eQMS approval. |
+| **Settings** | Set the project's Azure DevOps connection and PAT, and check the AI configuration. |
 
 1. To save a PAT, generate a Fernet key and set `APP_ENCRYPTION_KEY` to that value in the ignored `.env` file or process environment. Keep the key stable across launches.
 
@@ -41,13 +50,11 @@ The browser workspace starts empty for a new project. Choose SAD, SDD or SSTR. D
    uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
    ```
 
-2. Under **Azure DevOps Requirements Source**, enter the organization URL, project name, PAT and selector. Save the project default or choose **Override for this document**. Use **Work Items (Read)** and include **Test Management (Read)** for SSTR. Select **Test Connection**, then **Fetch Requirements**. SSTR can also fetch results for selected Test Plan or Test Run IDs.
-3. Add files to the document checklist. Each input accepts multiple files, including multiple existing SDDs. SAD and SDD accept an SRD or PRD in place of fetched Azure requirements. Word `.docx` and the listed UTF-8 text, code and CSV formats are supported, up to 12 MB per file. The workspace shows a warning when it redacts a likely secret. For structured SSTR results, CSV accepts `Test Case ID`, `Outcome`, and optional `Release` and `Completed Date` columns.
-4. Review **Requirements Snapshot** and **Open evidence explorer**. Select **Save evidence for drafting** to create `out/workspaces/<project-id>/<document-type>/evidence.sqlite`. Use that database with the existing drafting command and specify the actual release and approved provider.
-
-   ```bash
-   uv run dhf generate sdd --db out/workspaces/my-project/sdd/evidence.sqlite --documents out/workspaces/my-project/sdd/drafts --release 2.0 --provider copilotstudio
-   ```
+2. Under **Projects**, enter the project name and release. The release selects which test results count.
+3. Under **Settings → Azure DevOps**, enter the organization URL, project name, PAT and requirements selector, then **Test connection**. Use **Work Items (Read)**, plus **Test Management (Read)** for SSTR, which can also read selected Test Plan or Test Run IDs. A document can use its own connection instead.
+4. On each document page, **Fetch requirements** and add files to its checklist. Each input accepts multiple files, including multiple existing SDDs. SAD, SDD and sFMEA accept an SRD or PRD in place of Azure requirements. Word `.docx` and the listed UTF-8 text, code and CSV formats are supported, up to 12 MB per file. The workspace warns when it redacts a likely secret. For SSTR results, CSV accepts `Test Case ID`, `Outcome`, and optional `Release` and `Completed Date` columns.
+5. Select **Generate draft**. Drafting uses `DHF_PROVIDER` from `.env` (`mock` by default) through the same guarded AI layer as the CLI. Drafts are saved under `out/workspaces/<project-id>/<document>/drafts/`.
+6. In the **Review Center**, resolve every suggestion, write the human sections and review any validator rejections. When the document is ready, record its eQMS approval reference; that version becomes the baseline. After evidence changes, **Update draft** redrafts only the stale sections, and the Word file shows the changes as tracked changes.
 
 The browser shows verified access and an expiry when you supplied one from Azure DevOps. Reading PAT lifecycle metadata requires a separate user-delegated Microsoft Entra credential. The local workspace uses a one-time access link for the owner. The owner can add local members with repeated `--member` flags. PAT changes are attributed to the signed-in local session. Hosted organization sign-in and Key Vault integration are future deployment work. [Microsoft PAT documentation](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops)
 
@@ -82,7 +89,7 @@ Run every command from the repository root. `uv run dhf --help` lists all comman
 | `uv run dhf regenerate --stale --open-pr` | Regenerates only the stale sections. |
 | `uv run dhf explore` | Writes the offline evidence explorer to `out/explorer.html`. |
 | `uv run dhf refresh` | Reads ADO again, records changes and stale sections, and updates the gap reports and explorer. |
-| `uv run dhf serve` | Opens the local document workspace for Azure requirements and file uploads. |
+| `uv run dhf serve` | Opens the DHF workspace in the browser: projects, documents, traceability, review and settings. |
 | `uv run dhf serve --explorer-only` | Opens the existing CLI evidence explorer and its **Refresh from ADO** action. |
 | `uv run dhf audit-pack` | Exports drafts, provenance and verified hashes as a ZIP. |
 

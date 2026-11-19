@@ -325,3 +325,38 @@ The default browser entry point starts an empty project. Azure connections and u
 - The local owner provisions per-launch browser access for authorized members. The server listens on loopback and checks project binding, session membership and the request origin before mutations. Azure requests use the selected cloud organization over HTTPS and the existing read-only adapter.
 - Uploads are decoded in memory. Likely secrets are redacted from extracted Word text or decoded UTF-8 before evidence extraction. SQLite stores sanitized blocks and their digest. The existing structured document profile is matched by the checklist role and all explicitly supplied documents are kept.
 - The browser workspace uses a general Azure work-item mapping with a configuration override for custom processes. No fixture dataset or demo project configuration is loaded into this entry point.
+
+## ADR-047 — One browser workspace for the whole DHF loop
+
+2026-11-19 · Product frontend (owner: the inputs page and the demo explorer were confusing and did not meet the requirements; a colleague's platform specification was the input)
+
+The browser collected inputs only. Drafting, gaps, the RTM, review and approval needed the CLI or a separate explorer page. We adopt the specification's information architecture and workflow, not its stack: React, Fluent UI, FastAPI and the Azure services stay out (AGENTS stack, rules 8 and 11).
+
+- **One page, six areas.**
+  - Dashboard and Projects.
+  - Documents: SAD, SDD, SSTR, DRR and sFMEA.
+  - Traceability: requirements, design, code, verification and risk coverage, plus gap analysis.
+  - Review Center: AI suggestions, tracked changes, review queue and approval workflow.
+  - Settings: Azure DevOps and AI configuration.
+
+  `specs/render/workspace.html` is a single template with plain JavaScript and no external resource. It sets evidence text as text, never as HTML, and links only web URLs. The stdlib server stays on loopback with the existing origin and session checks.
+- **Numbers are computed in Python** (`src/dhf/workspace/insights.py`), never in the page.
+  - Coverage per trace level is measured over software requirements, or system requirements when there are none:
+    - architecture: `allocated_to` a software item
+    - design: a unit `implements` it
+    - code: a change `implements` it
+    - verification: a test `verifies` it
+    - risk: it `implements` a risk control
+  - A level reads "not assessable" when no input can hold that link.
+  - Documentation completeness counts drafted sections with no review blocker.
+  - Traceability completeness counts requirements that are both allocated and verified.
+  - Gap analysis groups the existing finding rules by `specs/rules/categories.yaml`, which is data. Every rule belongs to exactly one category, and a test checks this.
+- **Drafting runs from the browser.** It uses the same `generate_document` and `impact` + `regenerate` steps, `DHF_PROVIDER` and the guarded LLM layer, one draft at a time.
+  - The first draft is generated in full. Later updates redraft only stale sections, keeping the reviewer's bytes everywhere else.
+  - The Word file redlines against the reviewed version.
+- **Review edits are the docs-PR edits, as pure functions:** `resolve_suggestion`, `author_section` and `review_validation` in `dhf.review`. `readiness()` is unchanged, so the browser and the PR flow agree on what blocks a document. Decisions record the signed-in reviewer and a required rationale.
+- **Approval stays in the eQMS.** The workspace records the eQMS reference against a ready version and keeps that version as the baseline. A document whose text changes afterwards needs approval again.
+- **Projects:** one server serves every workspace the launching user owns in the workspaces folder. Archiving hides a project and deletes nothing.
+- **Not adopted:** GitHub and SharePoint connectors, Entra sign-in, hosted multi-user deployment, agent frameworks, and Azure SQL, Blob and Search. DRR drafting in the browser stays future work (ADR-046).
+
+Consequences: The docs-repo PR flow and its controlled baselines remain for the CLI. The browser's approval record is local evidence of an eQMS decision, not the decision itself.

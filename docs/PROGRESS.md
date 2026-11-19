@@ -572,3 +572,38 @@ Browser walkthrough (synthetic Kestrel fixtures loaded as an Azure snapshot, moc
 **Known issues:**
 - **Bulk review:** sFMEA drafts carry many suggested analysis cells (151 in the synthetic run), each resolved one at a time; bulk review is a follow-up.
 - **Release changes:** changing a project's release after drafting needs a fresh draft, because updates keep the recorded parameters.
+
+### Workbench redesign, bulk review, redraft and real-project check — 2026-11-20
+
+The owner judged the first workspace UI generic and asked for every button to be checked end to end with the company project and keys (ADR-048).
+
+- **Layout:** explorer-aligned workbench in DESIGN.md tokens: header with the project switcher and data class, a rail of areas and documents with version marks and the open blocker count, a provenance status bar, and flat tables. Light by default, with a dark toggle. Checked at desktop and at 375 px.
+- **Bulk review:** select suggestions and accept or reject them with one rationale. Single decisions, written sections and approvals now confirm what happened.
+- **Redraft:** a release change, or **Redraft from scratch**, regenerates every section as a new version with the Word redline. The document page lists stale sections and their causes before **Update draft**.
+- **RTM export:** CSV with formula-safe cells.
+- **sFMEA on real designs:** a **Safety classification** CSV fills unit and component classes the evidence lacks. Unmapped units use their own title as their function.
+
+Acceptance evidence:
+
+```text
+uv run ruff check .  →  All checks passed!
+uv run ruff format --check .  →  143 files already formatted
+uv run pytest -q  →  215 passed in 164.68s (0:02:44)
+```
+
+Real-project check (company data processed locally only; read-only PAT; mock provider; nothing committed):
+
+| Step | Result |
+|---|---|
+| Uploads | All design documents uploaded. One architecture document was over the old 12 MB cap, so the cap is now 40 MB. |
+| Fetch requirements | SAD and SSTR fetched; SSTR also read its test plans (thousands of work items) |
+| Drafts | SAD, SDD, SSTR and sFMEA drafted. sFMEA first stopped on missing safety classes, and then on two crashes, both fixed. |
+| Review | Section write, single and bulk accept, and select-all reject of several hundred sFMEA suggestions all worked |
+| Traceability | Matrix and RTM CSV export worked |
+| Speed | Document pages took up to 12.5 s and the evidence explorer 39 s on a project with thousands of artifacts. Gap rules and trace chains scanned every link for each subject. Both now index links once: under 0.6 s, with identical findings and chains checked against the old code. |
+
+Claude drafting (synthetic Kestrel SSTR, `anthropic`): 12 sections, 1 claim rejected by the validator. Every call was a cache hit from earlier live runs, so it cost $0.00. Anthropic spend to date is $0.15 of the $2.50 cap.
+
+**Pending live verification:** Copilot Studio drafting from the browser. `.env` has no `DHF_COPILOT_FLOW_URL` and no `DHF_REAL_DATA_APPROVAL`, so it cannot run here.
+
+**Known issues:** the type-scale advisories in DESIGN.md remain (14, 11, 15 and 20 px sizes and a 3 px radius used by the page).

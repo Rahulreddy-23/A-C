@@ -360,3 +360,19 @@ The browser collected inputs only. Drafting, gaps, the RTM, review and approval 
 - **Not adopted:** GitHub and SharePoint connectors, Entra sign-in, hosted multi-user deployment, agent frameworks, and Azure SQL, Blob and Search. DRR drafting in the browser stays future work (ADR-046).
 
 Consequences: The docs-repo PR flow and its controlled baselines remain for the CLI. The browser's approval record is local evidence of an eQMS decision, not the decision itself.
+
+## ADR-048 — Workbench layout, bulk review, redraft and scale fixes
+
+- **Date:** 2026-11-20
+- **Context:** The owner judged the first workspace UI generic. The owner then asked for bulk review, a way to redraft after a release change, and a check of every button against a real project.
+- **Decision:**
+  - The workspace follows the evidence explorer: a left rail of areas and documents, a status bar with provenance, flat tables and DESIGN.md tokens. Light is the default; dark is a toggle.
+  - Review decides many suggestions at once with one rationale. The server accepts only suggested-claim keys, at most 2,000 per call, under the project's edit lock.
+  - A changed project release, or **Redraft from scratch**, regenerates every section as a new version. The previous text stays the redline base.
+  - sFMEA reads an owner-recorded **Safety classification** CSV. It fills only classes the evidence does not state, and records the file as their source. Without a class for every unit, drafting still stops and names the units. A curated function map is optional; an unmapped unit uses its own title as its function.
+  - Gap rules and trace chains index links once. Each subject no longer scans every link.
+  - The RTM CSV prefixes cells that start with `=`, `+`, `-`, `@`, a tab or a carriage return with `'`, so spreadsheets never run them as formulas.
+- **Consequences:**
+  - A project with thousands of artifacts answers document pages in under a second, where it took 12 to 39 s before. Rule findings and trace chains are unchanged, checked against the previous code.
+  - Uploads accept Word files up to 40 MB, because real architecture documents carry many diagrams.
+

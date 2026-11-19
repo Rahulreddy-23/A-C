@@ -591,3 +591,6 @@ Acceptance:
 - A document becomes ready only when `readiness()` reports no blocker.
 - An update after an evidence change redrafts only stale sections and shows Word tracked changes.
 - The page loads nothing external.
+- Reviewers can decide suggestions in bulk with one rationale (ADR-048).
+- A release change or **Redraft from scratch** regenerates every section as a new version, with the Word redline against the previous text.
+- sFMEA drafts only when every unit has a recorded safety class, from the design evidence or a Safety classification CSV.

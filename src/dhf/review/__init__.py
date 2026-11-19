@@ -98,6 +98,100 @@ def readiness(markdown: str, manifest: dict) -> dict:
     }
 
 
+SUGGESTED_LABEL = "**[Suggested — review required]** "
+PLACEHOLDERS = ("Human input required", "AI drafting unavailable", "[Suggested")
+
+
+def marker_text(value: str) -> str:
+    """Reviewer names and rationales sit inside HTML comments: one line, no angle brackets."""
+    text = re.sub(r"[\s<>]+", " ", value).strip()
+    if not text:
+        raise ValueError("Enter a reviewer and a rationale.")
+    return text
+
+
+def resolve_suggestion(
+    markdown: str, key: str, decision: str, reviewer: str, rationale: str
+) -> str:
+    """The reviewer's edit in the docs PR, as a pure step: accepting drops the suggestion label,
+    rejecting drops the claim, and each section holding the claim records the decision."""
+    if decision not in ("accepted", "rejected") or not re.fullmatch(r"[a-f0-9]{16}", key):
+        raise ValueError("Choose accept or reject for a suggestion in this draft.")
+    marker = f"<!-- dhf-claim:{key} -->"
+    record = (
+        f"<!-- dhf-resolution:{key} {decision} reviewer={marker_text(reviewer)} "
+        f"rationale={marker_text(rationale)} -->\n"
+    )
+    earlier = re.compile(rf"<!-- dhf-resolution:{key} (?:accepted|rejected) [^\n]*-->\n")
+    found = False
+
+    def edit(match: re.Match) -> str:
+        nonlocal found
+        id, body = match[1], match[2]
+        if marker not in body:
+            return match[0]
+        found = True
+        if decision == "accepted":
+            body = body.replace(marker + "\n" + SUGGESTED_LABEL, marker + "\n")
+            body = body.replace(marker + SUGGESTED_LABEL, marker)
+        else:  # a table row holds the claim in a cell; elsewhere it is one paragraph
+            body = re.sub(rf"^\|[^\n]*{re.escape(marker)}[^\n]*\n", "", body, flags=re.M)
+            body = re.sub(rf"{re.escape(marker)}\n[^\n]*\n\n?", "", body)
+        return f"<!-- section:{id} -->\n{earlier.sub('', body)}{record}<!-- endsection:{id} -->"
+
+    result = SECTION.sub(edit, markdown)
+    if not found:
+        raise ValueError("That suggestion is not in this draft.")
+    return result
+
+
+def author_section(
+    markdown: str, section_id: str, text: str, reviewer: str, rationale: str, manual: bool
+) -> str:
+    """Replace a section's draft body below its heading with reviewer-authored text. A section
+    AI could not draft (`manual`) also records who wrote it and why, as readiness requires."""
+    content = text.replace("\r\n", "\n").strip()
+    if not content or "<!--" in content or any(p in content for p in PLACEHOLDERS):
+        raise ValueError("Write the section content without placeholders or HTML comments.")
+    found = False
+
+    def edit(match: re.Match) -> str:
+        nonlocal found
+        if match[1] != section_id:
+            return match[0]
+        found = True
+        first = match[2].split("\n", 1)[0]
+        heading = first + "\n\n" if first.startswith("#") else ""
+        authored = (
+            f"<!-- dhf-authoring:{section_id} reviewer={marker_text(reviewer)} "
+            f"rationale={marker_text(rationale)} -->\n"
+            if manual
+            else ""
+        )
+        return (
+            f"<!-- section:{section_id} -->\n{heading}{content}\n\n{authored}"
+            f"<!-- endsection:{section_id} -->"
+        )
+
+    result = SECTION.sub(edit, markdown)
+    if not found:
+        raise ValueError("That section is not in this draft.")
+    return result
+
+
+def review_validation(markdown: str, key: str, reviewer: str, rationale: str) -> str:
+    """Record that a reviewer saw a claim the validator rejected, replacing any earlier note."""
+    if not re.fullmatch(r"[a-f0-9]{16}", key):
+        raise ValueError("That validation event is not in this draft.")
+    kept = re.sub(rf"<!-- dhf-validation:{key} reviewed [^\n]*-->\n", "", markdown)
+    return (
+        kept.rstrip("\n")
+        + "\n"
+        + f"<!-- dhf-validation:{key} reviewed reviewer={marker_text(reviewer)} "
+        + f"rationale={marker_text(rationale)} -->\n"
+    )
+
+
 class DocsReview:
     def __init__(self, ado: ADO, root: Path = Path("out/docs-clone")) -> None:
         self.ado = ado

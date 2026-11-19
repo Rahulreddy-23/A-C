@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from dhf.config import setting
 from dhf.ingest.ado import ADO, DEFAULT_FOLLOW
 
-DOC_TYPES = ("sad", "sdd", "sstr", "drr")
+DOC_TYPES = ("sad", "sdd", "sstr", "drr", "sfmea")
 REQUIREMENT_TYPES = {"user_need", "system_req", "software_req"}
 MAX_ITEMS = 5000
 
@@ -29,7 +29,7 @@ class WorkspaceError(Exception):
 class ConnectionInput(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    document_type: Literal["sad", "sdd", "sstr", "drr"] | None = None
+    document_type: Literal["sad", "sdd", "sstr", "drr", "sfmea"] | None = None
     org_url: str = Field(min_length=1, max_length=250)
     project_name: str = Field(min_length=1, max_length=128)
     query_type: Literal["saved_query", "wiql", "area_path", "work_item_ids"]
@@ -64,6 +64,21 @@ class ConnectionInput(BaseModel):
         if self.pat_expiry is not None and (self.pat_expiry.tzinfo is None or self.pat is None):
             raise WorkspaceError(400, "Set a timezone-aware expiry when saving a new PAT.")
         return values
+
+
+class ProjectInput(BaseModel):
+    """Project metadata. Only `name` and `release` drive behaviour; the rest is display."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    name: str = Field(min_length=1, max_length=120)
+    product: str = Field(default="", max_length=120)
+    version: str = Field(default="", max_length=40)
+    release: str = Field(min_length=1, max_length=40, pattern=r"^[\w.-]+$")
+    repository_url: str = Field(default="", max_length=300, pattern=r"^(https://\S+)?$")
+    ado_project: str = Field(default="", max_length=128)
+    business_unit: str = Field(default="", max_length=120)
+    description: str = Field(default="", max_length=2000)
 
 
 def item_ids(value: str) -> list[int]:

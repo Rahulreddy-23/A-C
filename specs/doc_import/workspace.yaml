@@ -11,6 +11,8 @@ inputs:
   design_changes: {label: Design changes since last review}
   action_items: {label: Previous action items}
   review_details: {label: Review type, date and participants}
+  risk_documentation: {label: Risk documentation}
+  existing_sfmea: {label: Existing sFMEA}
 documents:
   sad:
     title: Software Architecture Document
@@ -25,3 +27,6 @@ documents:
     title: Design Review Record
     future: true
     inputs: [design_evidence, design_changes, action_items, review_details]
+  sfmea:
+    title: Software FMEA
+    inputs: [requirements, specification, sad, existing_sdd, risk_documentation, existing_sfmea]

@@ -3,425 +3,959 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Document inputs | DHF workspace</title>
+<title>DHF Automation</title>
 <style>
-:root{color-scheme:light;--bg:#f4f6f9;--surface:#fff;--text:#192538;--muted:#4d5b70;--border:#dbe2ec;--brand:#193e98;--wash:#edf3ff;--alert:#8b3416;--ok:#155c44}
+:root{color-scheme:light;
+--bg:#f5f6f8;--surface:#fff;--subtle:#f9fafb;--text:#1b1f27;--muted:#5b6472;--border:#e1e4ea;--strong:#c5cad3;
+--brand:#0f6cbd;--brand-hover:#115ea3;--brand-wash:#ebf3fc;--on-brand:#fff;
+--ok:#0e700e;--ok-wash:#e9f6e9;--warn:#8a4f00;--warn-wash:#fff5d6;--bad:#b10e1c;--bad-wash:#fde7e9;
+--stale:#5c2e91;--stale-wash:#f3ecfa;--fill-warn:#b87400;--side:#fbfbfc;--focus:#0f6cbd;--shadow:0 1px 2px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.08)}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;
+--bg:#14161a;--surface:#1d2026;--subtle:#22262d;--text:#e8eaee;--muted:#a5adba;--border:#2f343d;--strong:#454c57;
+--brand:#4f9eea;--brand-hover:#6aaeee;--brand-wash:#18324c;--on-brand:#0b1420;
+--ok:#6ccb6c;--ok-wash:#163222;--warn:#e9b44c;--warn-wash:#3a2d12;--bad:#f08a93;--bad-wash:#3c1b1f;
+--stale:#c4a1ef;--stale-wash:#2e2140;--fill-warn:#e9b44c;--side:#181b20;--focus:#6aaeee;--shadow:none}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;color:var(--text);background:var(--bg);font:15px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-header{background:#14233e;color:#fff;padding:14px max(22px,calc((100vw - 1140px)/2));display:flex;align-items:center;gap:12px}
-header strong{font-size:16px;white-space:nowrap} header span{font-size:13px;border-left:1px solid #60728d;padding-left:12px;overflow-wrap:anywhere}
-main{max-width:1184px;margin:auto;padding:34px 22px 64px}
-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:25px}
-h1,h2,h3,p{margin:0} h1{font-size:clamp(24px,4vw,36px);line-height:1.18;margin:6px 0 20px;letter-spacing:-.025em}
-h2{font-size:21px;margin-bottom:12px} h3{font-size:16px;margin-bottom:10px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:16px;min-width:0}
-.muted,small{color:var(--muted)} small{display:block} .step{color:var(--brand);font-size:13px;font-weight:700}
-.cols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px}
-.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-label,.field-label{display:block;font-weight:600} .field-label small,label small{font-weight:400;margin-top:4px}
-input,textarea,select,button{font:inherit}
-input:not([type=file]),textarea,select{width:100%;border:1px solid #aab6c8;background:white;color:var(--text);border-radius:7px;padding:8px 10px;min-height:40px}
-textarea{resize:vertical;min-height:72px}
-button,.file-action,.link-action{display:inline-flex;align-items:center;justify-content:center;min-height:37px;cursor:pointer;background:#fff;border:1px solid #aab6c8;color:var(--brand);padding:5px 11px;border-radius:7px;text-decoration:none;font-weight:650}
-button:hover,.file-action:hover,.link-action:hover{background:var(--wash)}
-button[aria-pressed=true]{color:var(--brand);border-color:#5275bf;background:var(--wash)}
-button:disabled{opacity:.55;cursor:default}
-.primary{background:var(--brand);border-color:var(--brand);color:#fff} .primary:hover{background:#16347c}
-button.remove{color:var(--alert);min-height:32px;font-size:13px}
-:focus-visible,.file-action:focus-within{outline:3px solid #5275bf;outline-offset:2px}
-.stack>*+*{margin-top:12px}
-.row,.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/20px "Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+a{color:var(--brand)}a:hover{color:var(--brand-hover)}
+h1,h2,h3,h4,p{margin:0}
+h1{font-size:24px;line-height:32px;font-weight:600}
+h2{font-size:16px;line-height:22px;font-weight:600}
+h3{font-size:14px;font-weight:600}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);grid-template-rows:48px minmax(0,1fr);height:100%}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;color:var(--text);text-decoration:none;white-space:nowrap}
+.brand svg{color:var(--brand)}
+.switch{display:flex;align-items:center;gap:8px;min-width:0;margin-left:8px}
+.switch label{color:var(--muted);font-size:12px}
+.switch select{max-width:260px;min-height:32px}
+.who{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .menu{display:none}
+.sidebar{background:var(--side);border-right:1px solid var(--border);overflow:auto;padding:12px 8px 24px}
+.sidebar a{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:6px;color:var(--text);text-decoration:none}
+.sidebar a:hover{background:var(--brand-wash)}
+.sidebar a[aria-current=page]{background:var(--brand-wash);color:var(--brand);font-weight:600;box-shadow:inset 3px 0 0 var(--brand)}
+.sidebar svg{flex:none;color:var(--muted)}
+.sidebar a[aria-current=page] svg{color:var(--brand)}
+.group{margin-top:14px}
+.group>span{display:block;padding:4px 12px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.group a{padding-left:38px}
+main{overflow:auto;padding:24px 32px 64px}
+main:focus,main:focus-visible{outline:none}
+.page{max-width:1280px;margin:0 auto}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+.page-head p{color:var(--muted);margin-top:4px;max-width:80ch}
+.crumbs{font-size:12px;color:var(--muted);margin-bottom:4px}
+.grid{display:grid;gap:16px}
+.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:16px 20px;min-width:0}
+.card>h2{margin-bottom:4px}
+.card>.hint{color:var(--muted);margin-bottom:12px}
+.card+.card{margin-top:16px}
+.grid>.card+.card{margin-top:0}
+.kpi{display:flex;flex-direction:column;gap:4px}
+.kpi .label{color:var(--muted);font-size:13px}
+.kpi .value{font-size:28px;line-height:36px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .sub{color:var(--muted);font-size:12px}
+.bar-row{display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--border)}
+.bar-row:first-of-type{border-top:0}
+.bar{height:8px;border-radius:4px;background:var(--subtle);border:1px solid var(--border);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--fill-warn)}
+.bar>i.full{background:var(--ok)}
+.bar-row .num{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;line-height:18px;white-space:nowrap;background:var(--subtle);color:var(--muted);border:1px solid var(--border)}
+.badge.info{background:var(--brand-wash);color:var(--brand);border-color:transparent}
+.badge.success{background:var(--ok-wash);color:var(--ok);border-color:transparent}
+.badge.warning{background:var(--warn-wash);color:var(--warn);border-color:transparent}
+.badge.danger{background:var(--bad-wash);color:var(--bad);border-color:transparent}
+.badge.stale{background:var(--stale-wash);color:var(--stale);border-color:transparent}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tabs a{padding:8px 12px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a:hover{color:var(--text)}
+.tabs a[aria-current=page]{color:var(--text);font-weight:600;border-color:var(--brand)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:5px 12px;border-radius:4px;border:1px solid var(--strong);background:var(--surface);color:var(--text);font:inherit;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--subtle);color:var(--text)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn.primary:hover{background:var(--brand-hover);color:var(--on-brand)}
+.btn.danger{color:var(--bad)}
+.btn.subtle{border-color:transparent;background:transparent;color:var(--brand)}
+.btn.subtle:hover{background:var(--brand-wash)}
+.btn:disabled{opacity:.5;cursor:default}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field>span,.field>label{font-weight:600}
+.field small,.help{color:var(--muted);font-size:12px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+.fields .wide{grid-column:1/-1}
+input:not([type=file]):not([type=checkbox]),select,textarea{width:100%;min-height:32px;padding:5px 8px;border:1px solid var(--strong);border-bottom-color:var(--muted);border-radius:4px;background:var(--surface);color:var(--text);font:inherit}
+textarea{min-height:80px;resize:vertical}
+input:disabled{opacity:.6}
 .password{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
-.file-action{position:relative;white-space:nowrap;font-size:13px}
-.file-action input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-.upload{padding:13px 0;border-top:1px solid var(--border)} .upload:first-of-type{border-top:0}
-.upload-heading,.file-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
-.file-row{padding:6px 0;font-size:13px;overflow-wrap:anywhere}.file-row span{min-width:0;flex:1}
-.status:not(:empty),.warning:not(:empty){margin:8px 0;padding:10px 12px;border-radius:7px;background:var(--wash);overflow-wrap:anywhere}
-.warning:not(:empty),.status[data-error=true]:not(:empty){color:var(--alert);background:#fff2e9}
-.status[data-error=false]{color:var(--ok)}
-table{width:100%;border-collapse:collapse;text-align:left}th,td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
-.table-wrap{max-height:350px;overflow:auto;margin:10px 0;max-width:100%}
-code{overflow-wrap:anywhere} details{margin-top:14px} summary{cursor:pointer;color:var(--brand)}
-@media(max-width:800px){.cols{grid-template-columns:1fr}}
-@media(max-width:460px){.fields{grid-template-columns:1fr}.card{padding:15px}main{padding:24px 14px}}
+.stack>*+*{margin-top:12px}
+.notice{padding:10px 12px;border-radius:6px;background:var(--brand-wash);color:var(--text);border-left:3px solid var(--brand);overflow-wrap:anywhere}
+.notice.success{background:var(--ok-wash);border-color:var(--ok)}
+.notice.warning{background:var(--warn-wash);border-color:var(--warn)}
+.notice.error{background:var(--bad-wash);border-color:var(--bad)}
+.notice:empty{display:none}
+.muted{color:var(--muted)}
+.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px}
+.table-wrap{overflow:auto;max-width:100%;border:1px solid var(--border);border-radius:6px}
+table{width:100%;border-collapse:collapse;text-align:left}
+th,td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere}
+th{position:sticky;top:0;background:var(--subtle);font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;z-index:1}
+tbody tr:last-child td{border-bottom:0}
+td.missing{color:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{display:inline-block;padding:0 6px;border-radius:4px;background:var(--subtle);border:1px solid var(--border);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:18px;color:var(--text);text-decoration:none}
+a.chip:hover{border-color:var(--brand)}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px}
+.toolbar input[type=search]{max-width:320px}
+.toolbar select{width:auto;min-width:160px}
+.check{display:inline-flex;align-items:center;gap:6px}
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.empty h2{color:var(--text);margin-bottom:6px}
+.empty .actions{justify-content:center;margin-top:16px}
+.list>*+*{border-top:1px solid var(--border)}
+.item{padding:14px 0}
+.item:first-child{padding-top:4px}
+.item-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+.item p{max-width:100ch}
+.meta{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:12px;margin-top:6px}
+.stepper{display:flex;flex-wrap:wrap;gap:0;margin:4px 0 0;padding:0;list-style:none}
+.stepper li{display:flex;align-items:center;gap:8px;padding:6px 16px 6px 0;color:var(--muted);font-size:13px}
+.stepper li+li::before{content:"";width:24px;height:1px;background:var(--strong);margin-right:8px}
+.stepper .dot{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--strong);font-size:12px;font-weight:600;background:var(--surface)}
+.stepper .done .dot{background:var(--ok);border-color:var(--ok);color:var(--on-brand)}
+.stepper .now{color:var(--text);font-weight:600}
+.stepper .now .dot{border-color:var(--brand);color:var(--brand);box-shadow:0 0 0 3px var(--brand-wash)}
+.upload{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--border)}
+.upload:first-child{border-top:0;padding-top:0}
+.upload-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.file-pick{position:relative;overflow:hidden}
+.file-pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.file-pick:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+.file-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:2px 0;overflow-wrap:anywhere}
+.project-card{display:flex;flex-direction:column;gap:8px}
+.project-card dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;margin:0;font-size:13px}
+.project-card dt{color:var(--muted)}.project-card dd{margin:0;overflow-wrap:anywhere}
+.project-card .actions{margin-top:auto;padding-top:8px}
+.kv{display:grid;grid-template-columns:minmax(140px,max-content) minmax(0,1fr);gap:6px 16px;margin:0}
+.kv dt{color:var(--muted)}.kv dd{margin:0;overflow-wrap:anywhere}
+details>summary{cursor:pointer;color:var(--brand);font-weight:600}
+details[open]>summary{margin-bottom:8px}
+.startup{display:grid;place-items:center;min-height:100%;padding:24px;text-align:center}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(1turn)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+@media (max-width:1100px){.cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}.cols-3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){
+.app{grid-template-columns:minmax(0,1fr)}
+.topbar .menu{display:inline-flex}
+.sidebar{position:fixed;top:48px;bottom:0;left:0;width:260px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateX(-105%);transition:transform .15s ease}
+.sidebar.open{transform:none}
+main{padding:16px}
+.cols-2,.cols-3,.cols-4{grid-template-columns:minmax(0,1fr)}
+.switch label{display:none}
+}
+@media (max-width:560px){.fields{grid-template-columns:minmax(0,1fr)}.who{display:none}.bar-row{grid-template-columns:minmax(0,1fr) auto}.bar-row .bar{grid-column:1/-1;grid-row:2}}
+@media (prefers-reduced-motion:reduce){.sidebar{transition:none}}
 </style>
 </head>
 <body>
-<header><strong>DHF workspace</strong><span id="project"></span></header>
-<main>
-<p class="status" id="startup" role="status">Opening workspace…</p>
-<div id="app" hidden>
-<nav id="documents" aria-label="Document type"></nav>
-<h1 id="title"></h1>
-<p class="step">Step 1</p><h2>Inputs</h2>
-<div class="cols">
-<section class="card" aria-labelledby="azure-heading">
-<h3 id="azure-heading">Azure DevOps Requirements Source</h3>
-<label for="source">Connection</label>
-<select id="source">
-<option value="default">Use project default Azure connection</option>
-<option value="override">Override for this document</option>
-<option value="none">Use uploaded inputs only</option>
-</select>
-<p id="source-status" class="status" role="status"></p>
-<p id="default-note" class="muted"></p>
-<form class="stack" id="connection" autocomplete="off">
-<div class="fields">
-<label for="org">Organization URL<input id="org" type="url" required placeholder="https://dev.azure.com/your-org"></label>
-<label for="project-name">Project name<input id="project-name" required maxlength="128"></label>
+<div class="startup" id="startup"><p id="startup-text" role="status"><span class="spinner" aria-hidden="true"></span> Opening workspace…</p></div>
+<div class="app" id="app" hidden>
+<header class="topbar">
+<button class="btn subtle menu" id="menu" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Open navigation">
+<svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></button>
+<a class="brand" href="#/dashboard"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8.5L19 7v14.5H6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14.5 2.5V7H19M9 12h7M9 15.5h7M9 19h4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>DHF Automation</a>
+<div class="switch"><label for="project-select">Project</label><select id="project-select" aria-label="Current project"></select></div>
+<span class="who" id="who"></span>
+</header>
+<nav class="sidebar" id="sidebar" aria-label="Main">
+<a href="#/dashboard" data-route="dashboard"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6v8H3zM11 3h6v5h-6zM11 10h6v7h-6zM3 13h6v4H3z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Dashboard</a>
+<a href="#/projects" data-route="projects"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 5.5h5l1.5 2h8.5v9h-15z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Projects</a>
+<div class="group"><span id="nav-documents">Documents</span><div role="group" aria-labelledby="nav-documents" id="nav-docs"></div></div>
+<div class="group"><span id="nav-trace">Traceability</span><div role="group" aria-labelledby="nav-trace">
+<a href="#/traceability/requirements" data-route="traceability/requirements">Requirements coverage</a>
+<a href="#/traceability/design" data-route="traceability/design">Design coverage</a>
+<a href="#/traceability/code" data-route="traceability/code">Code coverage</a>
+<a href="#/traceability/verification" data-route="traceability/verification">Verification coverage</a>
+<a href="#/traceability/risk" data-route="traceability/risk">Risk coverage</a>
+<a href="#/traceability/gaps" data-route="traceability/gaps">Gap analysis</a>
+</div></div>
+<div class="group"><span id="nav-review">Review Center</span><div role="group" aria-labelledby="nav-review">
+<a href="#/review/suggestions" data-route="review/suggestions">AI suggestions</a>
+<a href="#/review/changes" data-route="review/changes">Tracked changes</a>
+<a href="#/review/queue" data-route="review/queue">Review queue</a>
+<a href="#/review/approval" data-route="review/approval">Approval workflow</a>
+</div></div>
+<div class="group"><span id="nav-settings">Settings</span><div role="group" aria-labelledby="nav-settings">
+<a href="#/settings/azure" data-route="settings/azure">Azure DevOps</a>
+<a href="#/settings/ai" data-route="settings/ai">AI configuration</a>
+</div></div>
+</nav>
+<main id="main" tabindex="-1" aria-live="polite"></main>
 </div>
-<label for="query-type">Requirements selector
-<select id="query-type">
-<option value="saved_query">Saved Query ID</option><option value="wiql">WIQL</option>
-<option value="area_path">Area Path</option><option value="work_item_ids">Work Item IDs</option>
-</select></label>
-<label for="query" id="query-label">Selection value</label>
-<textarea id="query" required maxlength="40000" aria-labelledby="query-label"></textarea>
-<div class="fields" id="tests" hidden>
-<label for="plans">Test Plan IDs<input id="plans" placeholder="Optional, comma-separated"></label>
-<label for="runs">Test Run IDs<input id="runs" placeholder="Optional, comma-separated"></label>
-</div>
-<div>
-<label for="pat">Personal Access Token</label>
-<div class="password">
-<input id="pat" type="password" maxlength="256" autocomplete="new-password" spellcheck="false" aria-describedby="scopes saved-pat">
-<button type="button" id="toggle-pat" aria-pressed="false">Show</button>
-</div>
-<small id="scopes"></small><small id="saved-pat"></small>
-<p id="expiry-warning" class="warning" role="status"></p>
-</div>
-<label for="expiry">PAT expiry <small>Optional. Enter the expiry shown in Azure DevOps when saving a new PAT.</small>
-<input id="expiry" type="datetime-local" disabled></label>
-<div class="actions">
-<button class="primary" type="submit">Save connection</button>
-<button id="test" type="button">Test Connection</button>
-<button id="fetch" type="button">Fetch Requirements</button>
-<button id="remove" class="remove" type="button">Remove PAT</button>
-</div>
-<p id="connection-status" class="status" role="status"></p>
-<button id="update" type="button" hidden>Update PAT</button>
-</form>
-</section>
-<section class="card" aria-labelledby="upload-heading">
-<h3 id="upload-heading">Document and evidence files</h3>
-<small id="file-types"></small>
-<div id="uploads"></div>
-<p id="upload-status" class="status" role="status"></p>
-</section>
-</div>
-<p class="step">Step 2</p><h2>Requirements Snapshot</h2>
-<section class="card" aria-labelledby="snapshot-heading">
-<h3 id="snapshot-heading">Evidence for this document</h3>
-<p id="snapshot-summary" class="muted"></p>
-<div id="results"></div>
-<div class="actions">
-<a id="explore" class="link-action" target="_blank" rel="noopener" hidden>Open evidence explorer</a>
-<button id="save-evidence" type="button">Save evidence for drafting</button>
-</div>
-<p id="evidence-status" class="status" role="status"></p>
-<details id="audit" hidden><summary>PAT activity</summary><ul id="audit-events"></ul></details>
-</section>
-</div>
-</main>
 <script>
 'use strict';
-const el = id => document.getElementById(id);
-let profile, fileTypes, project, doc = 'sad', state, busy = false;
-const types = {
-  saved_query: ['Saved Query ID', 'GUID of a saved query'],
-  wiql: ['WIQL', 'SELECT [System.Id] FROM WorkItems WHERE …'],
-  area_path: ['Area Path', 'Project\\Area'],
-  work_item_ids: ['Work Item IDs', '1201, 1202, 1215']
+(() => {
+const $ = id => document.getElementById(id);
+const ctx = {session: null, projects: [], pid: null, project: null};
+const DOCS = ['sad', 'sdd', 'sstr', 'drr', 'sfmea'];
+const SHORT = {sad: 'SAD', sdd: 'SDD', sstr: 'SSTR', drr: 'DRR', sfmea: 'sFMEA'};
+const NAV = {sad: 'Architecture', sdd: 'Detailed design', sstr: 'System test report', drr: 'Design review', sfmea: 'Software FMEA'};
+const STAGES = {
+  no_inputs: ['No inputs yet', ''], inputs_ready: ['Inputs ready', 'info'], draft: ['Draft ready', 'info'],
+  in_review: ['In review', 'warning'], ready: ['Ready for approval', 'success'], approved: ['Approved', 'success']
 };
-const fields = ['org', 'project-name', 'query-type', 'query', 'plans', 'runs', 'pat', 'expiry'];
-const date = value => new Date(value).toLocaleString();
-function notice(id, text = '', error = false) {
-  el(id).textContent = text;
-  el(id).dataset.error = error;
+const REASONS = {
+  section_integrity: 'Section boundaries were edited', ai_unavailable: 'Section AI could not draft',
+  stale: 'Section is stale against the evidence', human_input_required: 'Section needs human input',
+  unresolved_suggestion: 'AI suggestion awaiting a decision', rejected_text_present: 'Rejected text still present',
+  suggestion_label_present: 'Suggestion label still present', unreviewed_validator_rejection: 'Validator rejection not reviewed'
+};
+const SELECTORS = {
+  saved_query: ['Saved Query ID', 'GUID of a saved query'], wiql: ['WIQL', 'SELECT [System.Id] FROM WorkItems WHERE …'],
+  area_path: ['Area Path', 'Project\\Area'], work_item_ids: ['Work Item IDs', '1201, 1202, 1215']
+};
+const TYPE_NAMES = {
+  user_need: 'User need', system_req: 'System requirement', software_req: 'Software requirement',
+  component: 'Software item', software_unit: 'Software unit', code_change: 'Code change', test_case: 'Test case',
+  test_result: 'Test result', test_run: 'Test run', risk_control: 'Risk control', hazard: 'Hazard', defect: 'Defect',
+  review: 'Review', action_item: 'Action item', adr: 'Architecture decision', soup: 'SOUP', document_section: 'Document section'
+};
+let view = 0, busy = false;
+
+function h(tag, props, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props || {})) {
+    if (value === undefined || value === null || value === false) continue;
+    if (key === 'class') node.className = value;
+    else if (key === 'text') node.textContent = value;
+    else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+    else if (key in node && typeof value !== 'string') node[key] = value;
+    else node.setAttribute(key, value === true ? '' : value);
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child === undefined || child === null || child === false) continue;
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
 }
-function node(tag, text) {
-  const item = document.createElement(tag);
-  if (text !== undefined) item.textContent = text;
-  return item;
+const svg = path => {
+  const ns = 'http://www.w3.org/2000/svg', icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('width', '16'); icon.setAttribute('height', '16'); icon.setAttribute('viewBox', '0 0 20 20');
+  icon.setAttribute('aria-hidden', 'true');
+  const line = document.createElementNS(ns, 'path');
+  line.setAttribute('d', path); line.setAttribute('fill', 'none'); line.setAttribute('stroke', 'currentColor');
+  line.setAttribute('stroke-width', '1.5'); line.setAttribute('stroke-linejoin', 'round');
+  icon.append(line);
+  return icon;
+};
+// Evidence URLs become links only when they are web addresses.
+const web = url => /^https?:\/\//i.test(url || '') ? url : null;
+const when = value => value ? new Date(value).toLocaleString() : '—';
+const pct = value => (Math.round(value * 10) / 10).toLocaleString() + '%';
+const plural = (n, one, many = one + 's') => n.toLocaleString() + ' ' + (n === 1 ? one : many);
+const badge = (text, tone = '') => h('span', {class: 'badge ' + tone, text});
+const stageBadge = stage => badge(...(STAGES[stage] || [stage, '']));
+const notice = (text, tone = '', role = 'status') => h('p', {class: 'notice ' + tone, role: tone === 'error' ? 'alert' : role, text});
+function setNotice(node, text, tone = '') {
+  node.textContent = text; node.className = 'notice ' + tone;
+  node.setAttribute('role', tone === 'error' ? 'alert' : 'status');
 }
+const card = (title, hint, ...body) => h('section', {class: 'card'}, title && h('h2', {text: title}), hint && h('p', {class: 'hint', text: hint}), ...body);
+const pageHead = (title, text, ...actions) => h('div', {class: 'page-head'},
+  h('div', {}, h('p', {class: 'crumbs', text: ctx.project?.details.name || ctx.pid || ''}), h('h1', {text: title}), text && h('p', {text})),
+  actions.some(Boolean) ? h('div', {class: 'actions'}, actions) : null);
+const link = (href, text, cls = 'btn') => h('a', {class: cls, href, text});
+const external = (href, text, cls = 'btn') => h('a', {class: cls, href, text, target: '_blank', rel: 'noopener'});
+function empty(title, text, ...actions) {
+  return h('div', {class: 'card empty'}, h('h2', {text: title}), h('p', {text}), actions.length ? h('div', {class: 'actions'}, actions) : null);
+}
+
 async function api(path, options = {}) {
-  const response = await fetch(path, options);
-  const result = await response.json();
-  if (!response.ok) throw Object.assign(new Error(result.error), {action: result.action});
+  const response = await fetch(path, {credentials: 'same-origin', ...options});
+  const type = response.headers.get('Content-Type') || '';
+  const result = type.includes('json') ? await response.json() : {};
+  if (!response.ok) throw Object.assign(new Error(result.error || 'Request failed.'), {action: result.action, status: response.status});
   return result;
 }
-function json(method, value) {
-  return {method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(value)};
-}
-const base = () => '/api/projects/' + encodeURIComponent(project);
-const documentRoute = () => base() + '/documents/' + doc;
-const connectionRoute = (cid, action) => base() + '/azure-connections/' + cid + '/' + action;
-const selected = () => state.connections.find(item =>
-  item.document_type === (state.source === 'default' ? null : doc));
-function connectionError(error) {
-  notice('connection-status', error.message, true);
-  el('update').hidden = error.action !== 'Update PAT';
-}
-async function act(fn, errorHandler) {
+const send = (method, value) => ({method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(value ?? {})});
+const base = () => '/api/projects/' + encodeURIComponent(ctx.pid);
+const docRoute = doc => base() + '/documents/' + doc;
+
+async function act(button, fn, onError) {
   if (busy) return;
   busy = true;
-  el('app').inert = true;
-  el('app').setAttribute('aria-busy', 'true');
+  if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
   try { await fn(); }
-  catch (error) { errorHandler(error); }
+  catch (error) { onError ? onError(error) : alert(error.message); }
   finally {
     busy = false;
-    el('app').inert = false;
-    el('app').removeAttribute('aria-busy');
+    if (button?.isConnected) { button.disabled = false; button.removeAttribute('aria-busy'); }
   }
 }
-function selectMode() {
-  const mode = el('source').value;
-  return act(async () => {
-    await api(documentRoute() + '/source', json('POST', {mode}));
-    clearNotices();
-    await load();
-  }, error => {
-    el('source').value = state.source;
-    notice('source-status', error.message, true);
+
+function bars(rows) {
+  return h('div', {}, rows.map(row => {
+    const full = row.total && row.covered === row.total;
+    const value = row.assessable === false ? null : row.percent;
+    return h('div', {class: 'bar-row'},
+      h('span', {}, row.href ? h('a', {href: row.href, text: row.label}) : row.label),
+      h('div', {class: 'bar', role: 'progressbar', 'aria-label': row.label + ' coverage', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(value ?? 0)},
+        h('i', {class: full ? 'full' : '', style: 'width:' + (value ?? 0) + '%'})),
+      h('span', {class: 'num'}, value === null ? badge('Not assessable') : row.covered.toLocaleString() + ' / ' + row.total.toLocaleString() + ' · ' + pct(value)));
+  }));
+}
+function chips(ids, titles = {}, types = {}) {
+  if (!ids.length) return h('span', {class: 'muted', text: '—'});
+  return h('span', {class: 'chips'}, ids.map(id => h('span', {class: 'chip', title: [TYPE_NAMES[types[id]] || '', titles[id] || ''].filter(Boolean).join(': '), text: id})));
+}
+function table(head, rows, empty = 'Nothing to show.') {
+  if (!rows.length) return h('p', {class: 'muted', text: empty});
+  return h('div', {class: 'table-wrap'}, h('table', {},
+    h('thead', {}, h('tr', {}, head.map(name => h('th', {scope: 'col', text: name})))),
+    h('tbody', {}, rows)));
+}
+
+/* ---------- navigation ---------- */
+function routeParts() {
+  const [name = 'dashboard', sub = '', extra = ''] = location.hash.replace(/^#\/?/, '').split('/');
+  return [name || 'dashboard', sub, extra];
+}
+function highlight() {
+  const [name, sub] = routeParts();
+  const key = sub && name !== 'projects' ? name + '/' + sub : name;
+  for (const anchor of document.querySelectorAll('.sidebar a')) {
+    const route = anchor.dataset.route;
+    const current = route === key || (route === name && !sub) || (name === 'projects' && route === 'projects');
+    if (current) anchor.setAttribute('aria-current', 'page'); else anchor.removeAttribute('aria-current');
+  }
+}
+async function render(focus = true) {
+  const token = ++view;
+  const [name, sub, extra] = routeParts();
+  highlight();
+  $('sidebar').classList.remove('open'); $('menu').setAttribute('aria-expanded', 'false');
+  const main = $('main');
+  main.replaceChildren(h('div', {class: 'page'}, h('p', {class: 'muted'}, h('span', {class: 'spinner', 'aria-hidden': 'true'}), ' Loading…')));
+  const pages = {dashboard: dashboardPage, projects: projectsPage, documents: documentPage, traceability: tracePage, review: reviewPage, settings: settingsPage};
+  try {
+    if (!ctx.pid && name !== 'projects') { location.hash = '#/projects'; return; }
+    if (ctx.pid) ctx.project = await api(base());
+    const content = await (pages[name] || dashboardPage)(sub, extra);
+    if (token !== view) return;
+    main.replaceChildren(h('div', {class: 'page'}, content));
+  } catch (error) {
+    if (token !== view) return;
+    main.replaceChildren(h('div', {class: 'page'}, pageHead('Something went wrong', ''), notice(error.message, 'error'),
+      h('div', {class: 'actions', style: 'margin-top:12px'}, h('button', {class: 'btn', type: 'button', text: 'Try again', onclick: () => render()}))));
+  }
+  if (focus) main.focus({preventScroll: true});
+  main.scrollTop = 0;
+  document.title = (document.querySelector('main h1')?.textContent || 'Workspace') + ' · DHF Automation';
+}
+async function loadProject() {
+  ctx.project = ctx.pid ? await api(base()) : null;
+  const select = $('project-select');
+  const active = ctx.projects.filter(p => !p.archived || p.id === ctx.pid);
+  select.replaceChildren(...active.map(p => h('option', {value: p.id, text: (p.name || p.id) + (p.archived ? ' (archived)' : '')})));
+  select.value = ctx.pid || '';
+  select.disabled = !active.length;
+}
+async function loadProjects() {
+  ctx.projects = (await api('/api/projects')).projects;
+}
+async function choose(pid) {
+  ctx.pid = pid;
+  try { localStorage.setItem('dhf-project', pid); } catch {}
+  await loadProject();
+}
+
+/* ---------- dashboard ---------- */
+async function dashboardPage() {
+  const data = await api(base() + '/dashboard');
+  const details = ctx.project.details;
+  const requirements = data.requirements;
+  const total = requirements.user_need + requirements.system_req + requirements.software_req;
+  const subject = data.subject === 'system_req' ? 'system requirements' : 'software requirements';
+  const meta = [details.product, details.version && 'Version ' + details.version, details.release && 'Release ' + details.release].filter(Boolean).join(' · ');
+  const head = pageHead('Dashboard', meta || 'Project overview', total ? external(base() + '/evidence', 'Open trace graph') : null, link('#/documents/sad', 'Go to documents', 'btn primary'));
+  if (!total) {
+    return [head, needsDetails(), empty('Add your first inputs', 'Connect Azure DevOps or upload existing documents. Coverage, gaps and drafts appear here as soon as evidence exists.',
+      link('#/settings/azure', 'Connect Azure DevOps', 'btn primary'), link('#/documents/sad', 'Upload documents'))];
+  }
+  const gaps = data.gaps.reduce((sum, g) => sum + g.count, 0);
+  const kpis = h('div', {class: 'grid cols-4'},
+    kpi('Total requirements', total.toLocaleString(), [requirements.software_req && requirements.software_req + ' software', requirements.system_req && requirements.system_req + ' system', requirements.user_need && plural(requirements.user_need, 'user need')].filter(Boolean).join(' · ')),
+    kpi('Documentation completeness', data.documentation.sections ? pct(data.documentation.percent) : '—', data.documentation.sections ? data.documentation.complete_sections + ' of ' + plural(data.documentation.sections, 'section') + ' clear of review blockers' : 'No drafts yet'),
+    kpi('Traceability completeness', data.traceability.total ? pct(data.traceability.percent) : '—', data.traceability.complete + ' of ' + data.traceability.total + ' ' + subject + ' allocated and verified'),
+    kpi('Open gaps', gaps.toLocaleString(), gaps ? 'Across ' + plural(data.gaps.filter(g => g.count).length, 'category', 'categories') : 'No gaps found by the rules'));
+  const coverage = card('Requirement coverage', 'Share of ' + subject + ' traced to each level. Not assessable means the inputs cannot hold that link.',
+    bars(data.coverage.map(row => ({...row, label: row.label, href: '#/traceability/' + traceTab(row.id)}))));
+  const gapCard = card('Gap analysis', 'Rule findings grouped by what is missing.',
+    h('div', {class: 'list'}, data.gaps.map(g => h('div', {class: 'item', style: 'display:flex;justify-content:space-between;gap:12px;align-items:center'},
+      h('a', {href: '#/traceability/gaps', text: g.label}), badge(g.count.toLocaleString(), g.count ? 'warning' : 'success')))));
+  const docs = card('Documents', 'Review status of each DHF document in this project.',
+    table(['Document', 'Status', ''], data.documents.map(d => h('tr', {},
+      h('td', {}, h('a', {href: '#/documents/' + d.type, text: d.title + ' (' + SHORT[d.type] + ')'})),
+      h('td', {}, stageBadge(d.stage), d.future ? ' ' : null, d.future ? badge('Inputs only') : null),
+      h('td', {}, link('#/documents/' + d.type, d.stage === 'no_inputs' ? 'Add inputs' : 'Open', 'btn subtle'))))));
+  return [head, needsDetails(), kpis, h('div', {class: 'grid cols-2', style: 'margin-top:16px'}, coverage, gapCard), h('div', {style: 'margin-top:16px'}, docs)];
+}
+const traceTab = id => ({architecture: 'design', design: 'design', code: 'code', verification: 'verification', risk: 'risk'}[id] || 'requirements');
+function kpi(label, value, sub) {
+  return h('section', {class: 'card kpi'}, h('span', {class: 'label', text: label}), h('span', {class: 'value', text: value}), h('span', {class: 'sub', text: sub}));
+}
+function needsDetails() {
+  if (ctx.project?.details.release) return null;
+  return h('p', {class: 'notice warning', role: 'status', style: 'margin-bottom:16px'}, 'Add the project name and release before drafting. ',
+    h('a', {href: '#/projects/edit', text: 'Edit project details'}));
+}
+
+/* ---------- projects ---------- */
+const PROJECT_FIELDS = [
+  ['name', 'Project name', 'text', true], ['product', 'Product name', 'text'], ['version', 'Version', 'text'],
+  ['release', 'Release', 'text', true, 'Letters, digits, dots or dashes, for example 2.0. Selects the test results.'], ['repository_url', 'Repository URL', 'url', false, 'Optional HTTPS link, for reference.'],
+  ['ado_project', 'Azure DevOps project', 'text'], ['business_unit', 'Business unit', 'text'], ['description', 'Description', 'textarea']
+];
+async function projectsPage(sub) {
+  await loadProjects();
+  if (sub === 'new' || sub === 'edit') return projectForm(sub === 'edit' ? ctx.project?.details : null);
+  const active = ctx.projects.filter(p => !p.archived), archived = ctx.projects.filter(p => p.archived);
+  const cards = active.map(projectCard);
+  return [pageHead('Projects', 'Each project keeps its own Azure DevOps connections, inputs, drafts and approvals on this computer.', link('#/projects/new', 'Create project', 'btn primary')),
+    active.length ? h('div', {class: 'grid cols-3'}, cards) : empty('No active projects', 'Create a project to start collecting evidence.', link('#/projects/new', 'Create project', 'btn primary')),
+    archived.length ? h('details', {class: 'card', style: 'margin-top:16px'}, h('summary', {text: 'Archived projects (' + archived.length + ')'}), h('div', {class: 'grid cols-3'}, archived.map(projectCard))) : null];
+}
+function projectCard(p) {
+  const rows = [['Product', p.product], ['Version', p.version], ['Release', p.release], ['Azure DevOps', p.ado_project], ['Business unit', p.business_unit]].filter(([, v]) => v);
+  const current = p.id === ctx.pid;
+  return h('section', {class: 'card project-card'},
+    h('div', {class: 'item-head'}, h('h2', {text: p.name || p.id}), current ? badge('Current', 'info') : null, p.archived ? badge('Archived') : null),
+    p.description ? h('p', {class: 'muted', text: p.description}) : null,
+    rows.length ? h('dl', {}, rows.map(([k, v]) => [h('dt', {text: k}), h('dd', {text: v})])) : h('p', {class: 'muted', text: 'Details not recorded yet.'}),
+    h('p', {class: 'help', text: 'Updated ' + when(p.updated_at)}),
+    h('div', {class: 'actions'},
+      current ? link('#/dashboard', 'Open dashboard', 'btn primary') : h('button', {class: 'btn primary', type: 'button', text: 'Open', onclick: async event => act(event.currentTarget, async () => { await choose(p.id); location.hash = '#/dashboard'; })}),
+      current ? link('#/projects/edit', 'Edit details', 'btn') : null,
+      p.release ? h('button', {class: 'btn subtle', type: 'button', text: p.archived ? 'Restore' : 'Archive', onclick: event => act(event.currentTarget, async () => {
+        await api('/api/projects/' + encodeURIComponent(p.id) + '/archive', send('POST', {archived: !p.archived}));
+        await loadProjects();
+        await loadProject();
+        render(false);
+      })}) : null));
+}
+function projectForm(details) {
+  const status = h('p', {class: 'notice'});
+  const inputs = {};
+  const fields = PROJECT_FIELDS.map(([key, label, type, required, help]) => {
+    const input = type === 'textarea' ? h('textarea', {id: 'p-' + key, maxlength: '2000'}) : h('input', {id: 'p-' + key, type, required: !!required, maxlength: key === 'repository_url' ? '300' : '120'});
+    input.value = details?.[key] || '';
+    inputs[key] = input;
+    if (help) input.setAttribute('aria-describedby', 'p-' + key + '-help');
+    return h('div', {class: 'field' + (type === 'textarea' ? ' wide' : '')}, h('label', {for: 'p-' + key, text: label + (required ? ' *' : '')}), input, help ? h('small', {id: 'p-' + key + '-help', text: help}) : null);
   });
+  const submit = h('button', {class: 'btn primary', type: 'submit', text: details ? 'Save details' : 'Create project'});
+  const form = h('form', {class: 'card stack', novalidate: true, onsubmit: event => {
+    event.preventDefault();
+    const value = Object.fromEntries(Object.entries(inputs).map(([k, input]) => [k, input.value.trim()]));
+    if (!value.name || !value.release) return setNotice(status, 'Enter the project name and release.', 'error');
+    act(submit, async () => {
+      const saved = details ? await api(base() + '/details', send('POST', value)) : await api('/api/projects', send('POST', value));
+      await loadProjects();
+      await choose(saved.id);
+      location.hash = '#/dashboard';
+    }, error => setNotice(status, error.message, 'error'));
+  }}, h('div', {class: 'fields'}, fields), status, h('div', {class: 'actions'}, submit, link(details ? '#/dashboard' : '#/projects', 'Cancel')));
+  return [pageHead(details ? 'Edit project details' : 'Create project', details ? 'Name and release are required. Other fields are for reference.' : 'Name and release are required. The project starts empty: add Azure DevOps and document inputs next.'), form];
 }
-function queryHelp() {
-  const [label, placeholder] = types[el('query-type').value];
-  el('query-label').textContent = label;
-  el('query').placeholder = placeholder;
+
+/* ---------- documents ---------- */
+async function documentPage(doc) {
+  if (!DOCS.includes(doc)) doc = 'sad';
+  const [state, drafting] = await Promise.all([api(docRoute(doc) + '/inputs'), api(docRoute(doc) + '/draft')]);
+  const profile = ctx.session.profile.documents[doc];
+  const row = ctx.project.documents.find(d => d.type === doc);
+  const future = !!profile.future;
+  const head = pageHead(profile.title + ' (' + SHORT[doc] + ')', future
+    ? 'Collect inputs for this document now. Drafting it from the browser is not available yet.'
+    : 'Add inputs, generate a cited draft, then review it in the Review Center.',
+    state.snapshot || state.uploads.length ? external(docRoute(doc) + '/evidence', 'Open evidence') : null);
+  return [head, needsDetails(), stepper(row?.stage || 'no_inputs', future),
+    h('div', {class: 'grid cols-2', style: 'margin-top:16px'}, h('div', {}, sourceCard(doc, state)), h('div', {}, uploadCard(doc, state))),
+    evidenceCard(doc, state), future ? null : draftCard(doc, drafting)];
 }
-function clearNotices() {
-  for (const id of ['source-status', 'connection-status', 'upload-status', 'evidence-status']) notice(id);
-  el('update').hidden = true;
+function stepper(stage, future) {
+  const order = ['inputs', 'draft', 'review', 'ready', 'approved'];
+  const at = {no_inputs: 0, inputs_ready: 1, draft: 2, in_review: 2, ready: 3, approved: 5}[stage] ?? 0;
+  const names = ['Inputs', 'Draft', 'Review', 'Ready for approval', 'Approved'];
+  return h('ol', {class: 'stepper', 'aria-label': 'Document progress'}, order.slice(0, future ? 1 : 5).map((_, i) =>
+    h('li', {class: i < at ? 'done' : i === at ? 'now' : '', 'aria-current': i === at ? 'step' : null}, h('span', {class: 'dot', text: i < at ? '✓' : String(i + 1)}), names[i])));
 }
-function passwordMask() {
-  el('pat').type = 'password';
-  el('toggle-pat').textContent = 'Show';
-  el('toggle-pat').setAttribute('aria-pressed', 'false');
+function sourceCard(doc, state) {
+  const status = h('p', {class: 'notice'});
+  const select = h('select', {id: 'source-mode', onchange: () => act(null, async () => {
+    await api(docRoute(doc) + '/source', send('POST', {mode: select.value}));
+    render(false);
+  }, error => { select.value = state.source; setNotice(status, error.message, 'error'); })},
+    h('option', {value: 'default', text: 'Use the project Azure DevOps connection'}),
+    h('option', {value: 'override', text: 'Use a connection for this document only'}),
+    h('option', {value: 'none', text: 'Use uploaded files only'}));
+  select.value = state.source;
+  const connection = state.connections.find(c => c.document_type === (state.source === 'override' ? doc : null));
+  let body;
+  if (state.source === 'none') body = h('p', {class: 'muted', text: 'Azure DevOps is not read for this document. Upload the inputs on the right.'});
+  else if (state.source === 'override') body = connectionForm(doc, connection, () => render(false));
+  else body = connection ? connectionSummary(doc, connection) : h('p', {class: 'notice warning'}, 'No project connection saved yet. ', h('a', {href: '#/settings/azure', text: 'Set up Azure DevOps'}), '.');
+  return card('Requirements source', 'Requirements and, for SSTR, test runs are read from Azure DevOps (read-only).',
+    h('label', {class: 'field', for: 'source-mode'}, h('span', {text: 'Source'}), select), status, h('div', {style: 'margin-top:12px'}, body));
 }
-function paintConnection() {
-  const c = selected();
-  el('connection').hidden = state.source === 'none';
-  el('default-note').textContent = state.source === 'default'
-    ? 'Saved settings are shared by documents using the project default.' : '';
-  el('org').value = c?.org_url || '';
-  el('project-name').value = c?.project_name || '';
-  el('query-type').value = c?.query_type || 'saved_query';
-  el('query').value = c?.query_value || '';
-  el('plans').value = c?.test_plan_ids?.join(', ') || '';
-  el('runs').value = c?.test_run_ids?.join(', ') || '';
-  el('tests').hidden = doc !== 'sstr';
-  el('pat').value = '';
-  el('expiry').value = '';
-  el('expiry').disabled = true;
-  passwordMask();
-  el('scopes').textContent = 'Required PAT scopes: Work Items (Read)' +
-    (doc === 'sstr' ? ' and Test Management (Read).' : '.');
-  el('saved-pat').textContent = c?.pat_mask
-    ? c.pat_mask + ' · Saved ' + date(c.pat_saved_at) +
-      (c.pat_expiry ? ' · Expires ' + date(c.pat_expiry) : ' · Expiry unknown')
-    : 'Enter a PAT and save the connection before testing or fetching.';
+function connectionSummary(doc, c) {
+  const status = h('p', {class: 'notice'});
+  const fetch = h('button', {class: 'btn primary', type: 'button', text: 'Fetch requirements', disabled: !c.pat_mask});
+  fetch.addEventListener('click', () => act(fetch, async () => {
+    setNotice(status, 'Reading work items from Azure DevOps…');
+    const result = await api(base() + '/azure-connections/' + c.id + '/fetch', send('POST', {document_type: doc}));
+    setNotice(status, 'Snapshot created: ' + plural(result.requirements, 'requirement') + ' fetched.', 'success');
+    setTimeout(() => render(false), 600);
+  }, error => setNotice(status, error.message, 'error')));
+  return h('div', {class: 'stack'},
+    h('dl', {class: 'kv'}, h('dt', {text: 'Organization'}), h('dd', {text: c.org_url}), h('dt', {text: 'Project'}), h('dd', {text: c.project_name}),
+      h('dt', {text: SELECTORS[c.query_type][0]}), h('dd', {class: 'mono', text: c.query_value}),
+      h('dt', {text: 'PAT'}), h('dd', {text: c.pat_mask ? c.pat_mask + (c.pat_expiry ? ' · expires ' + when(c.pat_expiry) : '') : 'Not saved'})),
+    h('div', {class: 'actions'}, fetch, link('#/settings/azure', 'Edit connection', 'btn subtle')), status);
+}
+function connectionForm(doc, c, saved) {
+  const status = h('p', {class: 'notice'});
+  const field = (id, label, input, help) => {
+    if (help) input.setAttribute('aria-describedby', id + '-help');
+    return h('div', {class: 'field'}, h('label', {for: id, text: label}), input, help ? h('small', {id: id + '-help', text: help}) : null);
+  };
+  const org = h('input', {id: 'c-org', type: 'url', required: true, placeholder: 'https://dev.azure.com/your-org', value: c?.org_url || ''});
+  const project = h('input', {id: 'c-project', required: true, maxlength: '128', value: c?.project_name || ''});
+  const kind = h('select', {id: 'c-kind'}, Object.entries(SELECTORS).map(([v, [t]]) => h('option', {value: v, text: t})));
+  kind.value = c?.query_type || 'saved_query';
+  const query = h('textarea', {id: 'c-query', required: true, maxlength: '40000'});
+  query.value = c?.query_value || '';
+  const queryLabel = h('span', {});
+  const plans = h('input', {id: 'c-plans', placeholder: 'Optional, comma-separated', value: c?.test_plan_ids?.join(', ') || ''});
+  const runs = h('input', {id: 'c-runs', placeholder: 'Optional, comma-separated', value: c?.test_run_ids?.join(', ') || ''});
+  const pat = h('input', {id: 'c-pat', type: 'password', maxlength: '256', autocomplete: 'new-password', spellcheck: 'false'});
+  const toggle = h('button', {class: 'btn', type: 'button', text: 'Show', 'aria-pressed': 'false', 'aria-controls': 'c-pat'});
+  const expiry = h('input', {id: 'c-expiry', type: 'datetime-local', disabled: true});
+  const sstr = doc === 'sstr';
   const remaining = c?.pat_expiry ? Date.parse(c.pat_expiry) - Date.now() : Infinity;
-  el('expiry-warning').textContent = remaining <= 0 ? 'The saved PAT has expired. Update it to fetch again.'
-    : remaining <= 7 * 86400000 ? 'The saved PAT expires within seven days.' : '';
-  el('remove').disabled = !c?.pat_mask;
-  setDirty(false);
-  queryHelp();
+  const save = h('button', {class: 'btn primary', type: 'submit', text: 'Save connection'});
+  const test = h('button', {class: 'btn', type: 'button', text: 'Test connection'});
+  const fetch = doc ? h('button', {class: 'btn', type: 'button', text: 'Fetch requirements'}) : null;
+  const remove = h('button', {class: 'btn danger', type: 'button', text: 'Remove PAT', disabled: !c?.pat_mask});
+  const setDirty = dirty => { test.disabled = dirty || !c?.pat_mask; if (fetch) fetch.disabled = dirty || !c?.pat_mask; };
+  const help = () => { const [label, placeholder] = SELECTORS[kind.value]; queryLabel.textContent = label; query.placeholder = placeholder; };
+  help(); setDirty(false);
+  kind.addEventListener('change', help);
+  for (const input of [org, project, kind, query, plans, runs, pat, expiry]) input.addEventListener('input', () => setDirty(true));
+  pat.addEventListener('input', () => { expiry.disabled = !pat.value; });
+  toggle.addEventListener('click', () => {
+    const show = pat.type === 'password';
+    pat.type = show ? 'text' : 'password'; toggle.textContent = show ? 'Hide' : 'Show'; toggle.setAttribute('aria-pressed', String(show));
+  });
+  const ids = input => {
+    const value = input.value.trim();
+    if (!value) return [];
+    const parts = value.split(',').map(p => p.trim());
+    if (!parts.every(p => /^\d{1,10}$/.test(p))) throw new Error('Enter comma-separated Test Plan or Test Run IDs.');
+    return parts.map(Number);
+  };
+  const fail = error => {
+    setNotice(status, error.message, 'error');
+    if (error.action === 'Update PAT') pat.focus();
+  };
+  const form = h('form', {class: 'stack', autocomplete: 'off', novalidate: true, onsubmit: event => {
+    event.preventDefault();
+    act(save, async () => {
+      const input = {document_type: doc || null, org_url: org.value, project_name: project.value,
+        query_type: kind.value, query_value: query.value, test_plan_ids: ids(plans), test_run_ids: ids(runs)};
+      if (pat.value) input.pat = pat.value.trim();
+      if (input.pat && expiry.value) input.pat_expiry = new Date(expiry.value).toISOString();
+      await api(base() + '/azure-connections', send('POST', input));
+      setNotice(status, 'Connection saved.', 'success');
+      setTimeout(saved, 500);
+    }, fail);
+  }},
+    h('div', {class: 'fields'}, field('c-org', 'Organization URL', org), field('c-project', 'Project name', project)),
+    field('c-kind', 'Requirements selector', kind),
+    h('div', {class: 'field'}, h('label', {for: 'c-query'}, queryLabel), query),
+    sstr || !doc ? h('div', {class: 'fields'}, field('c-plans', 'Test plan IDs', plans), field('c-runs', 'Test run IDs', runs)) : null,
+    h('div', {class: 'field'}, h('label', {for: 'c-pat', style: 'font-weight:600', text: 'Personal access token'}),
+      h('div', {class: 'password'}, pat, toggle),
+      h('small', {text: 'Required scopes: Work Items (Read)' + (sstr || !doc ? ', plus Test Management (Read) for SSTR.' : '.')}),
+      h('small', {text: c?.pat_mask ? c.pat_mask + ' · saved ' + when(c.pat_saved_at) + (c.pat_expiry ? ' · expires ' + when(c.pat_expiry) : ' · expiry unknown') : 'Enter a PAT and save before testing or fetching.'})),
+    remaining <= 0 ? notice('The saved PAT has expired. Enter a new one to fetch again.', 'warning') : remaining <= 7 * 86400000 ? notice('The saved PAT expires within seven days.', 'warning') : null,
+    field('c-expiry', 'PAT expiry', expiry, 'Optional. Enter the expiry shown in Azure DevOps when saving a new PAT.'),
+    h('div', {class: 'actions'}, save, test, fetch, remove), status);
+  test.addEventListener('click', () => act(test, async () => {
+    setNotice(status, 'Checking access…');
+    const result = await api(base() + '/azure-connections/' + c.id + '/test', send('POST', doc ? {document_type: doc} : {}));
+    setNotice(status, 'Connection works. Verified access: ' + result.verified_access.join(', ') + '.', 'success');
+  }, fail));
+  fetch?.addEventListener('click', () => act(fetch, async () => {
+    setNotice(status, 'Reading work items from Azure DevOps…');
+    const result = await api(base() + '/azure-connections/' + c.id + '/fetch', send('POST', {document_type: doc}));
+    setNotice(status, 'Snapshot created: ' + plural(result.requirements, 'requirement') + ' fetched.', 'success');
+    setTimeout(saved, 600);
+  }, fail));
+  remove.addEventListener('click', () => act(remove, async () => {
+    await api(base() + '/azure-connections/' + c.id + '/pat', {method: 'DELETE'});
+    setNotice(status, 'Saved PAT removed.', 'success');
+    setTimeout(saved, 500);
+  }, fail));
+  return form;
 }
-function setDirty(dirty) {
-  el('test').disabled = el('fetch').disabled = dirty || !selected()?.pat_mask;
-}
-function drawUploads() {
-  const list = el('uploads');
-  list.replaceChildren();
-  for (const role of profile.documents[doc].inputs) {
-    const card = node('div'); card.className = 'upload';
-    const top = node('div'); top.className = 'upload-heading';
+function uploadCard(doc, state) {
+  const status = h('p', {class: 'notice'});
+  const profile = ctx.session.profile;
+  const roles = profile.documents[doc].inputs.map(role => {
     const label = profile.inputs[role].label;
-    const title = node('strong', label);
-    const file = node('input');
-    file.type = 'file'; file.multiple = true; file.accept = fileTypes.join(',');
-    file.setAttribute('aria-label', 'Add files for ' + label);
-    file.addEventListener('change', () => upload(role, Array.from(file.files)));
-    const action = node('label', 'Add files'); action.className = 'file-action';
-    action.append(file); top.append(title, action); card.append(top);
-    if (role === 'requirements') card.append(node('small', state.snapshot?.requirements
-      ? 'Optional. Azure requirements are available.'
-      : 'Supply an SRD or PRD if Azure requirements are unavailable.'));
-    for (const entry of state.uploads.filter(item => item.role === role)) {
-      const row = node('div'); row.className = 'file-row';
-      const remove = node('button', 'Remove'); remove.type = 'button'; remove.className = 'remove';
-      remove.setAttribute('aria-label', 'Remove ' + entry.filename);
-      remove.addEventListener('click', () => act(async () => {
-        await api(documentRoute() + '/uploads/' + entry.id, {method: 'DELETE'});
-        await load(false);
-        notice('upload-status', 'File removed.');
-      }, error => notice('upload-status', error.message, true)));
-      row.append(node('span', entry.filename + (entry.redactions ? ' · Secrets redacted' : '')), remove);
-      card.append(row);
-    }
-    list.append(card);
-  }
+    const input = h('input', {type: 'file', multiple: true, accept: ctx.session.file_types.join(','), 'aria-label': 'Add files for ' + label});
+    const pick = h('label', {class: 'btn file-pick'}, 'Add files', input);
+    input.addEventListener('change', () => upload(doc, role, Array.from(input.files), status, pick));
+    const files = state.uploads.filter(u => u.role === role);
+    return h('div', {class: 'upload'},
+      h('div', {class: 'upload-head'}, h('strong', {text: label}), pick),
+      role === 'requirements' ? h('small', {class: 'help', text: state.snapshot?.requirements ? 'Optional: Azure requirements are available.' : 'Add an SRD or PRD if Azure requirements are not used.'}) : null,
+      files.map(file => h('div', {class: 'file-row'}, h('span', {}, file.filename, file.redactions ? ' ' : null, file.redactions ? badge('Secrets redacted', 'warning') : null),
+        h('button', {class: 'btn subtle', type: 'button', text: 'Remove', 'aria-label': 'Remove ' + file.filename, onclick: event => act(event.currentTarget, async () => {
+          await api(docRoute(doc) + '/uploads/' + file.id, {method: 'DELETE'});
+          render(false);
+        }, error => setNotice(status, error.message, 'error'))}))));
+  });
+  return card('Document and evidence files', 'Word .docx and the listed text, code and CSV formats, up to 12 MB each. Likely secrets are redacted before extraction.',
+    h('div', {}, roles), status);
 }
-function drawSnapshot() {
-  const snapshot = state.snapshot;
-  const files = state.uploads.length;
-  const results = el('results');
-  results.replaceChildren();
-  el('snapshot-summary').textContent =
-    (snapshot ? snapshot.requirements + ' Azure requirements · ' + snapshot.items.length +
-      ' artifacts · Fetched ' + date(snapshot.created_at) : 'No Azure requirements fetched for this selection.') +
-    (files ? ' · ' + files + (files === 1 ? ' input file' : ' input files') : '');
-  if (snapshot?.items.length) {
-    const wrap = node('div'); wrap.className = 'table-wrap';
-    const table = node('table'); const head = node('thead'); const heading = node('tr');
-    for (const name of ['ID', 'Type', 'Title']) {
-      const cell = node('th', name); cell.scope = 'col'; heading.append(cell);
-    }
-    head.append(heading); table.append(head);
-    const body = node('tbody');
-    for (const item of snapshot.items) {
-      const row = node('tr');
-      row.append(node('td', item.id), node('td', item.type.replaceAll('_', ' ')), node('td', item.title));
-      body.append(row);
-    }
-    table.append(body); wrap.append(table); results.append(wrap);
-  }
-  el('explore').href = documentRoute() + '/evidence';
-  el('explore').hidden = !snapshot && !files;
-  el('save-evidence').disabled = (!snapshot && !files) || !!profile.documents[doc].future;
-  el('audit').hidden = !state.audit.length;
-  el('audit-events').replaceChildren(...state.audit.map(entry =>
-    node('li', entry.action.replaceAll('_', ' ') + ' · ' + entry.actor + ' · ' + date(entry.at))));
-}
-async function load(connection = true) {
-  state = await api(documentRoute() + '/inputs');
-  const details = profile.documents[doc];
-  el('title').textContent = details.title + (details.future ? ' (future)' : '');
-  for (const button of el('documents').children)
-    button.setAttribute('aria-pressed', String(button.dataset.doc === doc));
-  el('source').value = state.source;
-  if (connection) paintConnection();
-  drawUploads();
-  drawSnapshot();
-}
-function planIds(id) {
-  const value = el(id).value.trim();
-  if (!value) return [];
-  const parts = value.split(',').map(item => item.trim());
-  if (!parts.every(item => /^\d{1,10}$/.test(item)))
-    throw new Error('Enter comma-separated Test Plan or Test Run IDs.');
-  return parts.map(Number);
-}
-function saveConnection(event) {
-  event.preventDefault();
-  return act(async () => {
-    const input = {
-      document_type: state.source === 'override' ? doc : null,
-      org_url: el('org').value,
-      project_name: el('project-name').value,
-      query_type: el('query-type').value,
-      query_value: el('query').value,
-      test_plan_ids: planIds('plans'), test_run_ids: planIds('runs')
-    };
-    if (el('pat').value) input.pat = el('pat').value.trim();
-    if (input.pat && el('expiry').value) input.pat_expiry = new Date(el('expiry').value).toISOString();
-    await api(base() + '/azure-connections', json('POST', input));
-    await load();
-    notice('connection-status', 'Connection saved.');
-    el('update').hidden = true;
-  }, connectionError);
-}
-function azure(action) {
-  return act(async () => {
-    notice('connection-status', action === 'fetch' ? 'Reading work items…' : 'Checking access…');
-    el('update').hidden = true;
-    const result = await api(connectionRoute(selected().id, action), json('POST', {document_type: doc}));
-    if (action === 'fetch') {
-      await load(false);
-      notice('connection-status', 'Snapshot created. ' + result.requirements + ' requirements fetched.');
-    } else notice('connection-status', 'Connection successful. Verified access: ' +
-      result.verified_access.join(', ') +
-      (result.pat_expiry ? '. Saved expiry ' + date(result.pat_expiry) + '.' : '. PAT expiry unavailable.'));
-  }, connectionError);
-}
-function upload(role, files) {
-  return act(async () => {
+async function upload(doc, role, files, status, pick) {
+  if (!files.length) return;
+  await act(pick, async () => {
     const warnings = [], failed = [];
     for (const file of files) {
-      notice('upload-status', 'Reading ' + file.name + '…');
+      setNotice(status, 'Reading ' + file.name + '…');
       try {
-        const saved = await api(documentRoute() + '/uploads/' + role, {
-          method: 'POST', headers: {'Content-Type': 'application/octet-stream',
-            'X-Input-Filename': encodeURIComponent(file.name)}, body: file
-        });
+        const saved = await api(docRoute(doc) + '/uploads/' + role, {method: 'POST', headers: {'Content-Type': 'application/octet-stream', 'X-Input-Filename': encodeURIComponent(file.name)}, body: file});
         if (saved.redactions) warnings.push(saved.filename);
       } catch (error) { failed.push(error.message); }
     }
-    await load(false);
-    const messages = [files.length - failed.length + ' file(s) added.'];
+    const messages = [plural(files.length - failed.length, 'file') + ' added.'];
     if (warnings.length) messages.push('Potential secrets were redacted in ' + warnings.join(', ') + '.');
     if (failed.length) messages.push([...new Set(failed)].join(' '));
-    notice('upload-status', messages.join(' '), !!(warnings.length || failed.length));
-  }, error => notice('upload-status', error.message, true));
+    carry(messages.join(' '), warnings.length || failed.length ? 'warning' : 'success');
+    render(false);
+  }, error => setNotice(status, error.message, 'error'));
 }
+let carried = null;
+const carry = (text, tone) => { carried = {text, tone}; };
+function evidenceCard(doc, state) {
+  const s = state.snapshot, files = state.uploads.length;
+  const flash = carried ? notice(carried.text, carried.tone) : null;
+  carried = null;
+  const counts = s ? Object.entries(s.artifact_counts).sort().map(([type, n]) => h('span', {class: 'badge'}, (TYPE_NAMES[type] || type.replaceAll('_', ' ')) + ' · ' + n)) : [];
+  return h('section', {class: 'card', style: 'margin-top:16px'}, h('h2', {text: 'Evidence'}),
+    h('p', {class: 'hint', text: (s ? plural(s.requirements, 'Azure requirement') + ' · ' + plural(s.items.length, 'artifact') + ' · fetched ' + when(s.created_at) : 'No Azure snapshot for this document.') + (files ? ' · ' + plural(files, 'input file') : '')}),
+    flash, counts.length ? h('div', {class: 'chips', style: 'margin-top:8px'}, counts) : null,
+    s?.items.length ? h('details', {style: 'margin-top:12px'}, h('summary', {text: 'Fetched work items (' + s.items.length + ')'}),
+      table(['ID', 'Type', 'Title'], s.items.slice(0, 500).map(item => h('tr', {}, h('td', {class: 'mono', text: item.id}), h('td', {text: TYPE_NAMES[item.type] || item.type}), h('td', {text: item.title}))))) : null);
+}
+function draftCard(doc, drafting) {
+  const status = h('p', {class: 'notice'});
+  const {job, draft} = drafting;
+  const running = job.state === 'running';
+  const button = h('button', {class: 'btn primary', type: 'button', text: draft ? 'Update draft' : 'Generate draft', disabled: running});
+  button.addEventListener('click', () => act(button, async () => {
+    await api(docRoute(doc) + '/draft', send('POST', {}));
+    render(false);
+  }, error => setNotice(status, error.message, 'error')));
+  const section = h('section', {class: 'card', style: 'margin-top:16px'});
+  const parts = [h('h2', {text: 'Draft'}),
+    h('p', {class: 'hint', text: draft ? 'Update redrafts only the sections the latest evidence made stale, and keeps review decisions everywhere else.' : 'Drafting saves this evidence, computes every count and link in code, and asks the AI only for cited prose.'})];
+  if (running) {
+    parts.push(h('p', {class: 'notice', role: 'status'}, h('span', {class: 'spinner', 'aria-hidden': 'true'}), ' Drafting with ' + job.provider + ' since ' + when(job.started_at) + '…'));
+    // Poll only this card, so typing elsewhere on the page survives; repaint all when done.
+    setTimeout(async () => {
+      if (!section.isConnected) return;
+      const next = await api(docRoute(doc) + '/draft').catch(() => drafting);
+      if (!section.isConnected) return;
+      if (next.job.state === 'running') section.replaceWith(draftCard(doc, next)); else render(false);
+    }, 1500);
+  } else if (job.state === 'failed') parts.push(notice(job.error + (job.action === 'Edit project' ? ' Open Projects → Edit details.' : ''), 'error'));
+  else if (job.state === 'done') parts.push(notice(job.result.updated ? (job.result.stale.length ? 'Updated ' + plural(job.result.stale.length, 'stale section') + '. Word shows the changes as tracked changes.' : 'Draft v' + job.result.version + ' generated.') : 'The draft already matches the latest evidence.', 'success'));
+  if (draft) {
+    const blockers = draft.readiness.blockers.length;
+    parts.push(h('dl', {class: 'kv', style: 'margin:12px 0'},
+      h('dt', {text: 'Version'}), h('dd', {text: 'v' + draft.version + ' · generated ' + when(draft.generated_at)}),
+      h('dt', {text: 'AI provider'}), h('dd', {text: draft.model.provider + ' · ' + draft.model.name}),
+      h('dt', {text: 'Sections'}), h('dd', {text: plural(draft.sections.length, 'section')}),
+      h('dt', {text: 'Validation'}), h('dd', {text: Object.entries(draft.validation).map(([k, v]) => v.length + ' ' + k).join(' · ')}),
+      h('dt', {text: 'Review'}), h('dd', {}, draft.readiness.ready ? badge('Ready for approval', 'success') : badge(plural(blockers, 'blocker'), 'warning')),
+      draft.redline ? [h('dt', {text: 'Tracked changes'}), h('dd', {text: draft.docx.insertions + ' insertions · ' + draft.docx.deletions + ' deletions'})] : null));
+  }
+  parts.push(h('div', {class: 'actions'}, button,
+    draft ? h('a', {class: 'btn', href: docRoute(doc) + '/files/' + doc + '.docx', download: '', text: 'Download Word'}) : null,
+    draft ? h('a', {class: 'btn', href: docRoute(doc) + '/files/' + doc + '.md', download: '', text: 'Download Markdown'}) : null,
+    draft ? link('#/review/queue', 'Review', 'btn subtle') : null), status);
+  section.append(...parts.flat().filter(Boolean));
+  return section;
+}
+
+/* ---------- traceability ---------- */
+const TRACE_TABS = {requirements: 'Requirements coverage', design: 'Design coverage', code: 'Code coverage', verification: 'Verification coverage', risk: 'Risk coverage', gaps: 'Gap analysis'};
+async function tracePage(tab) {
+  if (!TRACE_TABS[tab]) tab = 'requirements';
+  const data = await api(base() + '/traceability');
+  const {trace, groups} = data;
+  const head = pageHead('Traceability', 'Computed from the evidence: requirement → architecture → design → code → tests → results → risk controls.',
+    external(base() + '/evidence', 'Open trace graph'));
+  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Traceability views'}, Object.entries(TRACE_TABS).map(([key, label]) =>
+    h('a', {href: '#/traceability/' + key, text: label, 'aria-current': key === tab ? 'page' : null})));
+  if (tab === 'gaps') return [head, tabs, gapView(groups)];
+  if (!trace.rows.length) return [head, tabs, empty('No requirements yet', 'Fetch requirements from Azure DevOps or upload an SRD, PRD or software specification.', link('#/documents/sad', 'Add inputs', 'btn primary'))];
+  const levels = {requirements: null, design: ['architecture', 'design'], code: ['code'], verification: ['verification'], risk: ['risk']}[tab];
+  const coverage = trace.coverage.filter(c => !levels || levels.includes(c.id));
+  const blind = coverage.filter(c => !c.assessable);
+  const summary = card(TRACE_TABS[tab], 'Of ' + plural(trace.rows.length, trace.subject === 'system_req' ? 'system requirement' : 'software requirement') + (tab === 'verification' ? ' · ' + trace.passed + ' with every latest result passing' : '') + '.',
+    bars(coverage), blind.length ? notice(blind.map(c => c.label).join(', ') + ': these inputs cannot record the link, so a missing link here is not a gap. Connect the source that holds it.', 'warning') : null);
+  return [head, tabs, summary, h('div', {style: 'margin-top:16px'}, rtmTable(trace, levels))];
+}
+function rtmTable(trace, levels) {
+  const columns = levels || ['architecture', 'design', 'code', 'verification', 'risk'];
+  const labels = {architecture: 'Architecture', design: 'Design units', code: 'Code changes', verification: 'Tests', risk: 'Risk controls'};
+  const search = h('input', {type: 'search', placeholder: 'Filter by ID or title', 'aria-label': 'Filter requirements'});
+  const missing = h('input', {type: 'checkbox', id: 'only-missing'});
+  const count = h('span', {class: 'muted'});
+  const body = h('tbody', {});
+  const draw = () => {
+    const term = search.value.trim().toLowerCase();
+    const rows = trace.rows.filter(r => (!term || (r.id + ' ' + r.title).toLowerCase().includes(term)) && (!missing.checked || columns.some(c => !r[c].length)));
+    count.textContent = rows.length + ' of ' + trace.rows.length + ' shown';
+    body.replaceChildren(...rows.slice(0, 400).map(r => h('tr', {},
+      h('td', {}, (web(r.url) ? h('a', {class: 'chip', href: r.url, target: '_blank', rel: 'noopener', title: 'Revision ' + r.revision, text: r.id}) : h('span', {class: 'chip', title: 'Revision ' + r.revision, text: r.id})), h('div', {text: r.title})),
+      columns.map(c => h('td', {class: r[c].length ? '' : 'missing'}, c === 'verification' && r.results.length
+        ? h('div', {class: 'chips'}, r.verification.map(t => { const res = r.results.find(x => x.test === t); return h('span', {class: 'chip', title: trace.titles[t] || ''}, t, res ? ' · ' + res.outcome : ''); }))
+        : chips(r[c], trace.titles, trace.types), c === 'risk' && r.hazards.length ? h('div', {class: 'help'}, 'Hazards: ', r.hazards.join(', ')) : null)))));
+  };
+  search.addEventListener('input', draw); missing.addEventListener('change', draw);
+  draw();
+  return h('section', {class: 'card'}, h('h2', {text: 'Requirement traceability matrix'}),
+    h('div', {class: 'toolbar'}, search, h('label', {class: 'check', for: 'only-missing'}, missing, 'Only requirements with gaps'), count),
+    h('div', {class: 'table-wrap', style: 'max-height:70vh'}, h('table', {}, h('thead', {}, h('tr', {}, h('th', {scope: 'col', text: 'Requirement'}), columns.map(c => h('th', {scope: 'col', text: labels[c]})))), body)));
+}
+function gapView(groups) {
+  const total = groups.reduce((n, g) => n + g.findings.length, 0);
+  return [h('p', {class: 'muted', style: 'margin-bottom:12px', text: plural(total, 'finding') + ' from the deterministic rules. Each finding names its rule and the action that closes it.'}),
+    groups.map(g => h('section', {class: 'card'},
+      h('div', {class: 'item-head'}, h('h2', {text: g.label}), badge(g.findings.length.toLocaleString(), g.findings.length ? 'warning' : 'success')),
+      h('p', {class: 'hint', text: g.description}),
+      g.not_assessable.length ? notice('Not assessable from these inputs: ' + g.not_assessable.map(r => r.rule + ' ' + r.title).join('; ') + '.', 'warning') : null,
+      g.findings.length ? h('details', {open: g.findings.length <= 10}, h('summary', {text: 'Show ' + plural(g.findings.length, 'finding')}),
+        table(['Rule', 'Artifact', 'Finding', 'Action'], g.findings.slice(0, 500).map(f => h('tr', {},
+          h('td', {class: 'mono', text: f.rule}),
+          h('td', {}, web(f.source_url) ? h('a', {class: 'chip', href: f.source_url, target: '_blank', rel: 'noopener', text: f.artifact_id}) : h('span', {class: 'chip', text: f.artifact_id || '—'})),
+          h('td', {text: f.message}), h('td', {class: 'muted', text: f.action || ''}))))) : null))];
+}
+
+/* ---------- review center ---------- */
+const REVIEW_TABS = {suggestions: 'AI suggestions', changes: 'Tracked changes', queue: 'Review queue', approval: 'Approval workflow'};
+async function reviewPage(tab) {
+  if (!REVIEW_TABS[tab]) tab = 'suggestions';
+  const data = await api(base() + '/review');
+  const head = pageHead('Review Center', 'AI never overwrites a document: reviewers accept or reject each suggestion, complete human sections, then record approval.');
+  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Review views'}, Object.entries(REVIEW_TABS).map(([key, label]) =>
+    h('a', {href: '#/review/' + key, text: label, 'aria-current': key === tab ? 'page' : null})));
+  if (!data.queue.length) return [head, tabs, empty('No drafts to review', 'Generate a draft from a document page; its suggestions and review tasks appear here.', link('#/documents/sad', 'Go to documents', 'btn primary'))];
+  const content = {suggestions: suggestionsView, changes: changesView, queue: queueView, approval: approvalView}[tab](data);
+  return [head, tabs, content];
+}
+function reviewAction(doc, payload, status) {
+  return api(docRoute(doc) + '/review', send('POST', payload)).then(() => render(false)).catch(error => setNotice(status, error.message, 'error'));
+}
+function suggestionsView(data) {
+  const filter = h('select', {'aria-label': 'Show suggestions'}, ['open', 'accepted', 'rejected', 'all'].map(v => h('option', {value: v, text: {open: 'Open', accepted: 'Accepted', rejected: 'Rejected', all: 'All'}[v]})));
+  const docFilter = h('select', {'aria-label': 'Document'}, h('option', {value: '', text: 'All documents'}), [...new Set(data.suggestions.map(s => s.document))].map(d => h('option', {value: d, text: SHORT[d]})));
+  const list = h('div', {class: 'list'});
+  const draw = () => {
+    const shown = data.suggestions.filter(s => (filter.value === 'all' || s.status === filter.value) && (!docFilter.value || s.document === docFilter.value));
+    list.replaceChildren(...(shown.length ? shown.map(suggestion) : [h('p', {class: 'muted', style: 'padding:12px 0', text: 'No suggestions match.'})]));
+  };
+  filter.addEventListener('change', draw); docFilter.addEventListener('change', draw);
+  draw();
+  const open = data.suggestions.filter(s => s.status === 'open').length;
+  return card(plural(open, 'open suggestion'), 'Each suggestion names its source evidence and confidence. Accept keeps the text; reject removes it. Both record you as the reviewer with your rationale.',
+    h('div', {class: 'toolbar'}, filter, docFilter), list);
+}
+function suggestion(s) {
+  const status = h('p', {class: 'notice'});
+  const rationale = h('textarea', {'aria-label': 'Rationale', placeholder: 'Rationale (required)', rows: 2, style: 'min-height:56px'});
+  const decide = decision => event => {
+    if (!rationale.value.trim()) return setNotice(status, 'Enter a rationale for the decision.', 'error');
+    act(event.currentTarget, () => reviewAction(s.document, {kind: 'suggestion', key: s.key, decision, rationale: rationale.value}, status));
+  };
+  const tone = {open: 'warning', accepted: 'success', rejected: 'danger'}[s.status];
+  return h('article', {class: 'item'},
+    h('div', {class: 'item-head'}, badge(SHORT[s.document], 'info'), h('strong', {text: s.sections.join(' · ')}), badge(s.status[0].toUpperCase() + s.status.slice(1), tone),
+      s.confidence !== null && s.confidence !== undefined ? h('span', {class: 'muted', text: 'Confidence ' + Math.round(s.confidence * 100) + '%'}) : null),
+    h('p', {text: s.text}),
+    h('div', {class: 'meta'}, h('span', {}, 'Sources: ', s.citations.length ? h('span', {class: 'chips', style: 'display:inline-flex'}, s.citations.map(c => web(c.url)
+      ? h('a', {class: 'chip', href: c.url, target: '_blank', rel: 'noopener', title: (TYPE_NAMES[c.type] || c.type || '') + (c.title ? ': ' + c.title : '') + (c.revision ? ' · revision ' + c.revision : ''), text: c.id})
+      : h('span', {class: 'chip', text: c.id}))) : 'none recorded'),
+      s.status !== 'open' ? h('span', {text: s.status + ' by ' + s.reviewer + ': ' + s.rationale}) : null),
+    s.status === 'open' ? h('div', {class: 'stack', style: 'margin-top:10px'}, rationale, h('div', {class: 'actions'},
+      h('button', {class: 'btn primary', type: 'button', text: 'Accept', onclick: decide('accepted')}),
+      h('button', {class: 'btn danger', type: 'button', text: 'Reject', onclick: decide('rejected')})), status) : null);
+}
+function queueView(data) {
+  return data.queue.map(q => {
+    const sections = data.sections.filter(s => s.document === q.document);
+    const rejections = data.rejections.filter(r => r.document === q.document && r.status === 'open');
+    const open = data.suggestions.filter(s => s.document === q.document && s.status === 'open').length;
+    const reasons = Object.entries(q.blockers);
+    return h('section', {class: 'card'},
+      h('div', {class: 'item-head'}, h('h2', {text: q.document_title + ' (' + SHORT[q.document] + ')'}), stageBadge(q.stage), badge('v' + q.version)),
+      reasons.length ? h('ul', {style: 'margin:8px 0;padding-left:20px'}, reasons.map(([reason, n]) => h('li', {}, REASONS[reason] || reason, ' · ', String(n)))) : notice('No review blockers. Record approval in the Approval workflow tab.', 'success'),
+      open ? h('p', {}, link('#/review/suggestions', 'Resolve ' + plural(open, 'open suggestion'), 'btn subtle')) : null,
+      sections.map(s => sectionEditor(q.document, s)),
+      rejections.map(r => rejectionItem(q.document, r)),
+      h('div', {class: 'actions', style: 'margin-top:12px'}, h('a', {class: 'btn', href: docRoute(q.document) + '/files/' + q.document + '.docx', download: '', text: 'Download Word'}), link('#/documents/' + q.document, 'Open document', 'btn subtle')));
+  });
+}
+function sectionEditor(doc, s) {
+  const status = h('p', {class: 'notice'});
+  const text = h('textarea', {'aria-label': 'Content for ' + s.title, rows: 5, placeholder: s.manual ? 'AI could not draft this section. Write it here.' : 'Write the content this section needs.'});
+  const rationale = s.manual ? h('input', {'aria-label': 'Rationale', placeholder: 'Why this text is correct (required)'}) : null;
+  const save = h('button', {class: 'btn primary', type: 'button', text: 'Save section'});
+  save.addEventListener('click', () => {
+    if (!text.value.trim() || (rationale && !rationale.value.trim())) return setNotice(status, 'Write the section' + (rationale ? ' and a rationale' : '') + '.', 'error');
+    act(save, () => reviewAction(doc, {kind: 'section', section: s.section, text: text.value, rationale: rationale?.value || ''}, status));
+  });
+  return h('div', {class: 'item stack', style: 'border-top:1px solid var(--border)'},
+    h('div', {class: 'item-head'}, h('strong', {text: s.title}), badge(s.manual ? 'AI could not draft' : 'Human input required', 'warning')), text, rationale, h('div', {class: 'actions'}, save), status);
+}
+function rejectionItem(doc, r) {
+  const status = h('p', {class: 'notice'});
+  const rationale = h('input', {'aria-label': 'Rationale', placeholder: 'Rationale (required)'});
+  const mark = h('button', {class: 'btn', type: 'button', text: 'Mark reviewed'});
+  mark.addEventListener('click', () => {
+    if (!rationale.value.trim()) return setNotice(status, 'Enter a rationale.', 'error');
+    act(mark, () => reviewAction(doc, {kind: 'validation', key: r.key, rationale: rationale.value}, status));
+  });
+  return h('div', {class: 'item stack', style: 'border-top:1px solid var(--border)'},
+    h('div', {class: 'item-head'}, h('strong', {text: 'Validator rejected a claim in ' + r.section}), badge(r.reason.replaceAll('_', ' '), 'danger')),
+    r.detail ? h('p', {class: 'muted', text: 'Failed on: ' + r.detail}) : null, rationale, h('div', {class: 'actions'}, mark), status);
+}
+function changesView(data) {
+  return card('Tracked changes', 'When evidence changes, Update draft redrafts only the stale sections. The Word file then marks insertions and deletions against the reviewed version.',
+    table(['Document', 'Version', 'Tracked changes', ''], data.queue.map(q => h('tr', {},
+      h('td', {text: q.document_title + ' (' + SHORT[q.document] + ')'}), h('td', {text: 'v' + q.version}),
+      h('td', {}, q.redline ? q.tracked_changes.insertions + ' insertions · ' + q.tracked_changes.deletions + ' deletions' : h('span', {class: 'muted', text: 'None: first draft, or the latest approved version'})),
+      h('td', {}, h('a', {class: 'btn', href: docRoute(q.document) + '/files/' + q.document + '.docx', download: '', text: 'Download Word'}))))));
+}
+function approvalView(data) {
+  return data.queue.map(q => {
+    const status = h('p', {class: 'notice'});
+    const reference = h('input', {id: 'ref-' + q.document, maxlength: '120', placeholder: 'For example DCR-1234'});
+    const comment = h('textarea', {id: 'note-' + q.document, rows: 2, maxlength: '2000'});
+    const record = h('button', {class: 'btn primary', type: 'button', text: 'Record approval'});
+    record.addEventListener('click', () => {
+      if (!reference.value.trim()) return setNotice(status, 'Enter the eQMS approval reference.', 'error');
+      act(record, async () => {
+        await api(docRoute(q.document) + '/approval', send('POST', {reference: reference.value, comment: comment.value}));
+        render(false);
+      }, error => setNotice(status, error.message, 'error'));
+    });
+    return h('section', {class: 'card'},
+      h('div', {class: 'item-head'}, h('h2', {text: q.document_title + ' (' + SHORT[q.document] + ')'}), stageBadge(q.stage)),
+      stepper(q.stage, false),
+      q.stage === 'ready' ? h('div', {class: 'stack', style: 'margin-top:12px'},
+        h('p', {class: 'muted', text: 'Approval and signatures happen in the eQMS. Record its reference here: this version becomes the baseline that later updates are redlined against.'}),
+        h('div', {class: 'fields'}, h('label', {class: 'field', for: 'ref-' + q.document}, h('span', {text: 'eQMS reference *'}), reference), h('label', {class: 'field wide', for: 'note-' + q.document}, h('span', {text: 'Comment'}), comment)),
+        h('div', {class: 'actions'}, record), status)
+        : q.stage === 'approved' ? notice('v' + q.version + ' is the approved baseline.', 'success')
+        : h('p', {class: 'muted', style: 'margin-top:8px'}, 'Clear every review blocker first. ', link('#/review/queue', 'Open the review queue', 'btn subtle')),
+      q.approvals.length ? h('div', {style: 'margin-top:12px'}, h('h3', {text: 'Approval history', style: 'margin-bottom:8px'}),
+        table(['Version', 'eQMS reference', 'Recorded by', 'Date', 'Comment'], q.approvals.map(a => h('tr', {}, h('td', {text: 'v' + a.version}), h('td', {class: 'mono', text: a.reference}), h('td', {text: a.approver}), h('td', {text: when(a.approved_at)}), h('td', {text: a.comment || '—'}))))) : null);
+  });
+}
+
+/* ---------- settings ---------- */
+async function settingsPage(tab) {
+  if (!['azure', 'ai'].includes(tab)) tab = 'azure';
+  const data = await api(base() + '/settings');
+  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Settings'}, [['azure', 'Azure DevOps'], ['ai', 'AI configuration']].map(([key, label]) =>
+    h('a', {href: '#/settings/' + key, text: label, 'aria-current': key === tab ? 'page' : null})));
+  if (tab === 'ai') {
+    const ai = data.ai, budget = ai.budget || {};
+    const spend = 'remaining_credits' in budget ? budget.remaining_credits.toFixed(1) + ' of ' + budget.hard_cap_credits + ' credits left'
+      : 'remaining_usd' in budget ? '$' + budget.remaining_usd.toFixed(2) + ' of $' + budget.hard_cap_usd.toFixed(2) + ' left' : '—';
+    return [pageHead('Settings', 'AI drafting is configured on this computer in the ignored .env file and read here.'), tabs,
+      card('AI configuration', 'Every AI call goes through the guarded layer: cost ledger, response cache, claim validator and data guard.',
+        h('dl', {class: 'kv'}, h('dt', {text: 'Provider'}), h('dd', {text: ai.provider}), h('dt', {text: 'Model'}), h('dd', {text: ai.model || '—'}),
+          ai.copilot_mode ? [h('dt', {text: 'Copilot transport'}), h('dd', {text: ai.copilot_mode})] : null,
+          h('dt', {text: 'Company data clearance'}), h('dd', {text: ai.real_data_approval || 'Not recorded'}),
+          h('dt', {text: 'Budget'}), h('dd', {text: spend})),
+        notice('Personal OpenAI and Anthropic keys never receive company evidence. The mock provider copies source text to test the pipeline, not the prose.', '', 'note'))];
+  }
+  const connection = data.connections.find(c => c.document_type === null);
+  const overrides = data.connections.filter(c => c.document_type);
+  return [pageHead('Settings', 'The project connection is shared by every document that does not override it.'), tabs,
+    data.encryption_configured ? null : notice('Set APP_ENCRYPTION_KEY in .env before saving a PAT. README.md shows how to generate one.', 'warning'),
+    h('div', {class: 'grid cols-2'},
+      card('Azure DevOps connection', 'Read-only. The workspace reads work items and test runs; it never writes to Azure DevOps.', connectionForm(null, connection, () => render(false))),
+      h('div', {},
+        card('Document overrides', 'Documents can use their own connection from the document page.',
+          overrides.length ? h('ul', {style: 'margin:0;padding-left:20px'}, overrides.map(c => h('li', {}, h('a', {href: '#/documents/' + c.document_type, text: SHORT[c.document_type]}), ' · ' + c.org_url + ' / ' + c.project_name))) : h('p', {class: 'muted', text: 'None.'})),
+        card('PAT activity', 'Saving, replacing and removing tokens is recorded without the token.',
+          data.audit.length ? h('ul', {style: 'margin:0;padding-left:20px'}, data.audit.map(e => h('li', {text: e.action.replaceAll('_', ' ') + ' · ' + e.actor + ' · ' + when(e.at)}))) : h('p', {class: 'muted', text: 'No activity yet.'})),
+        card('Other sources', null, h('p', {class: 'muted', text: 'Code, tests and requirements come from Azure DevOps and uploaded files. GitHub and SharePoint connections are not available in this version.'}))))];
+}
+
+/* ---------- start ---------- */
 async function start() {
   const grant = new URLSearchParams(location.hash.slice(1)).get('access');
   if (grant) {
-    history.replaceState(null, '', location.pathname);
+    history.replaceState(null, '', location.pathname + '#/dashboard');
     await api('/api/session', {method: 'POST', headers: {Authorization: 'Bearer ' + grant}});
   }
-  const session = await api('/api/session');
-  ({profile, file_types: fileTypes, project_id: project} = session);
-  el('project').textContent = project;
-  el('file-types').textContent = 'Upload one or more files per input. ' +
-    fileTypes.join(', ') + ' · 12 MB per file.';
-  for (const type of Object.keys(profile.documents)) {
-    const button = node('button', type.toUpperCase());
-    button.dataset.doc = type; button.type = 'button';
-    button.addEventListener('click', () => act(async () => {
-      const previous = doc;
-      doc = type;
-      clearNotices();
-      try { await load(); }
-      catch (error) { doc = previous; throw error; }
-    }, error => notice('source-status', error.message, true)));
-    el('documents').append(button);
-  }
-  el('source').addEventListener('change', selectMode);
-  el('connection').addEventListener('submit', saveConnection);
-  for (const id of fields) el(id).addEventListener('input', () => setDirty(true));
-  el('query-type').addEventListener('change', queryHelp);
-  el('pat').addEventListener('input', () => el('expiry').disabled = !el('pat').value);
-  el('toggle-pat').addEventListener('click', () => {
-    if (el('pat').type === 'text') passwordMask();
-    else {
-      el('pat').type = 'text';
-      el('toggle-pat').textContent = 'Hide';
-      el('toggle-pat').setAttribute('aria-pressed', 'true');
-    }
+  ctx.session = await api('/api/session');
+  $('who').textContent = 'Signed in as ' + ctx.session.actor;
+  $('nav-docs').replaceChildren(...DOCS.filter(d => ctx.session.profile.documents[d]).map(d =>
+    h('a', {href: '#/documents/' + d, 'data-route': 'documents/' + d, title: ctx.session.profile.documents[d].title}, SHORT[d] + ' · ' + NAV[d])));
+  await loadProjects();
+  let saved = null;
+  try { saved = localStorage.getItem('dhf-project'); } catch {}
+  const known = id => ctx.projects.some(p => p.id === id);
+  await choose(known(saved) ? saved : ctx.session.project_id);
+  $('project-select').addEventListener('change', event => act(null, async () => {
+    await choose(event.target.value);
+    location.hash = '#/dashboard';
+    render();
+  }));
+  $('menu').addEventListener('click', () => {
+    const open = $('sidebar').classList.toggle('open');
+    $('menu').setAttribute('aria-expanded', String(open));
   });
-  el('test').addEventListener('click', () => azure('test'));
-  el('fetch').addEventListener('click', () => azure('fetch'));
-  el('update').addEventListener('click', () => el('pat').focus());
-  el('remove').addEventListener('click', () => act(async () => {
-    await api(connectionRoute(selected().id, 'pat'), {method: 'DELETE'});
-    await load();
-    el('update').hidden = true;
-    notice('connection-status', 'Saved PAT removed.');
-  }, connectionError));
-  el('save-evidence').addEventListener('click', () => act(async () => {
-    const result = await api(documentRoute() + '/snapshot', json('POST', {}));
-    notice('evidence-status', 'Saved ' + result.artifacts + ' evidence artifacts to ' + result.path + '.');
-  }, error => notice('evidence-status', error.message, true)));
-  await load();
-  el('startup').hidden = true;
-  el('app').hidden = false;
+  window.addEventListener('hashchange', () => render());
+  $('startup').hidden = true;
+  $('app').hidden = false;
+  if (!location.hash.startsWith('#/')) history.replaceState(null, '', '#/dashboard');
+  render(false);
 }
-start().catch(error => notice('startup', error.message, true));
+start().catch(error => {
+  $('startup-text').textContent = error.status === 401 ? 'Open the one-time access link printed by dhf serve.' : error.message;
+});
+})();
 </script>
 </body>
 </html>

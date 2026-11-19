@@ -191,6 +191,29 @@ def render_explorer(payload: dict, template: str) -> str:
     return template.replace("__EVIDENCE_BASE64__", data)
 
 
+def evidence_findings(
+    graph: dict, documents: list[dict], baselines: list[dict] | None = None
+) -> tuple[list[dict], list[str], dict[str, list[dict]]]:
+    """Every finding family the explorer shows, the rules not assessable from these sources,
+    and the rule files by name."""
+    import yaml
+
+    from dhf.graph.reviews import risk_gaps
+    from dhf.trace import evaluate_rules, unassessable_rules
+    from dhf.trace.consistency import consistency
+
+    rules = {
+        path.stem: yaml.safe_load(path.read_text(encoding="utf-8")).get("rules", [])
+        for path in sorted(Path("specs/rules").glob("*.yaml"))
+    }
+    blind = unassessable_rules(graph, rules["gaps"])
+    # Rules scope themselves (document-baseline rules declare `sources: [file]`).
+    findings = gaps(graph) + evaluate_rules(graph, rules["document_baseline"])
+    findings += consistency(graph, documents) + risk_gaps(graph)
+    findings += [{**f, "scope": "baseline"} for f in consistency(graph, baselines or [])]
+    return findings, blind, rules
+
+
 def create_explorer(
     graph: dict,
     documents: list[dict],
@@ -204,20 +227,9 @@ def create_explorer(
 
     from dhf.config import setting
     from dhf.generate import load_spec, manifest_template
-    from dhf.graph.reviews import risk_gaps
     from dhf.impact import impact
-    from dhf.trace import evaluate_rules, unassessable_rules
-    from dhf.trace.consistency import consistency
 
-    rules = {
-        path.stem: yaml.safe_load(path.read_text(encoding="utf-8")).get("rules", [])
-        for path in sorted(Path("specs/rules").glob("*.yaml"))
-    }
-    blind = unassessable_rules(graph, rules["gaps"])
-    # Rules scope themselves (document-baseline rules declare `sources: [file]`).
-    findings = gaps(graph) + evaluate_rules(graph, rules["document_baseline"])
-    findings += consistency(graph, documents) + risk_gaps(graph)
-    findings += [{**f, "scope": "baseline"} for f in consistency(graph, baselines or [])]
+    findings, blind, rules = evidence_findings(graph, documents, baselines)
     reports = reports if reports is not None else [impact(graph, d) for d in documents]
     synthetic = all(a["attributes"].get("synthetic") for a in graph["artifacts"])
     presentation = {

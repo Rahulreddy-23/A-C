@@ -14,13 +14,21 @@ from uuid import uuid4
 from cryptography.fernet import Fernet, InvalidToken
 
 from dhf.config import setting
+from dhf.generate import generate_document
+from dhf.generate.support import support_comments
 from dhf.graph import Store
-from dhf.llm import canonical
+from dhf.impact import impact, regenerate
+from dhf.llm import LLM, canonical
 from dhf.models.evidence import validate_graph
+from dhf.render import render_docx
+from dhf.render.explorer import evidence_findings
+from dhf.review import author_section, readiness, resolve_suggestion, review_validation
+from dhf.workspace.insights import gap_groups, merged_graph, requirement_trace
 from dhf.workspace.sources import (
     DOC_TYPES,
     REQUIREMENT_TYPES,
     ConnectionInput,
+    ProjectInput,
     WorkspaceADO,
     WorkspaceError,
     now,
@@ -61,6 +69,16 @@ CREATE TABLE IF NOT EXISTS requirements_snapshots (
     id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id),
     document_type TEXT NOT NULL, connection_id TEXT NOT NULL REFERENCES azure_connections(id),
     configuration TEXT NOT NULL, graph TEXT NOT NULL, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS project_details (
+    project_id TEXT PRIMARY KEY REFERENCES projects(id), details TEXT NOT NULL,
+    archived INTEGER NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS document_approvals (
+    project_id TEXT NOT NULL REFERENCES projects(id), document_type TEXT NOT NULL,
+    version INTEGER NOT NULL, reference TEXT NOT NULL, approver TEXT NOT NULL,
+    comment TEXT NOT NULL, document_sha256 TEXT NOT NULL, approved_at TEXT NOT NULL,
+    PRIMARY KEY (project_id, document_type, version)
 );
 CREATE INDEX IF NOT EXISTS requirements_snapshot_scope
     ON requirements_snapshots(project_id, document_type, connection_id, configuration, created_at);
@@ -451,7 +469,7 @@ class Workspace:
             for item in graph["artifacts"]
         )
         roles = {item["attributes"].get("input_role") for item in graph["artifacts"]}
-        if doc in {"sad", "sdd"} and not requirements and "requirements" not in roles:
+        if doc in {"sad", "sdd", "sfmea"} and not requirements and "requirements" not in roles:
             raise WorkspaceError(422, "Fetch Azure requirements or add an SRD or PRD first.")
         if doc == "sstr":
             if not requirements:
@@ -471,3 +489,274 @@ class Workspace:
         finally:
             store.close()
         return {**result, "path": path.as_posix()}
+
+    def details(self) -> dict:
+        with self.database() as db:
+            row = db.execute(
+                "SELECT details, archived, updated_at FROM project_details WHERE project_id=?",
+                (self.project_id,),
+            ).fetchone()
+        return {
+            "id": self.project_id,
+            **(json.loads(row["details"]) if row else {}),
+            "archived": bool(row and row["archived"]),
+            "updated_at": row["updated_at"] if row else None,
+        }
+
+    def save_details(self, actor: str, change: ProjectInput, archived: bool | None = None) -> dict:
+        self.require_member(actor)
+        with self.database() as db:
+            held = db.execute(
+                "SELECT archived FROM project_details WHERE project_id=?", (self.project_id,)
+            ).fetchone()
+            flag = int(archived if archived is not None else bool(held and held["archived"]))
+            db.execute(
+                """INSERT INTO project_details VALUES (?, ?, ?, ?) ON CONFLICT(project_id)
+                   DO UPDATE SET details=excluded.details, archived=excluded.archived,
+                   updated_at=excluded.updated_at""",
+                (self.project_id, canonical(change.model_dump()), flag, now()),
+            )
+        return self.details()
+
+    def set_archived(self, actor: str, archived: bool) -> dict:
+        details = {k: v for k, v in self.details().items() if k in ProjectInput.model_fields}
+        if not details:
+            raise WorkspaceError(422, "Save the project details first.", "Edit project")
+        return self.save_details(actor, ProjectInput.model_validate(details), archived)
+
+    def drafts_dir(self, doc: str) -> Path:
+        return self.root / doc / "drafts"
+
+    def manifest(self, doc: str) -> dict | None:
+        path = self.drafts_dir(doc) / f"{doc}.manifest.json"
+        return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+    def draft(self, actor: str, doc: str, provider: str) -> dict:
+        """The first draft, or later only the sections the latest evidence made stale, so a
+        reviewer's edits elsewhere stay byte for byte and Word shows the changes."""
+        release = self.details().get("release")
+        if not release:
+            raise WorkspaceError(422, "Set the project release before drafting.", "Edit project")
+        saved = self.save_evidence(actor, doc)
+        store = Store(Path(saved["path"]))
+        try:
+            graph = store.graph()
+        finally:
+            store.close()
+        out, llm = self.drafts_dir(doc), LLM(provider)
+        manifest = self.manifest(doc)
+        if manifest is None:
+            result = generate_document(doc, graph, {"release": release}, provider, out=out, llm=llm)
+            return {"updated": True, "version": result["manifest"]["doc_version"], "stale": []}
+        markdown = (out / f"{doc}.md").read_text(encoding="utf-8")
+        report = impact(graph, manifest)
+        stale = sorted(s["id"] for s in report["sections"] if s["status"] == "stale")
+        if not stale:
+            return {"updated": False, "version": manifest["doc_version"], "stale": []}
+        # Later review edits re-render Word against this version, keeping the redline.
+        (out / f"{doc}.previous.md").write_text(markdown, encoding="utf-8", newline="\n")
+        result = regenerate(graph, manifest, markdown, report, out, llm)
+        return {"updated": True, "version": result["manifest"]["doc_version"], "stale": stale}
+
+    def approvals(self, doc: str) -> list[dict]:
+        with self.database() as db:
+            rows = db.execute(
+                """SELECT version, reference, approver, comment, document_sha256, approved_at
+                   FROM document_approvals WHERE project_id=? AND document_type=?
+                   ORDER BY version DESC""",
+                (self.project_id, doc),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def draft_state(self, actor: str, doc: str, with_evidence: bool = False) -> dict | None:
+        self.require_member(actor)
+        self.document(doc)
+        manifest = self.manifest(doc)
+        if manifest is None:
+            return None
+        out = self.drafts_dir(doc)
+        check = readiness((out / f"{doc}.md").read_text(encoding="utf-8"), manifest)
+        cited = {
+            id
+            for s in manifest["sections"]
+            for c in s["claims"]
+            if with_evidence and c["kind"] == "suggested"
+            for id in c["citations"]
+        }
+        nodes = {}
+        if cited:  # only the Review Center shows citation titles; skip the snapshot read
+            store = Store(self.root / doc / "evidence.sqlite")
+            try:
+                nodes = {a["id"]: a for a in store.graph()["artifacts"] if a["id"] in cited}
+            finally:
+                store.close()
+        return {
+            "version": manifest["doc_version"],
+            "generated_at": manifest["generated_at"],
+            "model": manifest["model"],
+            "sections": [
+                {k: s[k] for k in ("id", "title", "mode", "status", "claims")}
+                for s in manifest["sections"]
+            ],
+            "validation": manifest["validation"],
+            "readiness": {k: check[k] for k in ("ready", "blockers", "resolutions")},
+            "document_sha256": check["document_sha256"],
+            "docx": {k: manifest.get("docx", {}).get(k, 0) for k in ("insertions", "deletions")},
+            "redline": (out / f"{doc}.previous.md").is_file(),
+            "changed_sections": manifest.get("changed_sections", []),
+            "evidence": {
+                id: {
+                    "id": id,
+                    "title": a["title"],
+                    "type": a["type"],
+                    "url": a["source"]["url"],
+                    "revision": a["source"]["revision"],
+                }
+                for id, a in nodes.items()
+            },
+        }
+
+    def rerender(self, doc: str, markdown: str, manifest: dict, redline: bool = True) -> None:
+        out = self.drafts_dir(doc)
+        previous = out / f"{doc}.previous.md"
+        base = previous.read_text(encoding="utf-8") if redline and previous.is_file() else ""
+        counts = render_docx(
+            markdown,
+            out / f"{doc}.docx",
+            base,
+            manifest["generated_at"],
+            support_findings=support_comments(manifest),
+        )
+        digest = hashlib.sha256((out / f"{doc}.docx").read_bytes()).hexdigest()
+        manifest["docx"] = {"sha256": digest, **counts}
+        (out / f"{doc}.md").write_text(markdown, encoding="utf-8", newline="\n")
+        (out / f"{doc}.manifest.json").write_text(
+            json.dumps(manifest, indent=2), encoding="utf-8", newline="\n"
+        )
+
+    def review(self, actor: str, doc: str, action: dict) -> dict:
+        """One reviewer decision on the local draft, as the same edit the docs PR would hold."""
+        self.require_member(actor)
+        self.document(doc)
+        manifest = self.manifest(doc)
+        if manifest is None:
+            raise WorkspaceError(404, "Generate a draft first.")
+        markdown = (self.drafts_dir(doc) / f"{doc}.md").read_text(encoding="utf-8")
+        try:
+            kind = action["kind"]
+            if kind == "suggestion":
+                markdown = resolve_suggestion(
+                    markdown, action["key"], action["decision"], actor, action["rationale"]
+                )
+            elif kind == "section":
+                section = next(s for s in manifest["sections"] if s["id"] == action["section"])
+                markdown = author_section(
+                    markdown,
+                    section["id"],
+                    action["text"],
+                    actor,
+                    action.get("rationale", ""),
+                    section["status"] == "ai_unavailable",
+                )
+            elif kind == "validation":
+                markdown = review_validation(markdown, action["key"], actor, action["rationale"])
+            else:
+                raise ValueError("Choose a review action.")
+        except ValueError as error:
+            raise WorkspaceError(400, str(error)) from None
+        except (KeyError, TypeError, StopIteration, AttributeError):
+            raise WorkspaceError(400, "Check the review fields.") from None
+        self.rerender(doc, markdown, manifest)
+        state = self.draft_state(actor, doc)
+        assert state is not None
+        return state
+
+    def approve(self, actor: str, doc: str, reference: str, comment: str) -> dict:
+        """Record that a ready draft was approved in the eQMS, and keep that version as the
+        baseline. Approval itself (signatures) stays in the eQMS."""
+        state = self.draft_state(actor, doc)
+        if state is None:
+            raise WorkspaceError(404, "Generate a draft first.")
+        if not state["readiness"]["ready"]:
+            raise WorkspaceError(409, "Resolve the review blockers before recording approval.")
+        reference, comment = reference.strip(), comment.strip()
+        if not 0 < len(reference) <= 120 or any(c in reference for c in "\r\n<>"):
+            raise WorkspaceError(400, "Enter the eQMS approval reference.")
+        if len(comment) > 2000:
+            raise WorkspaceError(400, "Keep the approval comment under 2000 characters.")
+        out = self.drafts_dir(doc)
+        markdown = (out / f"{doc}.md").read_text(encoding="utf-8")
+        baseline = self.root / doc / "baselines" / f"{doc}-v{state['version']}.md"
+        baseline.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        baseline.write_text(markdown, encoding="utf-8", newline="\n")
+        with self.database() as db:
+            db.execute(
+                """INSERT INTO document_approvals VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(project_id, document_type, version) DO UPDATE SET
+                   reference=excluded.reference, approver=excluded.approver,
+                   comment=excluded.comment, document_sha256=excluded.document_sha256,
+                   approved_at=excluded.approved_at""",
+                (
+                    self.project_id,
+                    doc,
+                    state["version"],
+                    reference,
+                    actor,
+                    comment,
+                    state["document_sha256"],
+                    now(),
+                ),
+            )
+        # The approved copy is clean; the next update redlines against it.
+        (out / f"{doc}.previous.md").unlink(missing_ok=True)
+        manifest = self.manifest(doc)
+        assert manifest is not None
+        self.rerender(doc, markdown, manifest, redline=False)
+        return self.approvals(doc)[0]
+
+    def inputs_ready(self, doc: str) -> bool:
+        with self.database() as db:
+            _, _, snapshot = self.read_inputs(db, doc)
+            uploads = db.execute(
+                "SELECT count(*) FROM input_uploads WHERE project_id=? AND document_type=?",
+                (self.project_id, doc),
+            ).fetchone()[0]
+        return snapshot is not None or uploads > 0
+
+    def documents(self, actor: str, with_evidence: bool = False) -> list[dict]:
+        """Each document type with its review stage, from inputs through recorded approval."""
+        rows = []
+        for doc in DOC_TYPES:
+            meta = self.document(doc)
+            draft = self.draft_state(actor, doc, with_evidence)
+            approvals = self.approvals(doc)
+            if draft is None:
+                stage = "inputs_ready" if self.inputs_ready(doc) else "no_inputs"
+            elif approvals and approvals[0]["document_sha256"] == draft["document_sha256"]:
+                stage = "approved"
+            elif draft["readiness"]["ready"]:
+                stage = "ready"
+            else:
+                stage = "in_review" if draft["readiness"]["resolutions"] else "draft"
+            rows.append(
+                {
+                    "type": doc,
+                    "title": meta["title"],
+                    "future": bool(meta.get("future")),
+                    "stage": stage,
+                    "draft": draft,
+                    "approvals": approvals,
+                }
+            )
+        return rows
+
+    def project_graph(self, actor: str) -> dict:
+        return merged_graph([self.graph(actor, doc) for doc in DOC_TYPES])
+
+    def insights(self, actor: str) -> dict:
+        """The project's merged evidence, requirement trace and grouped gap findings."""
+        graph = self.project_graph(actor)
+        manifests = [m for doc in DOC_TYPES if (m := self.manifest(doc)) is not None]
+        findings, blind, rules = evidence_findings(graph, manifests)
+        groups = gap_groups(findings, blind, [r for group in rules.values() for r in group])
+        return {"graph": graph, "trace": requirement_trace(graph), "groups": groups}

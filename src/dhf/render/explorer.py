@@ -8,11 +8,20 @@ from dhf.models.evidence import validate_graph
 from dhf.trace import confirmed_links, coverage, gaps, latest_results
 
 
-def trace_chain(graph: dict, selected: str) -> list[str]:
-    """Follow the selected requirement's actual upstream/downstream typed traces."""
+def chain_index(graph: dict) -> tuple[dict, dict, dict, set]:
+    """Nodes, confirmed links by source and by target, and latest result IDs, built once."""
     nodes = {a["id"]: a for a in graph["artifacts"]}
-    edges = confirmed_links(graph)
-    latest = {a["id"] for a in latest_results(graph)}
+    out: dict[str, list[dict]] = {}
+    into: dict[str, list[dict]] = {}
+    for e in confirmed_links(graph):
+        out.setdefault(e["src"], []).append(e)
+        into.setdefault(e["dst"], []).append(e)
+    return nodes, out, into, {a["id"] for a in latest_results(graph)}
+
+
+def trace_chain(graph: dict, selected: str, index: tuple | None = None) -> list[str]:
+    """Follow the selected requirement's actual upstream/downstream typed traces."""
+    nodes, out, into, latest = index or chain_index(graph)
     if selected not in nodes:
         return []
     reqs = {selected} if nodes[selected]["type"] == "software_req" else set()
@@ -27,42 +36,29 @@ def trace_chain(graph: dict, selected: str) -> list[str]:
         if nodes[current]["type"] == "software_req":
             reqs.add(current)
             continue
-        for edge in edges:
-            peer = (
-                edge["dst"]
-                if edge["src"] == current
-                else edge["src"]
-                if edge["dst"] == current
-                else None
-            )
-            if (
-                peer
-                and peer not in visited
-                and (
-                    nodes[peer]["type"] == "software_req"
-                    or nodes[current]["type"]
-                    in ("user_need", "system_req", "risk_control", "hazard", "test_result")
-                    and nodes[peer]["type"] in ("system_req", "risk_control", "test_case")
-                )
+        peers = [e["dst"] for e in out.get(current, [])] + [e["src"] for e in into.get(current, [])]
+        for peer in peers:
+            if peer not in visited and (
+                nodes[peer]["type"] == "software_req"
+                or nodes[current]["type"]
+                in ("user_need", "system_req", "risk_control", "hazard", "test_result")
+                and nodes[peer]["type"] in ("system_req", "risk_control", "test_case")
             ):
                 frontier.add(peer)
     result = {selected} | reqs
     for req in reqs:
-        for edge in edges:
-            if edge["src"] == req and edge["type"] in (
-                "derives_from",
-                "allocated_to",
-                "implements",
-            ):
-                result.add(edge["dst"])
-            elif edge["dst"] == req and edge["type"] in ("verifies", "implements"):
-                result.add(edge["src"])
+        result.update(
+            e["dst"]
+            for e in out.get(req, [])
+            if e["type"] in ("derives_from", "allocated_to", "implements")
+        )
+        result.update(
+            e["src"] for e in into.get(req, []) if e["type"] in ("verifies", "implements")
+        )
     for id in list(result):
         if nodes[id]["type"] == "test_case":
             result.update(
-                e["src"]
-                for e in edges
-                if e["dst"] == id and e["type"] == "executes" and e["src"] in latest
+                e["src"] for e in into.get(id, []) if e["type"] == "executes" and e["src"] in latest
             )
         elif nodes[id]["type"] == "software_unit":
             component = nodes[id]["attributes"].get("component")
@@ -71,14 +67,11 @@ def trace_chain(graph: dict, selected: str) -> list[str]:
     for id in list(result):
         result.update(
             e["dst"]
-            for e in edges
-            if e["src"] == id
-            and (
-                nodes[id]["type"] == "risk_control"
-                and e["type"] == "mitigates"
-                or nodes[id]["type"] == "system_req"
-                and e["type"] == "derives_from"
-            )
+            for e in out.get(id, [])
+            if nodes[id]["type"] == "risk_control"
+            and e["type"] == "mitigates"
+            or nodes[id]["type"] == "system_req"
+            and e["type"] == "derives_from"
         )
     return sorted(result)
 
@@ -110,7 +103,8 @@ def explorer_payload(
             if section["status"] == "stale":
                 stale.append({"document": report["document"], **section})
     affected = {c["artifact"] for s in stale for c in s["causes"] if c.get("artifact")}
-    latest = {a["id"] for a in latest_results(graph)}
+    index = chain_index(graph)
+    latest = index[3]
     documents = documents or []
     presentation = presentation or {}
     release = next(
@@ -174,7 +168,7 @@ def explorer_payload(
             }
             for a in graph["artifacts"]
         ],
-        "chains": {a["id"]: trace_chain(graph, a["id"]) for a in graph["artifacts"]},
+        "chains": {a["id"]: trace_chain(graph, a["id"], index) for a in graph["artifacts"]},
         "links": confirmed_links(graph),
         "findings": findings,
         "not_assessable": presentation.get("not_assessable", []),

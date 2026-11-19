@@ -13,6 +13,7 @@ inputs:
   review_details: {label: Review type, date and participants}
   risk_documentation: {label: Risk documentation}
   existing_sfmea: {label: Existing sFMEA}
+  safety_classification: {label: Safety classification (CSV with Item and Safety class)}
 documents:
   sad:
     title: Software Architecture Document
@@ -29,4 +30,4 @@ documents:
     inputs: [design_evidence, design_changes, action_items, review_details]
   sfmea:
     title: Software FMEA
-    inputs: [requirements, specification, sad, existing_sdd, risk_documentation, existing_sfmea]
+    inputs: [requirements, specification, sad, existing_sdd, risk_documentation, existing_sfmea, safety_classification]

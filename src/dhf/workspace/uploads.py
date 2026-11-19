@@ -26,7 +26,8 @@ from dhf.llm import canonical
 from dhf.models.evidence import validate_graph
 from dhf.workspace.sources import WorkspaceError
 
-MAX_FILE_BYTES = 12 * 1024 * 1024
+# Real design documents carry many diagrams; a 24 MB SAD is normal.
+MAX_FILE_BYTES = 40 * 1024 * 1024
 ALLOWED_TYPES = {
     ".docx",
     ".md",
@@ -111,12 +112,12 @@ def input_profile() -> dict:
 
 def upload_blocks(raw: bytes, suffix: str, redactor: SecretRedactor) -> list[dict]:
     if suffix not in ALLOWED_TYPES or not raw or len(raw) > MAX_FILE_BYTES:
-        raise WorkspaceError(400, "Choose a supported file up to 12 MB.")
+        raise WorkspaceError(400, "Choose a supported file up to 40 MB.")
     if suffix == ".docx":
         try:
             with zipfile.ZipFile(BytesIO(raw)) as package:
                 files = package.infolist()
-                if len(files) > 1000 or sum(f.file_size for f in files) > 60 * 1024 * 1024:
+                if len(files) > 1000 or sum(f.file_size for f in files) > 160 * 1024 * 1024:
                     raise WorkspaceError(413, "This Word document expands beyond the upload limit.")
             return docx_blocks(BytesIO(raw), redactor.word_paragraph)[0]
         except WorkspaceError:
@@ -162,7 +163,7 @@ def uploaded_evidence(uploads: list[dict], azure: dict) -> dict:
     )
     rules = {rule["name"]: rule for rule in extractor["documents"]}
     held = {item["id"]: item for item in azure["artifacts"]}
-    items, pending, test_links = [], [], []
+    items, pending, test_links, classes = [], [], [], {}
     for upload in uploads:
         role, name = upload["role"], upload["filename"]
         document = f"{upload['id']}/{name}"
@@ -181,6 +182,8 @@ def uploaded_evidence(uploads: list[dict], azure: dict) -> dict:
             records, result_links = test_evidence_csv(blocks[0]["text"], upload, source, held)
             original.extend(records)
             test_links.extend(result_links)
+        if role == "safety_classification" and Path(name).suffix.lower() == ".csv":
+            classes.update({k: (v, name) for k, v in safety_classes(blocks[0]["text"]).items()})
         for item in original:
             item["attributes"].update({"input_role": role, "input_file": name, "link_classes": []})
             if item["type"] in {"software_unit", "component", "system_req", "software_req"}:
@@ -198,6 +201,15 @@ def uploaded_evidence(uploads: list[dict], azure: dict) -> dict:
     known = frozenset(item["id"] for item in azure["artifacts"])
     links, _ = resolve_links(items, pending, known)
     distinct = {(e["src"], e["dst"], e["type"]): e for e in [*azure["links"], *links, *test_links]}
+    # The CSV fills classes the evidence lacks; a class a source states always wins.
+    for item in [*azure["artifacts"], *items]:
+        if item["type"] in {"component", "software_unit"} and not item["attributes"].get(
+            "safety_class"
+        ):
+            recorded = classes.get(item["id"].lower()) or classes.get(item["title"].lower())
+            if recorded:
+                item["attributes"].update(safety_class=recorded[0], safety_class_source=recorded[1])
+                item.pop("content_hash", None)  # recomputed, so the change reaches the store
     for item in items:
         item["source"]["revision"] = content_revision(item)
     return validate_graph(
@@ -227,6 +239,23 @@ def document_sections(blocks: list[dict], upload: dict, source: dict) -> list[di
         ident = f"DOC-{upload['id']}-1"
         result.append(artifact("document_section", ident, upload["filename"], "", {}, source))
     return result
+
+
+def safety_classes(text: str) -> dict[str, str]:
+    """Owner-recorded IEC 62304 classes by item ID or title (lowercase): Item, Safety class."""
+    reader = csv.DictReader(StringIO(text))
+    columns = {k.strip().lower(): k for k in reader.fieldnames or []}
+    if not {"item", "safety class"} <= columns.keys():
+        return {}
+    classes = {}
+    for row in reader:
+        item = (row.get(columns["item"]) or "").strip().lower()
+        match = re.fullmatch(
+            r"(?:class\s*)?([abc])", (row.get(columns["safety class"]) or "").strip(), re.I
+        )
+        if item and match:
+            classes[item] = match[1].upper()
+    return classes
 
 
 def test_evidence_csv(

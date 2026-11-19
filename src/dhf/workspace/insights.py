@@ -55,13 +55,14 @@ def requirement_trace(graph: dict) -> dict:
     edges = confirmed_links(graph)
     results = {r["attributes"]["test_case"]: r for r in latest_results(graph)}
     requirements = subjects(graph)
+    index: dict[tuple[str, str, str], set[str]] = {}
+    for e in edges:  # one pass, so each row reads its peers instead of rescanning every edge
+        index.setdefault((e["src"], e["type"], "out"), set()).add(e["dst"])
+        index.setdefault((e["dst"], e["type"], "in"), set()).add(e["src"])
 
     def peers(id: str, link: str, direction: str, types: tuple[str, ...]) -> list[str]:
-        anchor, peer = ("src", "dst") if direction == "out" else ("dst", "src")
-        return sorted(
-            {e[peer] for e in edges if e[anchor] == id and e["type"] == link}
-            & {n for n in nodes if nodes[n]["type"] in types}
-        )
+        found = index.get((id, link, direction), set())
+        return sorted(n for n in found if n in nodes and nodes[n]["type"] in types)
 
     rows = []
     for req in requirements:
@@ -74,7 +75,7 @@ def requirement_trace(graph: dict) -> dict:
             **{key: peers(req["id"], *spec[1:]) for key, spec in TRACE.items()},
         }
         row["hazards"] = sorted(
-            {e["dst"] for e in edges if e["src"] in row["risk"] and e["type"] == "mitigates"}
+            {h for c in row["risk"] for h in index.get((c, "mitigates", "out"), set())}
         )
         row["results"] = [
             {"test": t, "result": results[t]["id"], "outcome": results[t]["attributes"]["outcome"]}
@@ -157,7 +158,8 @@ def blocked_sections(readiness: dict) -> set[str]:
 
 def dashboard(trace: dict, groups: list[dict], documents: list[dict], graph: dict) -> dict:
     """Headline numbers. Documentation completeness counts sections with no review blocker;
-    traceability completeness counts requirements both allocated and verified."""
+    traceability completeness counts requirements both allocated and verified, over the
+    levels these inputs can record (neither recordable: not assessable, never 0%)."""
     counts = Counter(a["type"] for a in graph["artifacts"])
     drafted = [d for d in documents if d.get("draft")]
     total = sum(len(d["draft"]["sections"]) for d in drafted)
@@ -166,7 +168,9 @@ def dashboard(trace: dict, groups: list[dict], documents: list[dict], graph: dic
         for d in drafted
     )
     rows = trace["rows"]
-    complete = sum(bool(r["architecture"] and r["verification"]) for r in rows)
+    levels = [c["id"] for c in trace["coverage"] if c["assessable"]]
+    levels = [k for k in ("architecture", "verification") if k in levels]
+    complete = sum(all(r[k] for k in levels) for r in rows) if levels else 0
     return {
         "requirements": {kind: counts[kind] for kind in REQUIREMENT_TYPES},
         "subject": trace["subject"],
@@ -179,9 +183,10 @@ def dashboard(trace: dict, groups: list[dict], documents: list[dict], graph: dic
             "documents": len(documents),
         },
         "traceability": {
-            "percent": round(complete / len(rows) * 100, 1) if rows else 0.0,
+            "percent": round(complete / len(rows) * 100, 1) if rows and levels else None,
             "complete": complete,
             "total": len(rows),
+            "levels": levels,
         },
         "gaps": [{"id": g["id"], "label": g["label"], "count": len(g["findings"])} for g in groups],
         "documents": [{k: d[k] for k in ("type", "title", "stage", "future")} for d in documents],

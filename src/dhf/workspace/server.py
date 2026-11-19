@@ -1,10 +1,14 @@
 """Browser workspace and project API served only on the local loopback interface."""
 
+import csv
+import io
 import json
 import re
 import secrets
 import sqlite3
+import sys
 import threading
+import traceback
 from contextlib import closing
 from http.cookies import CookieError, SimpleCookie
 from http.server import ThreadingHTTPServer
@@ -17,6 +21,7 @@ from dhf.config import setting
 from dhf.llm import LLM
 from dhf.render.explorer import create_explorer
 from dhf.serve import LoopbackHandler
+from dhf.trace import results_summary
 from dhf.workspace import Workspace
 from dhf.workspace.insights import dashboard, review_items
 from dhf.workspace.sources import ConnectionInput, ProjectInput, WorkspaceError, now
@@ -51,6 +56,12 @@ def light(document: dict) -> dict:
     }
 
 
+def cell_text(value: object) -> str:
+    """Spreadsheet-safe text: source titles must never run as formulas."""
+    text = "" if value is None else str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
 def make_workspace_server(
     root: Path, project_id: str, owner: str, members: list[str], port: int = 8765
 ) -> tuple[ThreadingHTTPServer, dict[str, str]]:
@@ -67,8 +78,11 @@ def make_workspace_server(
         """Workspaces this owner started, side by side with the first project's folder."""
         found = {}
         for path in sorted(root.parent.glob("*/workspace.sqlite")):
-            with closing(sqlite3.connect(path)) as db:
-                row = db.execute("SELECT id, owner FROM projects").fetchone()
+            try:
+                with closing(sqlite3.connect(path)) as db:
+                    row = db.execute("SELECT id, owner FROM projects").fetchone()
+            except sqlite3.Error:
+                continue  # not a readable workspace; never let one folder hide the rest
             if row and row[1] == owner:
                 found[row[0]] = path.parent
         found[project_id] = root
@@ -93,7 +107,7 @@ def make_workspace_server(
             rows.append({**details, "name": details.get("name") or pid})
         return rows
 
-    def start_draft(pid: str, workspace: Workspace, actor: str, doc: str) -> dict:
+    def start_draft(pid: str, workspace: Workspace, actor: str, doc: str, fresh: bool) -> dict:
         workspace.document(doc)
         if not drafting.acquire(blocking=False):
             raise WorkspaceError(409, "Another draft is being prepared. Try again when it ends.")
@@ -104,7 +118,7 @@ def make_workspace_server(
 
         def work() -> None:
             try:
-                outcome = {"state": "done", "result": workspace.draft(actor, doc, provider)}
+                outcome = {"state": "done", "result": workspace.draft(actor, doc, provider, fresh)}
             except WorkspaceError as error:
                 outcome = {"state": "failed", "error": str(error), "action": error.action}
             except ValidationError:
@@ -112,7 +126,11 @@ def make_workspace_server(
                 outcome = {"state": "failed", "error": error}
             except ValueError as error:  # data errors and the AI data guard name the cause
                 outcome = {"state": "failed", "error": str(error)}
-            except Exception:
+            except Exception as error:
+                # Type and location only: an exception message could carry source text.
+                where = traceback.extract_tb(error.__traceback__)[-1]
+                place = f"{Path(where.filename).name}:{where.lineno}"
+                print(f"Drafting {doc} failed: {type(error).__name__} at {place}", file=sys.stderr)
                 outcome = {"state": "failed", "error": "Drafting failed. Check inputs and AI."}
             finally:
                 drafting.release()
@@ -239,7 +257,9 @@ def make_workspace_server(
                     return self.json(200, {"projects": project_list()})
                 if self.command == "POST":
                     change = ProjectInput.model_validate(self.json_body())
-                    pid = project_id_for(change.name, set(discover()))
+                    # Folder names count too: a new project never opens an existing folder.
+                    folders = {p.name for p in root.parent.iterdir() if p.is_dir()}
+                    pid = project_id_for(change.name, set(discover()) | folders)
                     workspace = Workspace(root.parent / pid, pid, owner, members)
                     with lock:
                         projects[pid] = workspace
@@ -252,7 +272,22 @@ def make_workspace_server(
             workspace.require_member(actor)
             if self.command == "GET" and path in ("", "/"):
                 documents = [light(d) for d in workspace.documents(actor)]
-                return self.json(200, {"details": workspace.details(), "documents": documents})
+                graph = workspace.project_graph(actor)
+                provenance = {
+                    **workspace.provenance(),
+                    "provider": setting("DHF_PROVIDER", "mock"),
+                    "artifacts": len(graph["artifacts"]),
+                    "synthetic": bool(graph["artifacts"])
+                    and all(a["attributes"].get("synthetic") for a in graph["artifacts"]),
+                }
+                return self.json(
+                    200,
+                    {
+                        "details": workspace.details(),
+                        "documents": documents,
+                        "provenance": provenance,
+                    },
+                )
             if self.command == "GET" and path in ("/dashboard", "/traceability", "/review"):
                 return self.json(200, self.view(workspace, actor, path[1:]))
             if self.command == "GET" and path == "/settings":
@@ -266,6 +301,25 @@ def make_workspace_server(
                         "connections": [workspace.public_connection(row) for row in rows],
                         "audit": workspace.state(actor, "sad")["audit"],
                     },
+                )
+            if self.command == "GET" and path == "/rtm.csv":
+                trace = workspace.insights(actor)["trace"]
+                out = io.StringIO()
+                writer = csv.writer(out, lineterminator="\n")
+                levels = ("architecture", "design", "code", "verification", "risk")
+                heads = [level.title() for level in levels]
+                writer.writerow(["Requirement", "Title", "Revision", *heads, "Latest results"])
+                for row in trace["rows"]:
+                    results = " ".join(f"{r['test']}={r['outcome']}" for r in row["results"])
+                    cells = [" ".join(row[k]) for k in levels]
+                    values = [row["id"], row["title"], row["revision"], *cells, results]
+                    writer.writerow([cell_text(value) for value in values])
+                name = f"{pid}-rtm.csv"
+                return self.reply(
+                    200,
+                    out.getvalue().encode("utf-8-sig"),
+                    "text/csv; charset=utf-8",
+                    {"Content-Disposition": f'attachment; filename="{name}"'},
                 )
             if self.command == "GET" and path == "/evidence":
                 graph = workspace.project_graph(actor)
@@ -313,7 +367,21 @@ def make_workspace_server(
             insight = workspace.insights(actor)
             if name == "traceability":
                 return {"trace": insight["trace"], "groups": insight["groups"]}
-            return dashboard(insight["trace"], insight["groups"], documents, insight["graph"])
+            view = dashboard(insight["trace"], insight["groups"], documents, insight["graph"])
+            work = review_items(documents)
+            release = workspace.details().get("release") or ""
+            return {
+                **view,
+                "results": results_summary(insight["graph"], release) if release else None,
+                "review": {
+                    "suggestions": sum(s["status"] == "open" for s in work["suggestions"]),
+                    "sections": len(work["sections"]),
+                    "rejections": sum(r["status"] == "open" for r in work["rejections"]),
+                    "stale": sum(
+                        len(d["draft"]["changed_sections"]) for d in documents if d["draft"]
+                    ),
+                },
+            }
 
         def document_route(
             self,
@@ -335,6 +403,8 @@ def make_workspace_server(
                         )
                     page_html = create_explorer(graph, [], workspace_name=pid)
                     return self.reply(200, page_html.encode(), "text/html; charset=utf-8")
+                if action == "changes":
+                    return self.json(200, workspace.changes(actor, doc))
                 if action == "draft":
                     with lock:
                         job = dict(jobs.get((pid, doc)) or {})
@@ -366,7 +436,10 @@ def make_workspace_server(
                 if action == "snapshot" and target is None:
                     return self.json(201, workspace.save_evidence(actor, doc))
                 if action == "draft" and target is None:
-                    return self.json(202, {"job": start_draft(pid, workspace, actor, doc)})
+                    fresh = self.json_body().get("fresh", False)
+                    if not isinstance(fresh, bool):
+                        raise WorkspaceError(400, "Choose update or redraft.")
+                    return self.json(202, {"job": start_draft(pid, workspace, actor, doc, fresh)})
                 if action == "review" and target is None:
                     return self.json(200, workspace.review(actor, doc, self.json_body()))
                 if action == "approval" and target is None:

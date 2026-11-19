@@ -12,6 +12,7 @@ import yaml
 from test_workspace import PAT, client_for, login, sdd_document
 
 from dhf.generate import generate_document
+from dhf.graph import Store
 from dhf.ingest.fixtures import ingest_fixtures
 from dhf.render.explorer import evidence_findings
 from dhf.review import (
@@ -24,7 +25,8 @@ from dhf.review import (
 from dhf.trace import coverage, rtm
 from dhf.workspace import Workspace
 from dhf.workspace.insights import dashboard, gap_groups, requirement_trace
-from dhf.workspace.server import make_workspace_server
+from dhf.workspace.server import cell_text, make_workspace_server
+from dhf.workspace.sources import ProjectInput, WorkspaceError
 
 API = "/api/projects/design"
 
@@ -117,7 +119,7 @@ def wait_for_draft(client, doc: str) -> dict:
 def test_one_draft_runs_at_a_time(tmp_path, monkeypatch) -> None:
     release = threading.Event()
 
-    def slow(self, actor: str, doc: str, provider: str) -> dict:
+    def slow(self, actor: str, doc: str, provider: str, fresh: bool = False) -> dict:
         release.wait(5)
         return {"updated": False, "version": 0, "stale": []}
 
@@ -243,3 +245,164 @@ def test_browser_projects_drafts_review_approval_and_redline(tmp_path, monkeypat
         server.shutdown()
         server.server_close()
         background.join()
+
+
+def test_reject_removes_every_line_of_a_multiline_suggestion() -> None:
+    key = "a" * 16
+    claim = "**[Suggested — review required]** First line\nsecond line [X@r1](u)"
+    body = f"## S\n\n<!-- dhf-claim:{key} -->\n{claim}\n\nKept.\n"
+    markdown = f"<!-- section:s -->\n{body}<!-- endsection:s -->\n"
+    out = resolve_suggestion(markdown, key, "rejected", "R", "No")
+    assert "second line" not in out and "First line" not in out and "Kept." in out
+
+
+def test_traceability_completeness_skips_levels_inputs_cannot_record() -> None:
+    graph = ingest_fixtures()
+    for item in graph["artifacts"]:
+        item["attributes"]["link_classes"] = ["verifies:test_case"]
+    trace = requirement_trace(graph)
+    view = dashboard(trace, [], [], graph)
+    assert view["traceability"]["levels"] == ["verification"]
+    assert view["traceability"]["complete"] == sum(bool(r["verification"]) for r in trace["rows"])
+    for item in graph["artifacts"]:
+        item["attributes"]["link_classes"] = []
+    view = dashboard(requirement_trace(graph), [], [], graph)
+    assert view["traceability"]["percent"] is None
+
+
+def test_project_ids_never_reuse_folders_and_bad_databases_are_skipped(tmp_path) -> None:
+    root = tmp_path / "workspaces" / "folder"
+    (tmp_path / "workspaces" / "broken").mkdir(parents=True)
+    (tmp_path / "workspaces" / "broken" / "workspace.sqlite").write_bytes(b"not a database")
+    server, links = make_workspace_server(root, "design", "owner", [], port=0)
+    background = threading.Thread(target=server.serve_forever, daemon=True)
+    background.start()
+    base = f"http://127.0.0.1:{server.server_port}"
+    try:
+        with client_for(base) as client:
+            login(client, links["owner"])
+            assert client.get("/api/projects").status_code == 200
+            made = client.post("/api/projects", json={"name": "Folder", "release": "1"})
+            assert made.json()["id"] == "folder-2"
+            made = client.post("/api/projects", json={"name": "Broken", "release": "1"})
+            assert made.json()["id"] == "broken-2"
+    finally:
+        server.shutdown()
+        server.server_close()
+        background.join()
+
+
+def test_bulk_review_redraft_changes_and_rtm_export(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("DHF_CACHE_ROOT", str(tmp_path / "llm"))
+    workspace = Workspace(tmp_path / "w", "w", "owner", ["peer"])
+    workspace.save_details("owner", ProjectInput(name="W", release="2.0"))
+    workspace.upload(
+        "owner",
+        "sstr",
+        "test_evidence",
+        "results.csv",
+        b"Test Case ID,Outcome,Release\n41,passed,2.0\n42,failed,2.0\n",
+    )
+    with pytest.raises(WorkspaceError):  # SSTR needs Azure requirements
+        workspace.draft("owner", "sstr", "mock")
+    graph = ingest_fixtures()
+    for item in graph["artifacts"]:
+        item["attributes"]["synthetic"] = True
+    monkeypatch.setattr(Workspace, "graph", lambda self, actor, doc: graph)
+    first = workspace.draft("owner", "sstr", "mock")
+    assert first == {"updated": True, "version": 1, "stale": [], "redrafted": False}
+    store = Store(tmp_path / "w" / "sstr" / "evidence.sqlite")
+    try:
+        snapshots = store.db.execute("SELECT count(*) FROM snapshots").fetchone()[0]
+    finally:
+        store.close()
+    assert workspace.draft("owner", "sstr", "mock")["updated"] is False
+    store = Store(tmp_path / "w" / "sstr" / "evidence.sqlite")
+    try:  # an unchanged update stores no second copy of the evidence
+        assert store.db.execute("SELECT count(*) FROM snapshots").fetchone()[0] == snapshots
+    finally:
+        store.close()
+    state = workspace.draft_state("owner", "sstr", with_evidence=True)
+    keys = list(
+        {claim_key(c) for s in state["sections"] for c in s["claims"] if c["kind"] == "suggested"}
+    )
+    sourced = next(
+        claim_key(c) for s in state["sections"] for c in s["claims"] if c["kind"] == "sourced"
+    )
+    with pytest.raises(WorkspaceError, match="Only AI suggestions"):
+        workspace.review(
+            "owner",
+            "sstr",
+            {"kind": "suggestion", "key": sourced, "decision": "rejected", "rationale": "x"},
+        )
+    with pytest.raises(WorkspaceError, match="need a person"):
+        workspace.review(
+            "owner", "sstr", {"kind": "section", "section": "purpose_scope", "text": "x"}
+        )
+    done = workspace.review(
+        "peer",
+        "sstr",
+        {"kind": "suggestion", "keys": keys, "decision": "accepted", "rationale": "Batch checked"},
+    )
+    assert set(done["readiness"]["resolutions"]) == set(keys)
+    assert {r["reviewer"] for r in done["readiness"]["resolutions"].values()} == {"peer"}
+    assert workspace.changes("owner", "sstr") == {"release_changed": False, "sections": []}
+    workspace.save_details("owner", ProjectInput(name="W", release="2.1"))
+    assert workspace.changes("owner", "sstr")["release_changed"] is True
+    redraft = workspace.draft("owner", "sstr", "mock")
+    assert redraft["redrafted"] and redraft["version"] == 2
+    again = workspace.draft_state("owner", "sstr")
+    assert again["version"] == 2 and again["redline"] and again["docx"]["insertions"]
+    assert workspace.manifest("sstr")["params"]["release"] == "2.1"
+    fresh = workspace.draft("owner", "sstr", "mock", fresh=True)
+    assert fresh["redrafted"] and fresh["version"] == 3
+
+
+def test_rtm_cells_never_run_as_spreadsheet_formulas() -> None:
+    assert cell_text("=HYPERLINK(1)") == "'=HYPERLINK(1)"
+    assert cell_text("@SUM(A1)") == "'@SUM(A1)"
+    assert cell_text("SRS-001") == "SRS-001"
+    assert cell_text(None) == ""
+
+
+def test_safety_classification_csv_unblocks_sfmea_without_guessing() -> None:
+    from dhf.generate import expand_sections, load_spec
+    from dhf.workspace.uploads import uploaded_evidence
+
+    azure = ingest_fixtures()
+    for item in azure["artifacts"]:
+        item["attributes"].pop("safety_class", None)
+    spec = load_spec("sfmea")
+    with pytest.raises(ValueError, match="Safety class columns"):
+        expand_sections(spec, azure)
+    components = [a for a in azure["artifacts"] if a["type"] == "component"]
+    rows = "Item,Safety class\n" + "".join(f"{c['id']},Class C\n" for c in components[1:])
+    rows += f"{components[0]['title'].upper()},a\nnot-an-item,C\n{components[1]['id']},D\n"
+    upload = {
+        "id": "u1",
+        "role": "safety_classification",
+        "filename": "classes.csv",
+        "digest": "d",
+        "uploaded_at": "2026-11-20T00:00:00+00:00",
+        "blocks": [{"kind": "para", "text": rows}],
+    }
+    graph = uploaded_evidence([upload], azure)
+    recorded = {a["id"]: a["attributes"].get("safety_class") for a in graph["artifacts"]}
+    assert recorded[components[0]["id"]] == "A"  # matched by title, any case
+    assert all(recorded[c["id"]] == "C" for c in components[1:])  # an invalid "D" row is ignored
+    sourced = next(a for a in graph["artifacts"] if a["id"] == components[0]["id"])
+    assert sourced["attributes"]["safety_class_source"] == "classes.csv"
+    # A class the evidence already states is never overwritten by the file.
+    stated = ingest_fixtures()
+    kept = uploaded_evidence([{**upload, "blocks": [{"kind": "para", "text": rows}]}], stated)
+    assert {a["id"]: a["attributes"].get("safety_class") for a in kept["artifacts"]}[
+        components[0]["id"]
+    ] == "B"
+    sections = expand_sections(spec, graph)
+    units = {s.get("entity") for s in sections if s.get("repeat") == "software_unit"}
+    in_b = {
+        a["id"]
+        for a in graph["artifacts"]
+        if a["type"] == "software_unit" and a["attributes"].get("component") == components[0]["id"]
+    }
+    assert units and not units & in_b

@@ -136,7 +136,7 @@ def resolve_suggestion(
             body = body.replace(marker + SUGGESTED_LABEL, marker)
         else:  # a table row holds the claim in a cell; elsewhere it is one paragraph
             body = re.sub(rf"^\|[^\n]*{re.escape(marker)}[^\n]*\n", "", body, flags=re.M)
-            body = re.sub(rf"{re.escape(marker)}\n[^\n]*\n\n?", "", body)
+            body = re.sub(rf"{re.escape(marker)}\n(?:[^\n]+\n)*\n?", "", body)  # every line
         return f"<!-- section:{id} -->\n{earlier.sub('', body)}{record}<!-- endsection:{id} -->"
 
     result = SECTION.sub(edit, markdown)

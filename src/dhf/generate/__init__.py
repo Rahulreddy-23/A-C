@@ -138,14 +138,19 @@ def expand_sections(spec: dict, graph: dict) -> list[dict]:
             for a in graph["artifacts"]
             if a["type"] == "component"
         }
+
+        def safety_class(item: dict, classes: dict = classes) -> str | None:
+            # A unit's own recorded class wins over its component's.
+            own = item["attributes"].get("safety_class")
+            return own or classes.get(item["attributes"].get("component"))
+
         if first.get("repeat_class"):
             # A safety-class filter fails closed: an unknown class must never drop an item
             # from a safety analysis without anyone noticing.
             unknown = sorted(
                 a["id"]
                 for a in graph["artifacts"]
-                if a["type"] == first["repeat"]
-                and classes.get(a["attributes"].get("component")) is None
+                if a["type"] == first["repeat"] and safety_class(a) is None
             )
             if unknown:
                 raise ValueError(
@@ -153,11 +158,12 @@ def expand_sections(spec: dict, graph: dict) -> list[dict]:
                     "none is recorded for "
                     + ", ".join(unknown[:10])
                     + (" …" if unknown[10:] else "")
+                    + ". Record each class in the design evidence, or add a safety"
+                    " classification CSV with Item and Safety class columns."
                 )
         for artifact in sorted(graph["artifacts"], key=lambda a: a["id"]):
             if artifact["type"] == first["repeat"] and (
-                not first.get("repeat_class")
-                or classes.get(artifact["attributes"].get("component")) == first["repeat_class"]
+                not first.get("repeat_class") or safety_class(artifact) == first["repeat_class"]
             ):
                 for group_index, section in enumerate(group):
                     sections.append(

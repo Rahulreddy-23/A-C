@@ -3,6 +3,7 @@
 import hashlib
 import json
 import sqlite3
+import threading
 from collections import Counter
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
@@ -16,13 +17,19 @@ from cryptography.fernet import Fernet, InvalidToken
 from dhf.config import setting
 from dhf.generate import generate_document
 from dhf.generate.support import support_comments
-from dhf.graph import Store
+from dhf.graph import Store, diff_graph
 from dhf.impact import impact, regenerate
 from dhf.llm import LLM, canonical
 from dhf.models.evidence import validate_graph
 from dhf.render import render_docx
 from dhf.render.explorer import evidence_findings
-from dhf.review import author_section, readiness, resolve_suggestion, review_validation
+from dhf.review import (
+    author_section,
+    claim_key,
+    readiness,
+    resolve_suggestion,
+    review_validation,
+)
 from dhf.workspace.insights import gap_groups, merged_graph, requirement_trace
 from dhf.workspace.sources import (
     DOC_TYPES,
@@ -117,6 +124,9 @@ class Workspace:
         if saved_owner != owner:
             raise WorkspaceError(403, "Only the workspace owner can start this project.")
         self.authorized = frozenset({owner, *members})
+        # One writer per project's drafts: reviews never interleave with a redraft.
+        self.edit = threading.Lock()
+        self.graphs: dict[str, tuple[tuple, dict]] = {}
 
     @contextmanager
     def database(self) -> Iterator[sqlite3.Connection]:
@@ -457,10 +467,17 @@ class Workspace:
                 "ORDER BY uploaded_at",
                 (self.project_id, doc),
             ).fetchall()
+        # Extraction is the slow part; reuse it until the snapshot or an upload changes.
+        key = (snapshot["id"] if snapshot else None, *((r["id"], r["digest"]) for r in uploads))
+        cached = self.graphs.get(doc)
+        if cached and cached[0] == key:
+            return cached[1]
         azure = json.loads(snapshot["graph"]) if snapshot else EMPTY_GRAPH
-        return uploaded_evidence(
+        graph = uploaded_evidence(
             [{**dict(row), "blocks": json.loads(row["blocks"])} for row in uploads], azure
         )
+        self.graphs[doc] = (key, graph)
+        return graph
 
     def save_evidence(self, actor: str, doc: str) -> dict:
         graph = self.graph(actor, doc)
@@ -485,7 +502,20 @@ class Workspace:
         path = directory / "evidence.sqlite"
         store = Store(path)
         try:
-            result = store.ingest(graph)
+            previous = store.graph()
+            if previous["artifacts"] and not any(diff_graph(previous, graph).values()):
+                # Unchanged evidence keeps its snapshot instead of storing a copy per click.
+                latest = store.db.execute("SELECT max(id) FROM snapshots").fetchone()[0]
+                result = {
+                    "snapshot": latest,
+                    "changed": [],
+                    "added": [],
+                    "removed": [],
+                    "artifacts": len(graph["artifacts"]),
+                    "links": len(graph["links"]),
+                }
+            else:
+                result = store.ingest(graph)
         finally:
             store.close()
         return {**result, "path": path.as_posix()}
@@ -531,32 +561,61 @@ class Workspace:
         path = self.drafts_dir(doc) / f"{doc}.manifest.json"
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
 
-    def draft(self, actor: str, doc: str, provider: str) -> dict:
+    def draft(self, actor: str, doc: str, provider: str, fresh: bool = False) -> dict:
         """The first draft, or later only the sections the latest evidence made stale, so a
-        reviewer's edits elsewhere stay byte for byte and Word shows the changes."""
+        reviewer's edits elsewhere stay byte for byte and Word shows the changes. `fresh`, or
+        a changed project release, redrafts every section and redlines against the old text."""
         release = self.details().get("release")
         if not release:
             raise WorkspaceError(422, "Set the project release before drafting.", "Edit project")
-        saved = self.save_evidence(actor, doc)
-        store = Store(Path(saved["path"]))
-        try:
-            graph = store.graph()
-        finally:
-            store.close()
-        out, llm = self.drafts_dir(doc), LLM(provider)
+        with self.edit:
+            saved = self.save_evidence(actor, doc)
+            store = Store(Path(saved["path"]))
+            try:
+                graph = store.graph()
+            finally:
+                store.close()
+            out, llm = self.drafts_dir(doc), LLM(provider)
+            manifest = self.manifest(doc)
+            previous = out / f"{doc}.previous.md"
+            if manifest is None or fresh or manifest["params"].get("release") != release:
+                old = (out / f"{doc}.md").read_text(encoding="utf-8") if manifest else ""
+                params = {"release": release}
+                result = generate_document(doc, graph, params, provider, out=out, llm=llm)
+                if manifest is None:
+                    return {"updated": True, "version": 1, "stale": [], "redrafted": False}
+                # A full redraft continues the version line and shows Word what changed.
+                result["manifest"]["doc_version"] = manifest["doc_version"] + 1
+                previous.write_text(old, encoding="utf-8", newline="\n")
+                self.rerender(doc, result["markdown"], result["manifest"])
+                version = result["manifest"]["doc_version"]
+                return {"updated": True, "version": version, "stale": [], "redrafted": True}
+            markdown = (out / f"{doc}.md").read_text(encoding="utf-8")
+            report = impact(graph, manifest)
+            stale = sorted(s["id"] for s in report["sections"] if s["status"] == "stale")
+            if not stale:
+                version = manifest["doc_version"]
+                return {"updated": False, "version": version, "stale": [], "redrafted": False}
+            # Later review edits re-render Word against this version, keeping the redline.
+            previous.write_text(markdown, encoding="utf-8", newline="\n")
+            result = regenerate(graph, manifest, markdown, report, out, llm)
+            version = result["manifest"]["doc_version"]
+            return {"updated": True, "version": version, "stale": stale, "redrafted": False}
+
+    def changes(self, actor: str, doc: str) -> dict:
+        """What Update draft would redraft: stale and possibly affected sections with their
+        causes, read against the current inputs without saving a snapshot."""
+        self.require_member(actor)
         manifest = self.manifest(doc)
         if manifest is None:
-            result = generate_document(doc, graph, {"release": release}, provider, out=out, llm=llm)
-            return {"updated": True, "version": result["manifest"]["doc_version"], "stale": []}
-        markdown = (out / f"{doc}.md").read_text(encoding="utf-8")
-        report = impact(graph, manifest)
-        stale = sorted(s["id"] for s in report["sections"] if s["status"] == "stale")
-        if not stale:
-            return {"updated": False, "version": manifest["doc_version"], "stale": []}
-        # Later review edits re-render Word against this version, keeping the redline.
-        (out / f"{doc}.previous.md").write_text(markdown, encoding="utf-8", newline="\n")
-        result = regenerate(graph, manifest, markdown, report, out, llm)
-        return {"updated": True, "version": result["manifest"]["doc_version"], "stale": stale}
+            raise WorkspaceError(404, "Generate a draft first.")
+        report = impact(self.graph(actor, doc), manifest)
+        titles = {s["id"]: s["title"] for s in manifest["sections"]}
+        release = self.details().get("release")
+        return {
+            "release_changed": manifest["params"].get("release") != release,
+            "sections": [{**s, "title": titles.get(s["id"], s["id"])} for s in report["sections"]],
+        }
 
     def approvals(self, doc: str) -> list[dict]:
         with self.database() as db:
@@ -635,38 +694,63 @@ class Workspace:
         )
 
     def review(self, actor: str, doc: str, action: dict) -> dict:
-        """One reviewer decision on the local draft, as the same edit the docs PR would hold."""
+        """Reviewer decisions on the local draft, as the same edits the docs PR would hold:
+        suggestions (one or many), sections that need a person, and validator rejections."""
         self.require_member(actor)
         self.document(doc)
-        manifest = self.manifest(doc)
-        if manifest is None:
-            raise WorkspaceError(404, "Generate a draft first.")
-        markdown = (self.drafts_dir(doc) / f"{doc}.md").read_text(encoding="utf-8")
+        if not self.edit.acquire(timeout=10):
+            raise WorkspaceError(409, "This draft is being updated. Try again in a moment.")
         try:
-            kind = action["kind"]
-            if kind == "suggestion":
-                markdown = resolve_suggestion(
-                    markdown, action["key"], action["decision"], actor, action["rationale"]
-                )
-            elif kind == "section":
-                section = next(s for s in manifest["sections"] if s["id"] == action["section"])
-                markdown = author_section(
-                    markdown,
-                    section["id"],
-                    action["text"],
-                    actor,
-                    action.get("rationale", ""),
-                    section["status"] == "ai_unavailable",
-                )
-            elif kind == "validation":
-                markdown = review_validation(markdown, action["key"], actor, action["rationale"])
-            else:
-                raise ValueError("Choose a review action.")
-        except ValueError as error:
-            raise WorkspaceError(400, str(error)) from None
-        except (KeyError, TypeError, StopIteration, AttributeError):
-            raise WorkspaceError(400, "Check the review fields.") from None
-        self.rerender(doc, markdown, manifest)
+            manifest = self.manifest(doc)
+            if manifest is None:
+                raise WorkspaceError(404, "Generate a draft first.")
+            markdown = (self.drafts_dir(doc) / f"{doc}.md").read_text(encoding="utf-8")
+            suggested = {
+                claim_key(c)
+                for s in manifest["sections"]
+                for c in s["claims"]
+                if c["kind"] == "suggested"
+            }
+            try:
+                kind = action["kind"]
+                if kind == "suggestion":
+                    keys = action["keys"] if "keys" in action else [action["key"]]
+                    if not isinstance(keys, list) or not keys or len(keys) > 2000:
+                        raise ValueError("Choose the suggestions to decide.")
+                    if any(key not in suggested for key in keys):
+                        raise ValueError("Only AI suggestions in this draft can be decided here.")
+                    for key in dict.fromkeys(keys):
+                        markdown = resolve_suggestion(
+                            markdown, key, action["decision"], actor, action["rationale"]
+                        )
+                elif kind == "section":
+                    section = next(s for s in manifest["sections"] if s["id"] == action["section"])
+                    if section["mode"] != "human" and section["status"] != "ai_unavailable":
+                        raise ValueError("Only sections that need a person can be written here.")
+                    markdown = author_section(
+                        markdown,
+                        section["id"],
+                        action["text"],
+                        actor,
+                        action.get("rationale", ""),
+                        section["status"] == "ai_unavailable",
+                    )
+                elif kind == "validation":
+                    rejected = {claim_key(e) for e in manifest["validation"]["rejected"]}
+                    if action["key"] not in rejected:
+                        raise ValueError("That validation event is not in this draft.")
+                    markdown = review_validation(
+                        markdown, action["key"], actor, action["rationale"]
+                    )
+                else:
+                    raise ValueError("Choose a review action.")
+            except ValueError as error:
+                raise WorkspaceError(400, str(error)) from None
+            except (KeyError, TypeError, StopIteration, AttributeError):
+                raise WorkspaceError(400, "Check the review fields.") from None
+            self.rerender(doc, markdown, manifest)
+        finally:
+            self.edit.release()
         state = self.draft_state(actor, doc)
         assert state is not None
         return state
@@ -674,6 +758,14 @@ class Workspace:
     def approve(self, actor: str, doc: str, reference: str, comment: str) -> dict:
         """Record that a ready draft was approved in the eQMS, and keep that version as the
         baseline. Approval itself (signatures) stays in the eQMS."""
+        if not self.edit.acquire(timeout=10):
+            raise WorkspaceError(409, "This draft is being updated. Try again in a moment.")
+        try:
+            return self.record_approval(actor, doc, reference, comment)
+        finally:
+            self.edit.release()
+
+    def record_approval(self, actor: str, doc: str, reference: str, comment: str) -> dict:
         state = self.draft_state(actor, doc)
         if state is None:
             raise WorkspaceError(404, "Generate a draft first.")
@@ -749,6 +841,25 @@ class Workspace:
                 }
             )
         return rows
+
+    def provenance(self) -> dict:
+        """Where the project's evidence came from, for the status bar on every page."""
+        with self.database() as db:
+            fetched = db.execute(
+                "SELECT max(created_at) FROM requirements_snapshots WHERE project_id=?",
+                (self.project_id,),
+            ).fetchone()[0]
+            uploads = db.execute(
+                "SELECT count(*) FROM input_uploads WHERE project_id=?", (self.project_id,)
+            ).fetchone()[0]
+            default = next((r for r in self.connections(db) if r["document_type"] is None), None)
+        return {
+            "fetched_at": fetched,
+            "uploads": uploads,
+            "azure": {"org_url": default["org_url"], "project": default["project_name"]}
+            if default
+            else None,
+        }
 
     def project_graph(self, actor: str) -> dict:
         return merged_graph([self.graph(actor, doc) for doc in DOC_TYPES])

@@ -607,3 +607,43 @@ Claude drafting (synthetic Kestrel SSTR, `anthropic`): 12 sections, 1 claim reje
 **Pending live verification:** Copilot Studio drafting from the browser. `.env` has no `DHF_COPILOT_FLOW_URL` and no `DHF_REAL_DATA_APPROVAL`, so it cannot run here.
 
 **Known issues:** the type-scale advisories in DESIGN.md remain (14, 11, 15 and 20 px sizes and a 3 px radius used by the page).
+
+### Projects dashboard, project-scoped navigation and design reviews — 2026-11-20
+
+The owner asked for a dashboard of projects, each with its own documents, and an obvious way to switch projects (ADR-049). Anthropic's design skills (design critique, accessibility review, UX copy) reviewed every screen first.
+
+- **Projects home:** one row per project, one cell per document (version · blockers, status). A cell opens that project's document.
+- **Project in the address:** `#/p/<project>/...`. Back, bookmarks and shared links open the right project, and old links redirect.
+- **Rail and breadcrumb:** the rail names the project and its release; the top bar has a switcher menu that keeps the current page.
+- **Settings → Project:** edits and archives the project.
+- **Accessibility:**
+  - Form-control borders now meet 3:1.
+  - The switcher is a disclosure of links rather than a select that navigates on change.
+  - Repeated links and buttons carry the project name for screen readers.
+  - No sideways scroll at 375 px.
+- **UX copy:** one status vocabulary (No inputs yet, Ready to draft, Needs review, In review, Ready for approval, Approved). Blocker reasons now say what to fix.
+- **Bug fixes:**
+  - Consistency (C01–C04) and risk (F01–F03) findings showed blank rows in the gap tables; every finding now has an artifact, a message and an action.
+  - Risk rules gained titles.
+  - Document column headers vanished when archived projects existed.
+  - The status bar printed "null".
+
+Acceptance evidence:
+
+```text
+uv run ruff check . && uv run ruff format --check .  →  All checks passed! · 143 files already formatted
+uv run pytest -q  →  216 passed in 166.62s (0:02:46)
+```
+
+Browser checks (synthetic Kestrel and Pump Platform projects, scratch copy):
+- **Navigation:**
+  - A dashboard cell opens `#/p/kestrel/documents/sstr`.
+  - Switching to Pump Platform keeps the SSTR page, and Back returns to Kestrel.
+  - `#/overview` and `#/projects/edit` redirect.
+  - An unknown project shows a way back.
+- **Accessibility:**
+  - An automated scan of 17 screens found every input labelled, every control named, one h1 per page and no skipped heading levels.
+  - With the keyboard, the switcher opens on Enter and closes on Escape, returning focus.
+- **Gap tables:** 0 blank rows out of 32.
+
+A plain-language guide with screenshots of every screen is kept locally in `docs/guide/` (not committed).

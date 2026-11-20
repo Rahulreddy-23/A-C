@@ -376,3 +376,18 @@ Consequences: The docs-repo PR flow and its controlled baselines remain for the 
   - A project with thousands of artifacts answers document pages in under a second, where it took 12 to 39 s before. Rule findings and trace chains are unchanged, checked against the previous code.
   - Uploads accept Word files up to 40 MB, because real architecture documents carry many diagrams.
 
+## ADR-049 — Projects dashboard and project-scoped addresses
+
+- **Date:** 2026-11-20
+- **Context:** The owner could not see the projects with their own documents, or tell which project a page belonged to. A design critique, an accessibility review and a UX-copy review (Anthropic's design skills) agreed that the navigation model was the main problem.
+- **Decision:**
+  - **Projects is the home page.** It shows one row per project and one cell per document (version, blockers, status); each cell opens that project's document. The projects API returns each project's document stages.
+  - **Addresses carry the project** (`#/p/<project>/<page>/<tab>`). Older project-less links redirect to the last project used.
+  - **Navigation names the project.** The rail starts with "All projects" and the project's name and release. The top bar shows the project as a breadcrumb menu of links, which keeps the same page when you switch. It is not a select that navigates on change, because arrow keys would fire one change per press (WCAG 3.2.2).
+  - **Settings has a Project tab** for details and archiving.
+  - **One word set for status everywhere**, and one primary action per document page.
+  - **Every gap finding has an artifact, a message and an action.** Consistency and risk findings were previously shown as blank rows.
+- **Consequences:**
+  - Form controls get their own border token with at least 3:1 contrast (WCAG 1.4.11).
+  - Repeated links and buttons carry the project or document in hidden text, so screen readers can tell them apart.
+

@@ -35,14 +35,16 @@ uv run dhf serve --project-id my-project
 
 `dhf serve` opens the DHF workspace in your browser. It runs only on this computer and starts with an empty project.
 
+It opens on **Projects**: one row per project and one cell per document (SAD, SDD, SSTR, DRR, sFMEA). Each cell shows the draft version, its review blockers and its status, and opens that document. Inside a project, the left rail names the project and its release. The address always carries the project (`#/p/<project>/documents/sstr`), so Back, bookmarks and shared links open the right one. Select the project name in the top bar to switch; you stay on the same page in the other project.
+
 | Area | What you do there |
 |---|---|
-| **Dashboard** | See total requirements, coverage at each trace level, documentation and traceability completeness, gaps by category, and each document's review status. |
-| **Projects** | Create, open and archive projects. Each keeps its own Azure DevOps connections, inputs, drafts and approvals. |
+| **Projects** | See every project and the state of each of its documents, create, open, archive and restore projects. Each keeps its own Azure DevOps connections, inputs, drafts and approvals. |
+| **Overview** | See one project's requirements, coverage at each trace level, latest results, documentation and traceability completeness, gaps by category, and each document's status. |
 | **Documents** | For SAD, SDD, SSTR, DRR and sFMEA: choose the requirements source, add existing documents and evidence, then **Generate draft** and download Word. DRR collects inputs only for now. |
 | **Traceability** | Check requirements, design, code, verification and risk coverage in a filterable RTM, gaps grouped by what is missing, and the trace graph. |
-| **Review Center** | Accept or reject AI suggestions one at a time or in bulk with one rationale, write the sections only people can write, see tracked changes, and record the eQMS approval. |
-| **Settings** | Set the project's Azure DevOps connection and PAT, and check the AI configuration. |
+| **Review** | Accept or reject AI suggestions one at a time or in bulk with one rationale, write the sections only people can write, see tracked changes, and record the eQMS approval. |
+| **Settings** | Set the project's Azure DevOps connection and PAT, check the AI configuration, and edit or archive the project. |
 
 1. To save a PAT, generate a Fernet key and set `APP_ENCRYPTION_KEY` to that value in the ignored `.env` file or process environment. Keep the key stable across launches.
 

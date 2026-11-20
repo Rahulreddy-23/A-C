@@ -426,7 +426,11 @@ async function render(focus = true) {
   try {
     if (r.pid) {
       if (!ctx.projects.some(p => p.id === r.pid)) await loadProjects();
-      if (!ctx.projects.some(p => p.id === r.pid)) throw new Error('This project is not on this computer. Open one from All projects.');
+      if (!ctx.projects.some(p => p.id === r.pid)) {
+        $('switch').hidden = true;  // never leave another project's navigation on screen
+        $('rail').replaceChildren(h('a', {href: '#/projects'}, 'All projects'));
+        throw new Error('This project is not on this computer. Open one from All projects.');
+      }
       if (r.pid !== ctx.pid) choose(r.pid);
       ctx.project = await api(base());
     } else {
@@ -916,7 +920,11 @@ function suggestionsView(data) {
       for (const [doc, keys] of Object.entries(byDoc)) await api(docRoute(doc) + '/review', send('POST', {kind: 'suggestion', keys, decision, rationale: rationale.value}));
       flash = {text: (decision === 'accepted' ? 'Accepted ' : 'Rejected ') + plural(selected.size, 'suggestion') + '.', tone: 'ok'};
       render(false);
-    }, error => say(status, error.message, 'error'));
+    }, error => {
+      // Documents are saved one at a time; reload so earlier saved decisions show as decided.
+      flash = {text: error.message + ' Decisions shown as decided were saved.', tone: 'error'};
+      render(false);
+    });
   }
   const draw = () => {
     shown = data.suggestions.filter(s => (show.value === 'all' || s.status === show.value) && (!which.value || s.document === which.value));

@@ -1,0 +1,27 @@
+# Gap analysis groups rule findings by what is missing. Rules keep their own files; this only
+# assigns each rule to one group for the workspace. A rule listed nowhere shows under "Other".
+categories:
+  - id: requirement
+    label: Requirement gaps
+    description: Requirements not decomposed, not allocated to the architecture, or tests with no requirement.
+    rules: [D01, D02, G08, G09, G04]
+  - id: design
+    label: Design gaps
+    description: Software items without documented units, units outside the architecture, or design inconsistent with the evidence.
+    rules: [D03, D04, D05, C01, C04]
+  - id: implementation
+    label: Implementation gaps
+    description: Requirements with no implementing change, or code with no requirement.
+    rules: [G02, G03]
+  - id: verification
+    label: Verification gaps
+    description: Requirements without a verifying test, unrecorded defects, outdated or mismatched results.
+    rules: [G01, G05, G07, G10, G11, C03]
+  - id: risk
+    label: Risk gaps
+    description: Risk controls with no realizing requirement or verification, failure modes without analysis, SOUP not evaluated.
+    rules: [G06, G12, F01, F02, F03]
+  - id: document
+    label: Document consistency
+    description: Draft citations that no longer match the evidence revision.
+    rules: [C02]

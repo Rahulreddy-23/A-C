@@ -24,9 +24,18 @@ def query(graph: dict, name: str, params: dict) -> dict:
     facts = {}
     if name == "purpose_scope":
         evidence = types("user_need")
+        confidential = any(not a["attributes"].get("synthetic") for a in nodes.values())
+        if confidential:
+            evidence += [
+                a
+                for a in types("document_section")
+                if a["attributes"].get("input_role") in {"existing_sstr", "test_evidence"}
+            ]
         facts = {
             "release": release,
-            "scope": "System verification of the Kestrel controller",
+            "scope": "System verification"
+            if confidential
+            else "System verification of the Kestrel controller",
             "verification_runs": [
                 a["id"] for a in types("test_run") if a["attributes"].get("release") == release
             ],

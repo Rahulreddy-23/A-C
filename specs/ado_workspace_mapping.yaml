@@ -1,0 +1,25 @@
+# Default mapping for common Azure DevOps processes. Use APP_ADO_MAPPING for custom work items.
+work_item_types:
+  Requirement: software_req
+  User Story: software_req
+  Product Backlog Item: software_req
+  Issue: software_req
+  System Requirement: system_req
+  Software Requirement: software_req
+  Test Case: test_case
+  Bug: defect
+  Risk: hazard
+fields:
+  title: System.Title
+  body: System.Description
+  state: System.State
+  changed_at: System.ChangedDate
+  acceptance_criteria: Microsoft.VSTS.Common.AcceptanceCriteria
+  steps: Microsoft.VSTS.TCM.Steps
+  area: System.AreaPath
+  tags: System.Tags
+relations:
+  derives_from: System.LinkTypes.Hierarchy-Reverse
+  verifies: Microsoft.VSTS.Common.TestedBy-Reverse
+related_pairs: []
+release_pattern: '(?i)release\s+(\d+(?:\.\d+)+)'

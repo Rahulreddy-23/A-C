@@ -142,9 +142,19 @@ def can_carry(artifact: dict, rule: dict) -> bool:
 def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
     nodes = {a["id"]: a for a in graph["artifacts"]}
     edges = confirmed_links(graph)
+    # Index once: scanning every edge per subject is quadratic on real projects.
+    touching: dict[str, list[dict]] = {}
+    for e in edges:
+        for id in {e["src"], e["dst"]}:
+            touching.setdefault(id, []).append(e)
+    passed_by_test: dict[str, list[dict]] = {}
+    for r in nodes.values():
+        if r["type"] == "test_result" and r["attributes"]["outcome"] == "Passed":
+            passed_by_test.setdefault(r["attributes"]["test_case"], []).append(r)
     findings = []
     for rule in rules:
         for a in rule_subjects(rule, graph["artifacts"]):
+            near = touching.get(a["id"], [])
             attrs = a["attributes"]
             operation = rule["op"]
             if operation == "missing_link" and not can_carry(a, rule):
@@ -155,7 +165,7 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
                     e[anchor] == a["id"]
                     and e["type"] == rule["link"]
                     and nodes[e[peer]]["type"] in rule["peer_types"]
-                    for e in edges
+                    for e in near
                 )
             elif operation == "soup_requirements":
                 flagged = not any(
@@ -163,7 +173,7 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
                     and a["id"] in (e["src"], e["dst"])
                     and nodes[e["dst"] if e["src"] == a["id"] else e["src"]]["type"]
                     == "software_req"
-                    for e in edges
+                    for e in near
                 ) or not attrs.get("known_anomaly_evaluation")
             elif operation == "match":
                 flagged = True
@@ -172,17 +182,12 @@ def evaluate_rules(graph: dict, rules: list[dict]) -> list[dict]:
             elif operation == "outdated_verification":
                 passed = [
                     r
-                    for r in nodes.values()
-                    if r["type"] == "test_result"
-                    and r["attributes"]["test_case"] == a["id"]
-                    and r["attributes"]["outcome"] == "Passed"
-                    and r["attributes"].get("completed_at")  # undated results prove no timing
+                    for r in passed_by_test.get(a["id"], [])
+                    if r["attributes"].get("completed_at")  # undated results prove no timing
                 ]
                 passed.sort(key=lambda r: r["attributes"].get("completed_at", ""))
                 reqs = [
-                    nodes[e["dst"]]
-                    for e in edges
-                    if e["src"] == a["id"] and e["type"] == "verifies"
+                    nodes[e["dst"]] for e in near if e["src"] == a["id"] and e["type"] == "verifies"
                 ]
                 flagged = bool(passed) and any(
                     datetime.fromisoformat(

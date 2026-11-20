@@ -314,3 +314,80 @@ On Windows, Python reads and writes text in the ANSI code page (usually cp1252) 
 - **CI runs the tests and the offline demo on `ubuntu-latest` and `windows-latest`.**
 
 Consequences: Windows needs only Git for Windows and uv, and the commands are the same as on macOS. `scripts/demo.sh` remains a macOS/Linux convenience; `uv run python tools/demo.py` works everywhere.
+
+## ADR-046 — Project inputs and scoped snapshots in the local workspace
+
+2026-11-19 · Product input workflow
+
+The default browser entry point starts an empty project. Azure connections and uploaded evidence are scoped to the local project and document type. A document can use the project connection, its own override, or uploaded inputs. Fetch creates a versioned Azure requirements snapshot. Saving evidence combines the selected snapshot with that document's uploads and produces a canonical evidence database for existing trace and generation commands.
+
+- `cryptography` provides Fernet authenticated encryption for PATs. The key comes from `APP_ENCRYPTION_KEY`. The API exposes the last four characters in a mask, the saved date and a supplied expiry. Credential mutations record the project, connection, actor, operation and timestamp. PAT-based access checks report verified capabilities. Microsoft Entra identity and managed key storage belong to a hosted deployment.
+- The local owner provisions per-launch browser access for authorized members. The server listens on loopback and checks project binding, session membership and the request origin before mutations. Azure requests use the selected cloud organization over HTTPS and the existing read-only adapter.
+- Uploads are decoded in memory. Likely secrets are redacted from extracted Word text or decoded UTF-8 before evidence extraction. SQLite stores sanitized blocks and their digest. The existing structured document profile is matched by the checklist role and all explicitly supplied documents are kept.
+- The browser workspace uses a general Azure work-item mapping with a configuration override for custom processes. No fixture dataset or demo project configuration is loaded into this entry point.
+
+## ADR-047 — One browser workspace for the whole DHF loop
+
+2026-11-19 · Product frontend (owner: the inputs page and the demo explorer were confusing and did not meet the requirements; a colleague's platform specification was the input)
+
+The browser collected inputs only. Drafting, gaps, the RTM, review and approval needed the CLI or a separate explorer page. We adopt the specification's information architecture and workflow, not its stack: React, Fluent UI, FastAPI and the Azure services stay out (AGENTS stack, rules 8 and 11).
+
+- **One page, six areas.**
+  - Dashboard and Projects.
+  - Documents: SAD, SDD, SSTR, DRR and sFMEA.
+  - Traceability: requirements, design, code, verification and risk coverage, plus gap analysis.
+  - Review Center: AI suggestions, tracked changes, review queue and approval workflow.
+  - Settings: Azure DevOps and AI configuration.
+
+  `specs/render/workspace.html` is a single template with plain JavaScript and no external resource. It sets evidence text as text, never as HTML, and links only web URLs. The stdlib server stays on loopback with the existing origin and session checks.
+- **Numbers are computed in Python** (`src/dhf/workspace/insights.py`), never in the page.
+  - Coverage per trace level is measured over software requirements, or system requirements when there are none:
+    - architecture: `allocated_to` a software item
+    - design: a unit `implements` it
+    - code: a change `implements` it
+    - verification: a test `verifies` it
+    - risk: it `implements` a risk control
+  - A level reads "not assessable" when no input can hold that link.
+  - Documentation completeness counts drafted sections with no review blocker.
+  - Traceability completeness counts requirements that are both allocated and verified.
+  - Gap analysis groups the existing finding rules by `specs/rules/categories.yaml`, which is data. Every rule belongs to exactly one category, and a test checks this.
+- **Drafting runs from the browser.** It uses the same `generate_document` and `impact` + `regenerate` steps, `DHF_PROVIDER` and the guarded LLM layer, one draft at a time.
+  - The first draft is generated in full. Later updates redraft only stale sections, keeping the reviewer's bytes everywhere else.
+  - The Word file redlines against the reviewed version.
+- **Review edits are the docs-PR edits, as pure functions:** `resolve_suggestion`, `author_section` and `review_validation` in `dhf.review`. `readiness()` is unchanged, so the browser and the PR flow agree on what blocks a document. Decisions record the signed-in reviewer and a required rationale.
+- **Approval stays in the eQMS.** The workspace records the eQMS reference against a ready version and keeps that version as the baseline. A document whose text changes afterwards needs approval again.
+- **Projects:** one server serves every workspace the launching user owns in the workspaces folder. Archiving hides a project and deletes nothing.
+- **Not adopted:** GitHub and SharePoint connectors, Entra sign-in, hosted multi-user deployment, agent frameworks, and Azure SQL, Blob and Search. DRR drafting in the browser stays future work (ADR-046).
+
+Consequences: The docs-repo PR flow and its controlled baselines remain for the CLI. The browser's approval record is local evidence of an eQMS decision, not the decision itself.
+
+## ADR-048 — Workbench layout, bulk review, redraft and scale fixes
+
+- **Date:** 2026-11-20
+- **Context:** The owner judged the first workspace UI generic. The owner then asked for bulk review, a way to redraft after a release change, and a check of every button against a real project.
+- **Decision:**
+  - The workspace follows the evidence explorer: a left rail of areas and documents, a status bar with provenance, flat tables and DESIGN.md tokens. Light is the default; dark is a toggle.
+  - Review decides many suggestions at once with one rationale. The server accepts only suggested-claim keys, at most 2,000 per call, under the project's edit lock.
+  - A changed project release, or **Redraft from scratch**, regenerates every section as a new version. The previous text stays the redline base.
+  - sFMEA reads an owner-recorded **Safety classification** CSV. It fills only classes the evidence does not state, and records the file as their source. Without a class for every unit, drafting still stops and names the units. A curated function map is optional; an unmapped unit uses its own title as its function.
+  - Gap rules and trace chains index links once. Each subject no longer scans every link.
+  - The RTM CSV prefixes cells that start with `=`, `+`, `-`, `@`, a tab or a carriage return with `'`, so spreadsheets never run them as formulas.
+- **Consequences:**
+  - A project with thousands of artifacts answers document pages in under a second, where it took 12 to 39 s before. Rule findings and trace chains are unchanged, checked against the previous code.
+  - Uploads accept Word files up to 40 MB, because real architecture documents carry many diagrams.
+
+## ADR-049 — Projects dashboard and project-scoped addresses
+
+- **Date:** 2026-11-20
+- **Context:** The owner could not see the projects with their own documents, or tell which project a page belonged to. A design critique, an accessibility review and a UX-copy review (Anthropic's design skills) agreed that the navigation model was the main problem.
+- **Decision:**
+  - **Projects is the home page.** It shows one row per project and one cell per document (version, blockers, status); each cell opens that project's document. The projects API returns each project's document stages.
+  - **Addresses carry the project** (`#/p/<project>/<page>/<tab>`). Older project-less links redirect to the last project used.
+  - **Navigation names the project.** The rail starts with "All projects" and the project's name and release. The top bar shows the project as a breadcrumb menu of links, which keeps the same page when you switch. It is not a select that navigates on change, because arrow keys would fire one change per press (WCAG 3.2.2).
+  - **Settings has a Project tab** for details and archiving.
+  - **One word set for status everywhere**, and one primary action per document page.
+  - **Every gap finding has an artifact, a message and an action.** Consistency and risk findings were previously shown as blank rows.
+- **Consequences:**
+  - Form controls get their own border token with at least 3:1 contrast (WCAG 1.4.11).
+  - Repeated links and buttons carry the project or document in hidden text, so screen readers can tell them apart.
+

@@ -37,6 +37,34 @@ PAGE_POLICY = (
 )
 
 
+class LoopbackHandler(BaseHTTPRequestHandler):
+    def allowed(self) -> set[str]:
+        bound = self.server.server_address[1]
+        return {f"127.0.0.1:{bound}", f"localhost:{bound}"}
+
+    def reply(
+        self, status: int, body: bytes, kind: str, headers: dict[str, str] | None = None
+    ) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", kind)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Security-Policy", PAGE_POLICY)
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        for key, value in (headers or {}).items():
+            self.send_header(key, value)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def json(self, status: int, payload: dict) -> None:
+        self.reply(status, json.dumps(payload).encode(), "application/json")
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+
 def make_server(
     db: Path,
     documents: Path,
@@ -46,26 +74,7 @@ def make_server(
 ) -> ThreadingHTTPServer:
     lock = threading.Lock()
 
-    class Handler(BaseHTTPRequestHandler):
-        def allowed(self) -> set[str]:
-            bound = self.server.server_address[1]
-            return {f"127.0.0.1:{bound}", f"localhost:{bound}"}
-
-        def reply(self, status: int, body: bytes, kind: str) -> None:
-            self.send_response(status)
-            self.send_header("Content-Type", kind)
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Security-Policy", PAGE_POLICY)
-            self.send_header("X-Frame-Options", "DENY")
-            self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Referrer-Policy", "no-referrer")
-            self.end_headers()
-            self.wfile.write(body)
-
-        def json(self, status: int, payload: dict) -> None:
-            self.reply(status, json.dumps(payload).encode(), "application/json")
-
+    class Handler(LoopbackHandler):
         def do_GET(self) -> None:
             if self.headers.get("Host") not in self.allowed():
                 return self.json(403, {"error": "Unexpected host"})
@@ -103,8 +112,5 @@ def make_server(
             finally:
                 lock.release()
             self.json(200, record)
-
-        def log_message(self, *args: object) -> None:
-            pass
 
     return ThreadingHTTPServer(("127.0.0.1", port), Handler)

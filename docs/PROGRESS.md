@@ -510,3 +510,140 @@ The owner asked for native Windows support as a priority, and for a clear README
   - `render_ms` counts from page start and refreshes on every update. The harness read it only after its whole scripted session, so a runner stall during any interaction counted against the initial render.
   - Locally, the initial render takes 19 ms and the whole session 33 ms; 25 hash seeds all pass, so the generated page does not vary.
   - The budget now applies to the stats taken at load, and a failure reports the measured time.
+
+### Product input workspace — 2026-11-19
+
+- Added the empty product workspace, project default and document-specific Azure connections, the four requirements selectors, SSTR plan/run inputs, immutable Azure snapshots, and per-document multi-file evidence.
+- Added encrypted PAT storage, local owner/member sessions, credential activity, 401/403 recovery actions, expiry warnings and upload redaction ahead of evidence extraction.
+- Exported selected Azure evidence and uploads into a document-specific database for the existing drafting engine.
+
+Acceptance evidence:
+
+```text
+uv run --locked pytest -q --tb=short
+203 passed in 164.96s (0:02:44)
+
+ruff check .
+All checks passed!
+ruff format --check .
+141 files already formatted
+```
+
+In a clean browser workspace, selecting two SDD files together produced the message “2 file(s) added. Potential secrets were redacted in SDD-reader.txt.” With a PRD alongside them, **Save evidence for drafting** reported “Saved 3 evidence artifacts”.
+
+**Pending live verification:** run the browser workflow against the owner's Azure DevOps organization using an owner-supplied read-only PAT, confirmed work-item mapping and approved test scope. The current Azure contract checks use stubbed responses.
+
+**Deviations:** the synthetic dataset stays in the test and explicit rehearsal paths. The deployed scope here is the local browser workspace. Shared hosting, Microsoft Entra identity, managed encryption keys and browser DRR drafting remain future work.
+
+### Product workspace UI — 2026-11-19
+
+The owner judged the front end confusing, outdated and demo-only. A colleague's platform specification was the input. Its information architecture and workflow were adopted on our stack (ADR-047, brief §20).
+
+- **One workspace:** Dashboard, Projects, Documents (SAD, SDD, SSTR, DRR inputs, sFMEA), Traceability (five coverage views plus gap analysis), Review Center (suggestions, tracked changes, queue, approval) and Settings (Azure DevOps, AI).
+- **Computed views:** `src/dhf/workspace/insights.py` computes every number. `specs/rules/categories.yaml` groups each finding rule under one gap category.
+- **Drafting from the browser:** the first draft is generated in full. Later updates redraft only stale sections and redline the Word file against the reviewed version. One draft runs at a time.
+- **Review in the browser:** accept/reject with a rationale, writing human or AI-failed sections, and reviewing validator rejections. Each writes the same markers as the docs PR, through pure functions in `dhf.review`.
+- **Approval:** the workspace records the eQMS reference for a ready version, which becomes the baseline. A later change needs approval again.
+- **Projects:** one server serves every project the user owns, with create, edit, archive and restore. sFMEA joins the input checklist.
+
+Acceptance evidence:
+
+```text
+uv run pytest -q
+209 passed in 167.68s (0:02:47)
+ruff check .  →  All checks passed!
+ruff format --check .  →  143 files already formatted
+uv run python tools/demo.py  →  exit 0; unknown IDs 0; gaps P/R 1.00;
+  deterministic impact exact (51 records); audit pack 33 verified files
+```
+
+Browser walkthrough (synthetic Kestrel fixtures loaded as an Azure snapshot, mock provider; scratch copy, not committed):
+- **Dashboard:** 56 requirements; traceability 88.6% (31 of 35 software requirements allocated and verified); 30 gaps in 4 categories before drafting.
+- **SSTR first draft:** v1 in about 6 s with 9 review blockers.
+  - Three suggestions resolved (2 accepted, 1 rejected), and the human Approvals section written; the SSTR became ready for approval.
+  - Approval recorded against reference DCR-0001.
+- **SSTR update:** after SRS-021 changed in a newer snapshot, **Update draft** redrafted 2 stale sections into v2. The Word file holds 2 `w:ins` and 2 `w:del` tracked changes, and the document needs approval again.
+- **sFMEA:** draft v1 with 61 sections.
+- **Projects:** created, switched and archived.
+- **Mobile:** at 375 px the navigation drawer works and nothing scrolls sideways. Light and dark themes were both checked.
+
+**Pending live verification:** the browser drafting path with `copilotstudio` against the owner's project. Tests and the walkthrough use the mock provider.
+
+**Known issues:**
+- **Bulk review:** sFMEA drafts carry many suggested analysis cells (151 in the synthetic run), each resolved one at a time; bulk review is a follow-up.
+- **Release changes:** changing a project's release after drafting needs a fresh draft, because updates keep the recorded parameters.
+
+### Workbench redesign, bulk review, redraft and real-project check — 2026-11-20
+
+The owner judged the first workspace UI generic and asked for every button to be checked end to end with the company project and keys (ADR-048).
+
+- **Layout:** explorer-aligned workbench in DESIGN.md tokens: header with the project switcher and data class, a rail of areas and documents with version marks and the open blocker count, a provenance status bar, and flat tables. Light by default, with a dark toggle. Checked at desktop and at 375 px.
+- **Bulk review:** select suggestions and accept or reject them with one rationale. Single decisions, written sections and approvals now confirm what happened.
+- **Redraft:** a release change, or **Redraft from scratch**, regenerates every section as a new version with the Word redline. The document page lists stale sections and their causes before **Update draft**.
+- **RTM export:** CSV with formula-safe cells.
+- **sFMEA on real designs:** a **Safety classification** CSV fills unit and component classes the evidence lacks. Unmapped units use their own title as their function.
+
+Acceptance evidence:
+
+```text
+uv run ruff check .  →  All checks passed!
+uv run ruff format --check .  →  143 files already formatted
+uv run pytest -q  →  215 passed in 164.68s (0:02:44)
+```
+
+Real-project check (company data processed locally only; read-only PAT; mock provider; nothing committed):
+
+| Step | Result |
+|---|---|
+| Uploads | All design documents uploaded. One architecture document was over the old 12 MB cap, so the cap is now 40 MB. |
+| Fetch requirements | SAD and SSTR fetched; SSTR also read its test plans (thousands of work items) |
+| Drafts | SAD, SDD, SSTR and sFMEA drafted. sFMEA first stopped on missing safety classes, and then on two crashes, both fixed. |
+| Review | Section write, single and bulk accept, and select-all reject of several hundred sFMEA suggestions all worked |
+| Traceability | Matrix and RTM CSV export worked |
+| Speed | Document pages took up to 12.5 s and the evidence explorer 39 s on a project with thousands of artifacts. Gap rules and trace chains scanned every link for each subject. Both now index links once: under 0.6 s, with identical findings and chains checked against the old code. |
+
+Claude drafting (synthetic Kestrel SSTR, `anthropic`): 12 sections, 1 claim rejected by the validator. Every call was a cache hit from earlier live runs, so it cost $0.00. Anthropic spend to date is $0.15 of the $2.50 cap.
+
+**Pending live verification:** Copilot Studio drafting from the browser. `.env` has no `DHF_COPILOT_FLOW_URL` and no `DHF_REAL_DATA_APPROVAL`, so it cannot run here.
+
+**Known issues:** the type-scale advisories in DESIGN.md remain (14, 11, 15 and 20 px sizes and a 3 px radius used by the page).
+
+### Projects dashboard, project-scoped navigation and design reviews — 2026-11-20
+
+The owner asked for a dashboard of projects, each with its own documents, and an obvious way to switch projects (ADR-049). Anthropic's design skills (design critique, accessibility review, UX copy) reviewed every screen first.
+
+- **Projects home:** one row per project, one cell per document (version · blockers, status). A cell opens that project's document.
+- **Project in the address:** `#/p/<project>/...`. Back, bookmarks and shared links open the right project, and old links redirect.
+- **Rail and breadcrumb:** the rail names the project and its release; the top bar has a switcher menu that keeps the current page.
+- **Settings → Project:** edits and archives the project.
+- **Accessibility:**
+  - Form-control borders now meet 3:1.
+  - The switcher is a disclosure of links rather than a select that navigates on change.
+  - Repeated links and buttons carry the project name for screen readers.
+  - No sideways scroll at 375 px.
+- **UX copy:** one status vocabulary (No inputs yet, Ready to draft, Needs review, In review, Ready for approval, Approved). Blocker reasons now say what to fix.
+- **Bug fixes:**
+  - Consistency (C01–C04) and risk (F01–F03) findings showed blank rows in the gap tables; every finding now has an artifact, a message and an action.
+  - Risk rules gained titles.
+  - Document column headers vanished when archived projects existed.
+  - The status bar printed "null".
+
+Acceptance evidence:
+
+```text
+uv run ruff check . && uv run ruff format --check .  →  All checks passed! · 143 files already formatted
+uv run pytest -q  →  216 passed in 166.62s (0:02:46)
+```
+
+Browser checks (synthetic Kestrel and Pump Platform projects, scratch copy):
+- **Navigation:**
+  - A dashboard cell opens `#/p/kestrel/documents/sstr`.
+  - Switching to Pump Platform keeps the SSTR page, and Back returns to Kestrel.
+  - `#/overview` and `#/projects/edit` redirect.
+  - An unknown project shows a way back.
+- **Accessibility:**
+  - An automated scan of 17 screens found every input labelled, every control named, one h1 per page and no skipped heading levels.
+  - With the keyboard, the switcher opens on Enter and closes on Escape, returning focus.
+- **Gap tables:** 0 blank rows out of 32.
+
+A plain-language guide with screenshots of every screen is kept locally in `docs/guide/` (not committed).

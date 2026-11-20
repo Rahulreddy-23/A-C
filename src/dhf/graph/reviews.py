@@ -30,7 +30,7 @@ def risk_rows(graph: dict, hazard: str | None = None) -> list[dict]:
             and e["type"] == "implements"
             and nodes[e["src"]]["type"] == "software_unit"
         }
-        components = {nodes[u]["attributes"]["component"] for u in units}
+        components = {c for u in units if (c := nodes[u]["attributes"].get("component")) in nodes}
         tests = {e["src"] for e in edges if e["dst"] in reqs and e["type"] == "verifies"}
         rows.append(
             {
@@ -40,7 +40,8 @@ def risk_rows(graph: dict, hazard: str | None = None) -> list[dict]:
                 "components": sorted(components),
                 "units": sorted(units),
                 "function": "; ".join(
-                    nodes[c]["attributes"]["responsibility"] for c in sorted(components)
+                    nodes[c]["attributes"].get("responsibility", nodes[c]["title"])
+                    for c in sorted(components)
                 ),
                 "controls": [{"id": c, "title": nodes[c]["title"]} for c in sorted(controls)],
                 "requirements": sorted(reqs),
@@ -106,11 +107,12 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
         import yaml
 
         unit = nodes[params["entity"]]
-        primary = yaml.safe_load(Path("specs/risk/functions.yaml").read_text(encoding="utf-8"))[
-            unit["id"]
-        ]
+        functions = yaml.safe_load(Path("specs/risk/functions.yaml").read_text(encoding="utf-8"))
+        # Units a curated function map does not name (any imported design) use their own title.
+        primary = functions.get(unit["id"]) or unit["title"]
+        component = unit["attributes"].get("component")
         hazards = [r for r in risk_rows(graph) if unit["id"] in r["units"]]
-        ids = {unit["id"], unit["attributes"]["component"]}
+        ids = {unit["id"], *([component] if component in nodes else [])}
         ids.update(
             id
             for r in hazards
@@ -124,7 +126,7 @@ def review_query(graph: dict, name: str, params: dict) -> dict:
         evidence = [nodes[id] for id in sorted(ids)]
         row = {
             "unit": unit["id"],
-            "component": unit["attributes"]["component"],
+            "component": component,
             "function": primary,
             "hazards": [
                 {"id": r["hazard"], "name": r["hazard_name"], "source_severity": r["severity"]}

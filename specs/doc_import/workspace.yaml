@@ -1,0 +1,33 @@
+inputs:
+  requirements: {label: SRD / PRD, rule: product requirements}
+  specification: {label: Software Specifications Document, rule: software specification}
+  architecture: {label: Existing Architecture & Code Base, rule: software architecture}
+  sad: {label: SAD, rule: software architecture}
+  existing_sad: {label: Existing SAD, rule: software architecture}
+  existing_sdd: {label: Existing SDD, rule: software design}
+  existing_sstr: {label: Existing SSTR}
+  test_evidence: {label: Test evidence / results}
+  design_evidence: {label: Design documents & evidence}
+  design_changes: {label: Design changes since last review}
+  action_items: {label: Previous action items}
+  review_details: {label: Review type, date and participants}
+  risk_documentation: {label: Risk documentation}
+  existing_sfmea: {label: Existing sFMEA}
+  safety_classification: {label: Safety classification (CSV with Item and Safety class)}
+documents:
+  sad:
+    title: Software Architecture Document
+    inputs: [requirements, specification, architecture, existing_sad]
+  sdd:
+    title: Software Detailed Design
+    inputs: [requirements, specification, sad, architecture, existing_sdd]
+  sstr:
+    title: Software System Test Report
+    inputs: [existing_sstr, test_evidence]
+  drr:
+    title: Design Review Record
+    future: true
+    inputs: [design_evidence, design_changes, action_items, review_details]
+  sfmea:
+    title: Software FMEA
+    inputs: [requirements, specification, sad, existing_sdd, risk_documentation, existing_sfmea, safety_classification]

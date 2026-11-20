@@ -106,6 +106,11 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
 
     if name in ("design_scope", "system_context"):
         items = of_type("user_need") if name == "design_scope" else of_type("system_req")
+        items += [
+            a
+            for a in of_type("document_section")
+            if a["attributes"].get("input_role") in {"requirements", "specification"}
+        ]
         return pack(items, {"release": params.get("release", "1.1")})
     if name == "components":
         items = of_type("component")
@@ -231,8 +236,14 @@ def design_query(graph: dict, name: str, params: dict) -> dict:
             },
         )
     if name == "runtime_view":
+        source_documents = [
+            a
+            for a in of_type("document_section")
+            if a["attributes"].get("input_role")
+            in {"architecture", "sad", "existing_sad", "existing_sdd"}
+        ]
         return pack(
-            of_type("component", "adr", "hazard", "risk_control"),
+            [*of_type("component", "adr", "hazard", "risk_control"), *source_documents],
             {"release": params.get("release", "1.1"), **structure()},
         )
     if name == "architecture_risks":

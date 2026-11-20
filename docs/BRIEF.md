@@ -556,3 +556,41 @@ For the **official demo, all AI-written text must come from BD-approved GPT mode
 | M | Scope | Acceptance criteria |
 |---|---|---|
 | **M16** | **`copilotstudio` provider in `src/dhf/llm/adapters/`**, with one generic tenant prompt. Prompt bodies stay versioned data in `specs/prompts/` and are passed to the tenant as **text inputs**. **Mode 1, HTTP:** POST `{request_id, prompt_id, prompt_version, instructions, facts_json, evidence_json, output_schema_json, max_claims}` to a Power Automate cloud flow ("When an HTTP request is received" → AI Builder **Run a prompt**, generic "DHF section drafter" prompt on a **Basic-tier GPT model**, JSON output → Response). Read back `{claims_json, model, input_tokens, output_tokens}`. The flow URL is a **secret** (`DHF_COPILOT_FLOW_URL` in `.env`, never logged). **Mode 2, folder exchange** (fallback if HTTP triggers are DLP-blocked): write one request JSON per document into a **OneDrive-synced folder**. A cloud flow ("When a file is created in a folder", OneDrive for Business) loops the sections, runs the prompt and writes a response file; the adapter polls with a timeout. Both modes go through the same cache, ledger, validator and refusal/placeholder path. The ledger tracks **estimated Copilot credits** (tokens × the configured tier rate, Basic 0.1/1K) against `DHF_COPILOT_CREDIT_CAP` (default **400**, leaving headroom under BD's 600 per agent per month). The manifest records `provider: copilotstudio`, the tenant-reported model and the tier. The demo runs `DHF_LIVE_PROVIDER=copilotstudio ./scripts/demo.sh --live`. **Day-1 kit additions:** the generic prompt definition (instruction template, input variables, JSON output example), click-paths for both flows, and sample request/response payloads. **DEMO_SCRIPT:** state which provider produced each AI section, add the Copilot Studio agent beat (R-052 item 4), and keep mock/personal-API output out of the official path. | Offline tests with a stubbed HTTP endpoint and a stubbed exchange folder cover success, refusal/empty output, malformed JSON, timeout, cap exhaustion, cache hits and secret redaction. No paid or tenant calls in tests. A dry-run command prints the exact request payload for one section so the owner can test it in the prompt builder. The flow specs make no claim of tenant execution until the owner runs them. |
+
+## 19. Working product inputs — 2026-11-19
+
+The browser workspace uses a fresh local project and real Azure DevOps Services or user-supplied files. The synthetic dataset and mock are development fixtures with explicit entry points.
+
+| Document | Step 1 checklist |
+|---|---|
+| SAD | Azure requirements and/or SRD/PRD, software specifications, existing architecture and code base, existing SAD |
+| SDD | Azure requirements and/or SRD/PRD, software specifications, SAD, existing architecture and code base, existing SDDs |
+| SSTR | Azure requirements, optional Azure test plan/run IDs, existing SSTR, test evidence or results |
+| DRR (future) | Optional Azure requirements, design documents and evidence, design changes, past action items, review type/date/participants |
+
+- The Azure source supports an organization URL, project name, write-only PAT and saved query ID, WIQL, area path or work item IDs. Each document can select the project default or save an override. Test Connection verifies access, and Fetch Requirements creates the Step 2 snapshot. Fetched Azure requirements make SRD/PRD optional for SAD and SDD.
+- The project owner and authorized local members may save, replace or remove a PAT. Store PATs with authenticated encryption and a deployment-supplied key. Show the last four characters only, the save date and a known expiry. Guide users to Work Items (Read), plus Test Management (Read) for SSTR. Map invalid/expired credentials and insufficient access to actionable errors. Warn seven days ahead of a known expiry. Keep the secret out of responses, logs, evidence and model requests.
+- Accept multiple files per role and redact likely secrets before evidence extraction or indexing. The input workspace feeds the existing evidence graph and drafting engine. Product acceptance includes selector coverage, connection isolation, encrypted persistence and credential error mapping, upload redaction and a multi-file SDD snapshot.
+
+## 20. Product workspace UI — 2026-11-19
+
+`dhf serve` is the product front end (ADR-047). It is one local page with six areas:
+
+| Area | Content |
+|---|---|
+| Dashboard | Total requirements; coverage by architecture, design, code, verification and risk; documentation and traceability completeness; gaps by category; each document's review stage |
+| Projects | Create, open and archive; name, product, version, release, repository URL, ADO project, business unit, description |
+| Documents | SAD, SDD, SSTR, DRR (inputs only), sFMEA: requirements source, input checklist, evidence summary, draft and update, Word and Markdown download |
+| Traceability | Requirements, design, code, verification and risk coverage with a filterable RTM and drill-down IDs; gap analysis by requirement, design, implementation, verification, risk and document consistency; the trace graph |
+| Review Center | AI suggestions with sources, confidence and an accept/reject rationale; sections to write; validator rejections; tracked changes; review queue; approval workflow with the eQMS reference |
+| Settings | Azure DevOps connection and PAT; AI provider, model, data clearance and budget |
+
+Acceptance:
+- Every number comes from code.
+- Review decisions produce the same Markdown markers as the docs PR, so `readiness()` agrees.
+- A document becomes ready only when `readiness()` reports no blocker.
+- An update after an evidence change redrafts only stale sections and shows Word tracked changes.
+- The page loads nothing external.
+- Reviewers can decide suggestions in bulk with one rationale (ADR-048).
+- A release change or **Redraft from scratch** regenerates every section as a new version, with the Word redline against the previous text.
+- sFMEA drafts only when every unit has a recorded safety class, from the design evidence or a Safety classification CSV.

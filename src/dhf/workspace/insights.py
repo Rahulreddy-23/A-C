@@ -119,6 +119,59 @@ def linked_ids(row: dict) -> list[str]:
     ]
 
 
+ACTIONS = {
+    "stale": "Update the draft so it cites the current revision.",
+    "unknown": "Correct or remove the citation.",
+}
+
+
+def figure(value: object) -> str:
+    if isinstance(value, dict) and "total" in value:
+        return f"{value['passed']} of {value['total']} passed"
+    return "nothing" if value is None else str(value)
+
+
+def describe(finding: dict, titles: dict) -> dict:
+    """One artifact, message and action for every finding. Consistency and risk rules name a
+    document, section or hazard instead, so the gap tables never show a blank row."""
+    if finding.get("message") and finding.get("action"):
+        return finding
+    where = " · ".join(
+        str(part)
+        for part in (str(finding.get("document", "")).upper(), finding.get("section"))
+        if part
+    )
+    detail = {
+        "stale": f"cites {finding.get('artifact')} at an older revision",
+        "unknown": f"cites {finding.get('artifact')}, which is not in the evidence",
+    }.get(finding.get("reason"), "")
+    if finding.get("missing") or finding.get("unexpected"):
+        detail = "; ".join(
+            text
+            for text in (
+                "missing " + ", ".join(finding.get("missing", []))
+                if finding.get("missing")
+                else "",
+                "not in the evidence " + ", ".join(finding.get("unexpected", []))
+                if finding.get("unexpected")
+                else "",
+            )
+            if text
+        )
+    if "recorded" in finding:
+        recorded, current = figure(finding["recorded"]), figure(finding.get("current"))
+        detail = f"records {recorded}; the evidence has {current}"
+    place = " · ".join(part for part in (where, detail) if part)
+    title = titles.get(finding["rule"], finding["rule"])
+    return {
+        **finding,
+        "artifact_id": finding.get("artifact_id") or finding.get("artifact"),
+        "message": finding.get("message") or (f"{title}: {place}" if place else title),
+        "action": finding.get("action")
+        or ACTIONS.get(finding.get("reason"), "Update the document to match the current evidence."),
+    }
+
+
 def gap_groups(findings: list[dict], blind: list[str], rules: list[dict]) -> list[dict]:
     """Findings grouped by what is missing, per specs/rules/categories.yaml."""
     categories = yaml.safe_load(Path("specs/rules/categories.yaml").read_text(encoding="utf-8"))[
@@ -126,6 +179,7 @@ def gap_groups(findings: list[dict], blind: list[str], rules: list[dict]) -> lis
     ]
     owner = {rule: c["id"] for c in categories for rule in c["rules"]}
     titles = {r["id"]: r.get("title", r["id"]) for r in rules}
+    findings = [describe(f, titles) for f in findings]
     groups = [
         {
             "id": c["id"],

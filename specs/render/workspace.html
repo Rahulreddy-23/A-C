@@ -9,12 +9,12 @@
 --primary:#315cbb;--primary-ink:#ffffff;--primary-hover:#284d9e;--ink:#22262e;--muted:#535c6c;--paper:#fafbfc;--surface:#ffffff;
 --chrome:#f0f2f5;--line:#d8dde5;--line-soft:#e8ebf0;--nav-active:#e1e7f0;--selection:#edf2ff;
 --warn:#935015;--warn-wash:#fbf1e4;--gap:#a54420;--gap-wash:#fbebe5;--stale:#704a93;--stale-wash:#f3edf9;--ok:#28634e;--ok-wash:#e8f3ee;
---fill-warn:#b8732a;--fill-ok:#28634e;--drawer:0 8px 24px rgb(20 35 55 / .18)}
+--fill-warn:#b8732a;--fill-ok:#28634e;--control:#858e9e;--drawer:0 8px 24px rgb(20 35 55 / .18)}
 :root[data-theme=dark]{color-scheme:dark;
 --primary:#8aa9ee;--primary-ink:#0f1726;--primary-hover:#a3bcf3;--ink:#e6e8ec;--muted:#a6aebb;--paper:#15181d;--surface:#1b1f26;
 --chrome:#20252d;--line:#363c48;--line-soft:#2b3039;--nav-active:#2c3442;--selection:#25314a;
 --warn:#e7ab6b;--warn-wash:#33271a;--gap:#f19478;--gap-wash:#3a2420;--stale:#c8a8ec;--stale-wash:#2f2440;--ok:#7cc7a1;--ok-wash:#1d3229;
---fill-warn:#d79a55;--fill-ok:#5fae86;--drawer:0 8px 24px rgb(0 0 0 / .5)}
+--fill-warn:#d79a55;--fill-ok:#5fae86;--control:#6b7383;--drawer:0 8px 24px rgb(0 0 0 / .5)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -34,8 +34,21 @@ main:focus,main:focus-visible{outline:none}
 .top{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--line);min-width:0}
 .brand{display:flex;align-items:center;gap:8px;font-weight:650;font-size:14px;color:var(--ink);text-decoration:none;white-space:nowrap}
 .brand-mark{display:grid;place-items:center;width:22px;height:22px;border-radius:5px;background:var(--primary);color:var(--primary-ink);font-size:12px;font-weight:700}
-.switch{min-width:0;max-width:340px}
-.switch select{width:100%}
+.switch{display:flex;align-items:center;gap:10px;min-width:0;max-width:380px}
+.crumb{color:var(--muted)}
+.picker{position:relative;min-width:0}
+.picker summary{display:flex;align-items:center;gap:6px;min-height:32px;padding:4px 10px;border:1px solid var(--line);border-radius:5px;background:var(--surface);font-weight:600;cursor:pointer;list-style:none}
+.picker summary::-webkit-details-marker{display:none}
+.picker summary:hover{background:var(--chrome)}
+.picker-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:20;width:max-content;min-width:260px;max-width:min(420px,90vw);max-height:60vh;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);box-shadow:var(--drawer)}
+.picker-menu a{display:flex;justify-content:space-between;gap:16px;padding:7px 10px;border-radius:5px;color:var(--ink);text-decoration:none}
+.picker-menu a:hover{background:var(--chrome)}
+.picker-menu a[aria-current=true]{background:var(--nav-active);font-weight:600}
+.picker-menu small{color:var(--muted);white-space:nowrap;font-weight:400}
+.picker-menu p{padding:4px 10px 6px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.picker-menu .all{margin-top:4px;border-top:1px solid var(--line-soft);border-radius:0}
+.clip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .class{color:var(--muted);font-size:12px;white-space:nowrap}
 .class.confidential{color:var(--warn)}
 .top .spacer{flex:1}
@@ -47,6 +60,12 @@ main:focus,main:focus-visible{outline:none}
 .rail a[aria-current=page]{background:var(--nav-active);font-weight:600}
 .rail a small{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;color:var(--muted);font-weight:400}
 .rail h2{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 10px 4px}
+.rail a small.s-ok{color:var(--ok)}.rail a small.s-warn{color:var(--warn)}
+.rail a.back{justify-content:flex-start;gap:6px;color:var(--muted);font-size:12px;min-height:28px}
+.rail a.rail-end{margin-top:12px}
+.rail-project{padding:6px 10px 10px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.rail-project strong{display:block;line-height:1.35;overflow-wrap:anywhere}
+.rail-project span{color:var(--muted);font-size:12px}
 main{overflow:auto;padding:20px 28px 48px;min-width:0}
 .status{grid-column:1/-1;display:flex;align-items:center;gap:22px;padding:0 16px;background:var(--chrome);border-top:1px solid var(--line);color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden}
 .status span{overflow:hidden;text-overflow:ellipsis}
@@ -73,8 +92,8 @@ h1{font-size:22px;font-weight:650;letter-spacing:-.025em;line-height:1.25}
 .btn[aria-busy=true]::after{content:"";width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(1turn)}}
 .actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-input:not([type=checkbox]):not([type=file]),select,textarea{width:100%;min-height:32px;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink);font:inherit}
-input:not([type=checkbox]):not([type=file]):hover,select:hover,textarea:hover{border-color:var(--muted)}
+input:not([type=checkbox]):not([type=file]),select,textarea{width:100%;min-height:32px;padding:5px 8px;border:1px solid var(--control);border-radius:5px;background:var(--surface);color:var(--ink);font:inherit}
+input:not([type=checkbox]):not([type=file]):hover,select:hover,textarea:hover{border-color:var(--ink)}
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--primary);outline-offset:0;border-color:var(--primary)}
 input:disabled{opacity:.6}
 textarea{min-height:72px;resize:vertical}
@@ -92,7 +111,7 @@ label{font-weight:600}
 .note.warn{background:var(--warn-wash);border-color:transparent;color:var(--warn)}
 .note.error{background:var(--gap-wash);border-color:transparent;color:var(--gap)}
 .note:empty{display:none}
-.table-wrap{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.table-wrap{position:relative;overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 table{width:100%;border-collapse:collapse;text-align:left}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line-soft);vertical-align:top;overflow-wrap:anywhere}
 th{position:sticky;top:0;z-index:1;background:var(--chrome);font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;border-bottom-color:var(--line)}
@@ -100,6 +119,10 @@ tbody tr:last-child td{border-bottom:0}
 tbody tr:hover td{background:var(--paper)}
 td.r,th.r{text-align:right}
 td.missing{color:var(--gap)}
+.doc-cell{display:flex;flex-direction:column;color:var(--ink);text-decoration:none;line-height:1.4;white-space:nowrap}
+.doc-cell:hover .num{text-decoration:underline}
+.project-link{font-weight:650}
+td:has(>.project-link){min-width:180px}
 .ids{display:flex;flex-wrap:wrap;gap:2px 8px}
 .bar{display:grid;grid-template-columns:minmax(110px,150px) minmax(0,1fr) minmax(108px,auto);align-items:center;gap:12px;padding:5px 0}
 .bar .track{height:6px;border-radius:3px;background:var(--chrome);overflow:hidden}
@@ -169,8 +192,8 @@ main{padding:16px}
 <div class="app" id="app" hidden>
 <header class="top">
 <button class="btn quiet menu" id="menu" type="button" aria-controls="rail" aria-expanded="false" aria-label="Open navigation"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-<a class="brand" href="#/overview" aria-label="DHF Automation overview"><span class="brand-mark" aria-hidden="true">D</span><span class="brand-name">DHF Automation</span></a>
-<div class="switch"><select id="project-select" aria-label="Current project"></select></div>
+<a class="brand" href="#/projects" aria-label="DHF Automation: all projects"><span class="brand-mark" aria-hidden="true">D</span><span class="brand-name">DHF Automation</span></a>
+<div class="switch" id="switch" hidden><span class="crumb" aria-hidden="true">/</span><details class="picker" id="picker"><summary id="picker-label"></summary><div class="picker-menu" id="picker-menu"></div></details></div>
 <span class="class" id="data-class"></span>
 <span class="spacer"></span>
 <button class="btn quiet" id="theme" type="button">Dark appearance</button>
@@ -187,14 +210,14 @@ const $ = id => document.getElementById(id);
 const DOCS = ['sad', 'sdd', 'sstr', 'drr', 'sfmea'];
 const SHORT = {sad: 'SAD', sdd: 'SDD', sstr: 'SSTR', drr: 'DRR', sfmea: 'sFMEA'};
 const STAGE = {
-  no_inputs: ['No inputs', 'muted'], inputs_ready: ['Inputs ready', ''], draft: ['Needs review', 's-warn'],
+  no_inputs: ['No inputs yet', 'muted'], inputs_ready: ['Ready to draft', ''], draft: ['Needs review', 's-warn'],
   in_review: ['In review', 's-warn'], ready: ['Ready for approval', 's-ok'], approved: ['Approved', 's-ok']
 };
 const REASON = {
-  section_integrity: 'Section boundaries were edited', ai_unavailable: 'Sections AI could not draft',
-  stale: 'Stale sections', human_input_required: 'Sections that need a person',
-  unresolved_suggestion: 'AI suggestions to decide', rejected_text_present: 'Rejected text still present',
-  suggestion_label_present: 'Suggestion labels still present', unreviewed_validator_rejection: 'Validator rejections to note'
+  section_integrity: 'Section markers were edited or removed', ai_unavailable: 'Sections AI could not draft',
+  stale: 'Sections out of date with the evidence', human_input_required: 'Sections only a person can write',
+  unresolved_suggestion: 'AI suggestions to decide', rejected_text_present: 'Rejected text still in the document',
+  suggestion_label_present: 'Sections still marked [Suggested]', unreviewed_validator_rejection: 'Validator rejections to acknowledge'
 };
 const CAUSE = {
   query_facts_changed: 'computed facts changed', entity_removed: 'the item it describes was removed',
@@ -292,33 +315,71 @@ async function act(button, fn, onError) {
 }
 
 /* shell */
-function routeParts() {
-  const [name = 'overview', sub = '', extra = ''] = location.hash.replace(/^#\/?/, '').split('/');
-  return [name === 'dashboard' ? 'overview' : name || 'overview', sub, extra];
+const PROJECT_PAGES = ['overview', 'documents', 'traceability', 'review', 'settings'];
+// Project pages carry their project in the address (#/p/<project>/<page>/<tab>), so Back,
+// bookmarks and shared links always open the same project.
+function route() {
+  const parts = location.hash.replace(/^#\/?/, '').split('/').map(part => { try { return decodeURIComponent(part); } catch { return part; } });
+  if (parts[0] === 'p' && parts[1]) {
+    const [, pid, name = 'overview', sub = '', extra = ''] = parts;
+    return {pid, name: name === 'dashboard' ? 'overview' : name || 'overview', sub, extra};
+  }
+  const [name = '', sub = '', extra = ''] = parts;
+  return {pid: null, name: name === 'dashboard' ? 'overview' : name || 'projects', sub, extra};
 }
+const at = (path = 'overview', pid = ctx.pid) => '#/p/' + encodeURIComponent(pid) + '/' + path;
+const compact = d => ({type: d.type, stage: d.stage, future: d.future, version: d.draft ? d.draft.version : null,
+  blockers: d.draft ? d.draft.readiness.blockers.length : 0, approval: d.approvals?.[0]?.reference || null});
+function docMark(d) {
+  const label = d.future && !d.version ? 'Inputs only' : (STAGE[d.stage] || [d.stage])[0];
+  const title = label + (d.version ? ' · draft v' + d.version : '') + (d.blockers ? ' · ' + plural(d.blockers, 'review blocker') : '') + (d.stage === 'approved' && d.approval ? ' · ' + d.approval : '');
+  if (d.stage === 'approved') return ['v' + d.version + ' ✓', 's-ok', title, label];
+  if (d.version) return ['v' + d.version, d.blockers ? 's-warn' : '', title, label];
+  return [d.future ? 'inputs only' : d.stage === 'inputs_ready' ? 'ready to draft' : 'no inputs', '', title, label];
+}
+const BACK = 'M10 3L5 8l5 5';
 function paintRail() {
-  const docs = Object.fromEntries((ctx.project?.documents || []).map(d => [d.type, d]));
-  const mark = d => !d ? '' : d.draft ? 'v' + d.draft.version : d.future ? 'inputs' : d.stage === 'inputs_ready' ? 'ready' : '—';
-  const open = ctx.project ? ctx.project.documents.reduce((n, d) => n + (d.draft ? d.draft.readiness.blockers.length : 0), 0) : 0;
-  $('rail').replaceChildren(
-    h('a', {href: '#/overview', 'data-route': 'overview'}, 'Overview'),
-    h('a', {href: '#/projects', 'data-route': 'projects'}, 'Projects'),
-    h('h2', {text: 'Documents'}),
-    ...DOCS.filter(d => ctx.session.profile.documents[d]).map(d => h('a', {href: '#/documents/' + d, 'data-route': 'documents/' + d, title: ctx.session.profile.documents[d].title}, SHORT[d], h('small', {text: mark(docs[d])}))),
-    h('h2', {text: 'Work'}),
-    h('a', {href: '#/traceability', 'data-route': 'traceability'}, 'Traceability'),
-    h('a', {href: '#/review', 'data-route': 'review'}, 'Review', open ? h('small', {text: String(open), title: plural(open, 'review blocker')}) : null),
-    h('a', {href: '#/settings', 'data-route': 'settings'}, 'Settings'));
+  const r = route();
+  if (!r.pid) {
+    const active = ctx.projects.filter(p => !p.archived);
+    $('rail').replaceChildren(...[
+      h('a', {href: '#/projects', 'data-route': 'projects'}, 'All projects', h('small', {text: String(active.length)})),
+      active.length ? h('h2', {text: 'Open a project'}) : null,
+      ...active.map(p => h('a', {href: at('overview', p.id), title: p.name}, h('span', {class: 'clip', text: p.name}), h('small', {text: p.release || ''}))),
+      h('a', {href: '#/projects/new', 'data-route': 'projects/new'}, 'Create project')].filter(Boolean));  // replaceChildren would print null
+  } else {
+    const d = ctx.project.details, profile = ctx.session.profile.documents;
+    const docs = Object.fromEntries(ctx.project.documents.map(x => [x.type, compact(x)]));
+    const open = Object.values(docs).reduce((n, x) => n + x.blockers, 0);
+    $('rail').replaceChildren(
+      h('a', {href: '#/projects', class: 'back'}, icon(BACK, 12), 'All projects'),
+      h('div', {class: 'rail-project'}, h('strong', {text: d.name || ctx.pid}), h('span', {text: d.release ? 'Release ' + d.release : 'No release set'})),
+      h('a', {href: at('overview'), 'data-route': 'overview'}, 'Overview'),
+      h('h2', {text: 'Documents'}),
+      ...DOCS.filter(x => profile[x] && docs[x]).map(x => {
+        const [text, cls, title] = docMark(docs[x]);
+        return h('a', {href: at('documents/' + x), 'data-route': 'documents/' + x, title: profile[x].title + ': ' + title}, SHORT[x], h('small', {class: cls, text}));
+      }),
+      h('h2', {text: 'Across documents'}),
+      h('a', {href: at('traceability'), 'data-route': 'traceability'}, 'Traceability'),
+      h('a', {href: at('review'), 'data-route': 'review'}, 'Review', open ? h('small', {class: 's-warn', text: String(open), title: plural(open, 'review blocker')}) : null),
+      h('a', {href: at('settings'), 'data-route': 'settings', class: 'rail-end'}, 'Settings'));
+  }
   markRail();
 }
 function markRail() {
-  const [name, sub] = routeParts();
-  const key = name === 'documents' ? 'documents/' + sub : name;
-  for (const a of $('rail').querySelectorAll('a')) { if (a.dataset.route === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+  const r = route();
+  const key = r.name === 'documents' || (r.name === 'projects' && r.sub) ? r.name + '/' + r.sub : r.name;
+  for (const a of $('rail').querySelectorAll('a[data-route]')) { if (a.dataset.route === key) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
 }
 function paintStatus() {
-  const p = ctx.project?.provenance;
-  if (!p) { $('status').replaceChildren(h('span', {text: 'No project open'})); return; }
+  const p = route().pid ? ctx.project?.provenance : null;
+  if (!p) {
+    const active = ctx.projects.filter(x => !x.archived).length, archived = ctx.projects.length - active;
+    $('data-class').textContent = ''; $('data-class').className = 'class';
+    $('status').replaceChildren(...[h('span', {text: plural(active, 'project')}), archived ? h('span', {text: archived + ' archived'}) : null, h('span', {text: 'Projects are saved on this computer'})].filter(Boolean));
+    return;
+  }
   $('data-class').textContent = p.artifacts ? (p.synthetic ? 'Synthetic evidence' : 'Confidential evidence · local only') : '';
   $('data-class').className = 'class' + (p.artifacts && !p.synthetic ? ' confidential' : '');
   $('status').replaceChildren(
@@ -329,11 +390,19 @@ function paintStatus() {
     h('span', {text: 'AI: ' + p.provider}));
 }
 async function loadProjects() { ctx.projects = (await api('/api/projects')).projects; }
+const CHEVRON = 'M4 6l4 4 4-4';
 function paintSwitch() {
-  const select = $('project-select');
-  const shown = ctx.projects.filter(p => !p.archived || p.id === ctx.pid);
-  select.replaceChildren(...shown.map(p => h('option', {value: p.id, text: (p.name || p.id) + (p.archived ? ' (archived)' : '')})));
-  select.value = ctx.pid || '';
+  const r = route();
+  $('switch').hidden = !r.pid;
+  $('picker').open = false;
+  if (!r.pid) return;
+  const current = ctx.projects.find(p => p.id === ctx.pid);
+  const here = [r.name, r.sub].filter(Boolean).join('/');  // the same page in the other project
+  $('picker-label').replaceChildren(h('span', {class: 'sr-only', text: 'Project: '}), h('span', {class: 'clip', text: current?.name || ctx.pid}), h('span', {class: 'sr-only', text: '. Switch project'}), icon(CHEVRON, 12));
+  $('picker-menu').replaceChildren(h('p', {text: 'Switch project'}),
+    ...ctx.projects.filter(p => !p.archived || p.id === ctx.pid).map(p => h('a', {href: at(here, p.id), 'aria-current': p.id === ctx.pid ? 'true' : null},
+      h('span', {class: 'clip', text: p.name + (p.archived ? ' (archived)' : '')}), h('small', {text: p.release ? 'Release ' + p.release : ''}))),
+    h('a', {class: 'all', href: '#/projects'}, 'All projects'));
 }
 function choose(pid) {
   ctx.pid = pid;
@@ -342,30 +411,48 @@ function choose(pid) {
 }
 async function render(focus = true) {
   const token = ++view;
-  const [name, sub, extra] = routeParts();
+  let r = route();
+  // Links from before projects were in the address open the last project used.
+  if (!r.pid && (PROJECT_PAGES.includes(r.name) || (r.name === 'projects' && r.sub === 'edit'))) {
+    const rest = r.name === 'projects' ? 'settings/project' : [r.name, r.sub, r.extra].filter(Boolean).join('/');
+    history.replaceState(null, '', ctx.pid ? at(rest) : '#/projects');
+    r = route();
+  }
   $('rail').classList.remove('open'); $('menu').setAttribute('aria-expanded', 'false');
   const main = $('main');
   markRail();
   main.replaceChildren(h('div', {class: 'page'}, h('div', {class: 'skeleton', role: 'status', 'aria-label': 'Loading'}, h('i'), h('i'), h('i'), h('i'), h('i'))));
-  const pages = {overview: overviewPage, projects: projectsPage, documents: documentPage, traceability: tracePage, review: reviewPage, settings: settingsPage};
+  const pages = {projects: projectsPage, overview: overviewPage, documents: documentPage, traceability: tracePage, review: reviewPage, settings: settingsPage};
   try {
-    if (ctx.pid) ctx.project = await api(base());
+    if (r.pid) {
+      if (!ctx.projects.some(p => p.id === r.pid)) await loadProjects();
+      if (!ctx.projects.some(p => p.id === r.pid)) throw new Error('This project is not on this computer. Open one from All projects.');
+      if (r.pid !== ctx.pid) choose(r.pid);
+      ctx.project = await api(base());
+    } else {
+      ctx.project = null;
+      await loadProjects();  // the dashboard always shows current document stages
+    }
     if (token !== view) return;
-    paintRail(); paintStatus();
-    const content = await (pages[name] || overviewPage)(sub, extra);
+    paintSwitch(); paintRail(); paintStatus();
+    const page = r.pid ? (PROJECT_PAGES.includes(r.name) && pages[r.name]) || overviewPage : projectsPage;
+    const content = await page(r.sub, r.extra);
     if (token !== view) return;
     main.replaceChildren(h('div', {class: 'page'}, content));
   } catch (error) {
     if (token !== view) return;
-    main.replaceChildren(h('div', {class: 'page'}, head('This page could not load', ''), note(error.message, 'error'), h('div', {class: 'actions', style: 'margin-top:12px'}, btn('Try again', () => render()))));
+    main.replaceChildren(h('div', {class: 'page'}, head('This page could not load', ''), note(error.message, 'error'),
+      h('div', {class: 'actions', style: 'margin-top:12px'}, btn('Try again', () => render()), link('#/projects', 'All projects', 'btn quiet'))));
   }
   if (focus) main.focus({preventScroll: true});
   main.scrollTop = 0;
-  document.title = (main.querySelector('h1')?.textContent || 'Workspace') + ' · DHF Automation';
+  const title = main.querySelector('h1')?.textContent || 'Workspace';
+  const project = r.pid && r.pid === ctx.pid && ctx.project ? ctx.project.details.name || ctx.pid : null;
+  document.title = [title, project !== title ? project : null, 'DHF Automation'].filter(Boolean).join(' · ');
 }
 function needsRelease() {
   if (ctx.project?.details.release) return null;
-  return h('p', {class: 'note warn', role: 'status', style: 'margin-bottom:16px'}, 'Set the project release before drafting. ', h('a', {href: '#/projects/edit', text: 'Edit project details'}));
+  return h('p', {class: 'note warn', role: 'status', style: 'margin-bottom:16px'}, 'Set the project release before drafting. ', h('a', {href: at('settings/project'), text: 'Edit project details'}));
 }
 
 /* overview */
@@ -375,16 +462,16 @@ async function overviewPage() {
   const total = r.user_need + r.system_req + r.software_req;
   const subject = data.subject === 'system_req' ? 'system requirement' : 'software requirement';
   const meta = [d.product, d.version && 'Version ' + d.version, d.release && 'Release ' + d.release].filter(Boolean).join(' · ');
-  const title = head(d.name || ctx.pid, meta || 'Project overview', total ? external(base() + '/evidence', 'Open trace graph') : null, link('#/review', 'Review work', 'btn primary'));
-  if (!total) return [title, needsRelease(), empty('No evidence yet', 'Connect Azure DevOps in Settings, or open a document and add its input files. Coverage, results and review work appear here as soon as evidence exists.', link('#/settings', 'Connect Azure DevOps', 'btn primary'), link('#/documents/sad', 'Add document inputs'))];
+  const title = head(d.name || ctx.pid, meta || 'Project overview', total ? external(base() + '/evidence', 'Open trace graph') : null, link(at('review'), 'Review work', 'btn primary'));
+  if (!total) return [title, needsRelease(), empty('No evidence yet', 'Connect Azure DevOps in Settings, or open a document and add its input files. Coverage, results and review work appear here as soon as evidence exists.', link(at('settings'), 'Connect Azure DevOps', 'btn primary'), link(at('documents/sad'), 'Add document inputs'))];
   const res = data.results;
   const left = h('div', {},
-    section('Coverage', 'of ' + plural(data.coverage[0].total, subject), bars(data.coverage.map(c => ({...c, href: '#/traceability/' + (c.id === 'architecture' ? 'design' : c.id)})))),
+    section('Coverage', 'of ' + plural(data.coverage[0].total, subject), bars(data.coverage.map(c => ({...c, href: at('traceability/') + (c.id === 'architecture' ? 'design' : c.id)})))),
     section('Latest results', d.release ? 'release ' + d.release : 'no release set', res && res.total
       ? h('div', {class: 'figures'}, [['passed', res.passed, ''], ['failed', res.failed, 's-gap'], ['blocked', res.blocked, 's-warn'], ['not run', res.not_run, '']].map(([label, n, tone]) => h('div', {}, h('b', {class: n ? tone : '', text: String(n)}), label)))
       : h('p', {class: 'muted', text: 'No test results recorded for this release.'})),
     section('Documents', null, table(['Document', 'Version', 'Status', h('th', {scope: 'col', class: 'r', text: 'Blockers'})], ctx.project.documents.map(doc => h('tr', {},
-      h('td', {}, h('a', {href: '#/documents/' + doc.type, text: doc.title})),
+      h('td', {}, h('a', {href: at('documents/') + doc.type, text: doc.title})),
       h('td', {class: 'num', text: doc.draft ? 'v' + doc.draft.version : '—'}),
       h('td', {}, doc.future ? h('span', {class: 'muted', text: 'Inputs only'}) : stage(doc.stage), doc.approvals[0] ? h('span', {class: 'muted', text: ' · ' + doc.approvals[0].reference}) : null),
       h('td', {class: 'r num', text: doc.draft ? String(doc.draft.readiness.blockers.length) : '—'}))))));
@@ -393,13 +480,13 @@ async function overviewPage() {
   const t = data.traceability;
   const right = h('div', {},
     section('Review work', plural(work.suggestions + work.sections + work.rejections, 'item') + ' open', h('ul', {class: 'rows'},
-      [['AI suggestions to decide', work.suggestions, '#/review'], ['Sections to write', work.sections, '#/review/queue'], ['Validator rejections to note', work.rejections, '#/review/queue'], ['Sections redrafted after an evidence change', work.stale, '#/review/changes']]
+      [['AI suggestions to decide', work.suggestions, at('review')], ['Sections to write', work.sections, at('review/queue')], ['Validator rejections to acknowledge', work.rejections, at('review/queue')], ['Sections redrafted after an evidence change', work.stale, at('review/changes')]]
         .map(([label, n, href]) => h('li', {}, h('a', {href, text: label}), h('span', {class: 'num ' + (n ? 's-warn' : 'muted'), text: String(n)}))))),
     section('Completeness', null, h('ul', {class: 'rows'},
       h('li', {}, h('span', {text: 'Documentation'}), h('span', {class: 'num', title: 'Drafted sections clear of review blockers', text: data.documentation.sections ? pct(data.documentation.percent) + ' · ' + data.documentation.complete_sections + '/' + data.documentation.sections + ' sections' : 'no drafts'})),
       h('li', {}, h('span', {text: 'Traceability'}), h('span', {class: 'num', text: t.percent === null ? 'not assessable' : pct(t.percent) + ' · ' + t.complete + '/' + t.total + ' ' + (t.levels.length === 2 ? 'allocated and verified' : t.levels[0] === 'verification' ? 'verified' : 'allocated')})))),
     section('Gaps', plural(gaps, 'finding'), table(['Kind', h('th', {scope: 'col', class: 'r', text: 'Findings'})], data.gaps.map(g => h('tr', {},
-      h('td', {}, h('a', {href: '#/traceability/gaps', text: g.label})), h('td', {class: 'r num ' + (g.count ? 's-warn' : 's-ok'), text: String(g.count)}))))),
+      h('td', {}, h('a', {href: at('traceability/gaps'), text: g.label})), h('td', {class: 'r num ' + (g.count ? 's-warn' : 's-ok'), text: String(g.count)}))))),
     section('Provenance', null, h('dl', {class: 'kv'}, provenanceRows())));
   return [title, needsRelease(), h('div', {class: 'cols'}, left, right)];
 }
@@ -420,23 +507,38 @@ const PROJECT_FIELDS = [
   ['business_unit', 'Business unit', 'text'], ['description', 'Description', 'textarea']
 ];
 async function projectsPage(sub) {
-  await loadProjects(); paintSwitch();
-  if (sub === 'new' || sub === 'edit') return projectForm(sub === 'edit' ? ctx.project?.details : null);
+  if (sub === 'new') return [head('Create project', 'A project is one product release. It starts empty: connect Azure DevOps or add document files next.'), projectForm(null)];
   const active = ctx.projects.filter(p => !p.archived), archived = ctx.projects.filter(p => p.archived);
-  const rows = list => list.map(p => h('tr', {},
-    h('td', {}, h('strong', {text: p.name || p.id}), p.id === ctx.pid ? h('span', {class: 'muted', text: ' · open'}) : null, p.description ? h('div', {class: 'muted', text: p.description}) : null),
-    h('td', {text: p.product || '—'}), h('td', {class: 'num', text: p.release || '—'}), h('td', {text: p.ado_project || '—'}), h('td', {text: p.business_unit || '—'}),
-    h('td', {class: 'num', text: when(p.updated_at)}),
-    h('td', {}, h('div', {class: 'actions'},
-      p.id === ctx.pid ? link('#/projects/edit', 'Edit', 'btn quiet') : btn('Open', event => act(event.currentTarget, async () => { choose(p.id); location.hash = '#/overview'; }), 'quiet'),
-      p.release ? btn(p.archived ? 'Restore' : 'Archive', event => act(event.currentTarget, async () => {
-        await api('/api/projects/' + encodeURIComponent(p.id) + '/archive', send('POST', {archived: !p.archived}));
-        await loadProjects(); paintSwitch(); render(false);
-      }), 'quiet') : null))));
-  const columns = ['Project', 'Product', 'Release', 'Azure DevOps', 'Business unit', 'Updated', ''];
-  return [head('Projects', 'Each project keeps its own Azure DevOps connections, inputs, drafts and approvals on this computer.', link('#/projects/new', 'Create project', 'btn primary')),
-    active.length ? table(columns, rows(active)) : empty('No active projects', 'Create a project to start collecting evidence.', link('#/projects/new', 'Create project', 'btn primary')),
-    archived.length ? h('details', {style: 'margin-top:20px'}, h('summary', {text: 'Archived projects (' + archived.length + ')'}), table(columns, rows(archived))) : null];
+  const docs = DOCS.filter(d => ctx.session.profile.documents[d]);
+  const cell = (p, d) => {
+    const doc = p.documents.find(x => x.type === d);
+    if (!doc) return h('td', {class: 'muted', text: '—'});
+    const [, , title, label] = docMark(doc);
+    return h('td', {}, h('a', {class: 'doc-cell', href: at('documents/' + d, p.id), title: ctx.session.profile.documents[d].title + ': ' + title},
+      h('span', {class: 'sr-only', text: SHORT[d] + ', ' + p.name + ': '}),
+      h('span', {class: 'num', text: doc.version ? 'v' + doc.version + (doc.blockers ? ' · ' + doc.blockers : '') : '—'}),
+      h('span', {class: (STAGE[doc.stage] || [])[1] || '', text: label})));
+  };
+  const rows = list => list.map(p => {
+    const open = p.documents.reduce((n, d) => n + d.blockers, 0);
+    const archive = p.release ? btn(p.archived ? 'Restore' : 'Archive', event => act(event.currentTarget, async () => {
+      await api('/api/projects/' + encodeURIComponent(p.id) + '/archive', send('POST', {archived: !p.archived}));
+      render(false);
+    }), 'quiet') : null;
+    archive?.append(h('span', {class: 'sr-only', text: ' ' + p.name}));
+    return h('tr', {},
+      h('td', {}, h('a', {class: 'project-link', href: at('overview', p.id), text: p.name}), h('div', {class: 'muted', text: [p.product, p.release ? 'Release ' + p.release : 'No release set'].filter(Boolean).join(' · ')})),
+      docs.map(d => cell(p, d)),
+      h('td', {class: 'r num'}, open ? h('a', {class: 's-warn', href: at('review', p.id), text: String(open)}) : h('span', {class: 'muted', text: '0'})),
+      h('td', {class: 'muted', text: p.fetched_at ? 'Azure read ' + when(p.fetched_at) : p.uploads ? plural(p.uploads, 'uploaded file') : 'No evidence yet'}),
+      h('td', {}, h('div', {class: 'actions'}, h('a', {class: 'btn quiet', href: at('overview', p.id)}, 'Open', h('span', {class: 'sr-only', text: ' ' + p.name})), archive)));
+  });
+  // Built per table: one header node cannot sit in two tables.
+  const columns = () => ['Project', ...docs.map(d => h('th', {scope: 'col', title: ctx.session.profile.documents[d].title, text: SHORT[d]})), h('th', {scope: 'col', class: 'r', text: 'Blockers'}), 'Evidence', ''];
+  return [head('Projects', 'Each project is one product release with its own evidence and its own DHF documents. Open a project, or select a document to go straight to it.', link('#/projects/new', 'Create project', 'btn primary')),
+    active.length ? [table(columns(), rows(active)), h('p', {class: 'help', style: 'margin-top:8px', text: 'A document cell shows its draft version, then its review blockers after the dot, then its status. Select a cell to open that document.'})]
+      : empty('No projects yet', 'Create a project for the product release you are documenting, then connect Azure DevOps or upload its documents.', link('#/projects/new', 'Create project', 'btn primary')),
+    archived.length ? h('details', {style: 'margin-top:20px'}, h('summary', {text: 'Archived projects (' + archived.length + ')'}), table(columns(), rows(archived))) : null];
 }
 function projectForm(details) {
   const status = h('p', {class: 'note'});
@@ -450,17 +552,22 @@ function projectForm(details) {
     return h('div', {class: 'field' + (type === 'textarea' ? ' wide' : '')}, h('label', {for: id, text: label + (required ? ' (required)' : '')}), input, help ? h('small', {id: id + '-help', text: help}) : null);
   });
   const submit = h('button', {class: 'btn primary', type: 'submit', text: details ? 'Save details' : 'Create project'});
-  const form = h('form', {class: 'form', novalidate: true, onsubmit: event => {
+  return h('form', {class: 'form', novalidate: true, onsubmit: event => {
     event.preventDefault();
     const value = Object.fromEntries(Object.entries(inputs).map(([k, input]) => [k, input.value.trim()]));
     if (!value.name || !value.release) { say(status, 'Enter the project name and release.', 'error'); (value.name ? inputs.release : inputs.name).focus(); return; }
     act(submit, async () => {
-      const saved = details ? await api(base() + '/details', send('POST', value)) : await api('/api/projects', send('POST', value));
-      await loadProjects(); choose(saved.id);
-      location.hash = '#/overview';
+      if (details) {
+        await api(base() + '/details', send('POST', value));
+        flash = {text: 'Project details saved.', tone: 'ok'};
+        render(false);
+        return;
+      }
+      const saved = await api('/api/projects', send('POST', value));
+      await loadProjects();
+      location.hash = at('overview', saved.id);
     }, error => say(status, error.message, 'error'));
-  }}, h('div', {class: 'fields'}, fields), status, h('div', {class: 'actions'}, submit, link(details ? '#/overview' : '#/projects', 'Cancel', 'btn quiet')));
-  return [head(details ? 'Edit project details' : 'Create project', details ? 'Name and release are required; the rest is for reference.' : 'A new project starts empty. Connect Azure DevOps and add document inputs next.'), form];
+  }}, h('div', {class: 'fields'}, fields), status, h('div', {class: 'actions'}, submit, details ? null : link('#/projects', 'Cancel', 'btn quiet')));
 }
 
 /* documents */
@@ -502,12 +609,12 @@ function sourceSection(doc, state) {
   let body;
   if (state.source === 'none') body = h('p', {class: 'muted', text: 'Azure DevOps is not read for this document.'});
   else if (state.source === 'override') body = connectionForm(doc, connection, () => render(false));
-  else body = connection ? connectionSummary(doc, connection) : h('p', {class: 'note warn'}, 'No project connection yet. ', h('a', {href: '#/settings', text: 'Set up Azure DevOps'}), '.');
+  else body = connection ? connectionSummary(doc, connection, !state.snapshot) : h('p', {class: 'note warn'}, 'No project connection yet. ', h('a', {href: at('settings'), text: 'Set up Azure DevOps'}), '.');
   return section('Requirements source', 'read-only', h('div', {class: 'field'}, h('label', {for: 'source-mode', text: 'Source'}), select), h('div', {style: 'margin-top:12px'}, body), status);
 }
-function connectionSummary(doc, c) {
+function connectionSummary(doc, c, first) {
   const status = h('p', {class: 'note'});
-  const fetchButton = h('button', {class: 'btn primary', type: 'button', text: 'Fetch requirements', disabled: !c.pat_mask});
+  const fetchButton = h('button', {class: first ? 'btn primary' : 'btn', type: 'button', text: 'Fetch requirements', disabled: !c.pat_mask});
   fetchButton.addEventListener('click', () => act(fetchButton, async () => {
     say(status, 'Reading work items from Azure DevOps…');
     const result = await api(base() + '/azure-connections/' + c.id + '/fetch', send('POST', {document_type: doc}));
@@ -519,7 +626,7 @@ function connectionSummary(doc, c) {
     h('dt', {text: SELECTORS[c.query_type][0]}), h('dd', {class: 'mono', text: c.query_value}),
     doc === 'sstr' && (c.test_plan_ids.length || c.test_run_ids.length) ? [h('dt', {text: 'Test plans · runs'}), h('dd', {class: 'mono', text: (c.test_plan_ids.join(', ') || '—') + ' · ' + (c.test_run_ids.join(', ') || '—')})] : null,
     h('dt', {text: 'PAT'}), h('dd', {text: c.pat_mask ? c.pat_mask + (c.pat_expiry ? ' · expires ' + when(c.pat_expiry) : '') : 'Not saved'})),
-    h('div', {class: 'actions', style: 'margin-top:10px'}, fetchButton, link('#/settings', 'Edit connection', 'btn quiet')), status);
+    h('div', {class: 'actions', style: 'margin-top:10px'}, fetchButton, link(at('settings'), 'Edit connection', 'btn quiet')), status);
 }
 function connectionForm(doc, c, saved) {
   const status = h('p', {class: 'note'});
@@ -659,7 +766,9 @@ function draftSection(doc, drafting, changes) {
     await api(docRoute(doc) + '/draft', send('POST', {fresh}));
     render(false);
   }, error => say(status, error.message, 'error'));
-  const update = h('button', {class: 'btn primary', type: 'button', text: draft ? 'Update draft' : 'Generate draft', disabled: running});
+  // One primary action: draft or update when something changed, otherwise review.
+  const behind = !draft || !!changes && (changes.release_changed || changes.sections.some(s => s.status === 'stale'));
+  const update = h('button', {class: behind ? 'btn primary' : 'btn', type: 'button', text: draft ? 'Update draft' : 'Generate draft', disabled: running});
   update.addEventListener('click', () => start(false, update));
   const redraft = draft ? h('button', {class: 'btn quiet', type: 'button', text: 'Redraft from scratch', disabled: running}) : null;
   const confirm = h('div', {class: 'note warn', hidden: true},
@@ -675,7 +784,7 @@ function draftSection(doc, drafting, changes) {
       if (!box.isConnected) return;
       if (next.job.state === 'running') box.replaceWith(draftSection(doc, next, changes)); else render(false);
     }, 1500);
-  } else if (job.state === 'failed') parts.push(note(job.error, 'error'), job.action === 'Edit project' ? h('p', {}, h('a', {href: '#/projects/edit', text: 'Edit project details'})) : null);
+  } else if (job.state === 'failed') parts.push(note(job.error, 'error'), job.action === 'Edit project' ? h('p', {}, h('a', {href: at('settings/project'), text: 'Edit project details'})) : null);
   else if (job.state === 'done') {
     const r = job.result;
     parts.push(note(r.redrafted ? 'Redrafted as v' + r.version + '. Word shows every change as tracked changes.' : r.updated ? (r.stale.length ? 'Updated ' + plural(r.stale.length, 'stale section') + ' as v' + r.version + '. Word shows the changes as tracked changes.' : 'Drafted v' + r.version + '.') : 'Already current: no section is stale against the inputs.', 'ok'));
@@ -686,7 +795,7 @@ function draftSection(doc, drafting, changes) {
       h('dt', {text: 'Drafted with'}), h('dd', {text: draft.model.provider + ' · ' + draft.model.name}),
       h('dt', {text: 'Sections'}), h('dd', {class: 'num', text: String(draft.sections.length)}),
       h('dt', {text: 'Validator'}), h('dd', {text: draft.validation.rejected.length + ' rejected · ' + draft.validation.downgraded.length + ' downgraded · ' + draft.validation.coerced.length + ' coerced'}),
-      h('dt', {text: 'Review'}), h('dd', {}, draft.readiness.ready ? h('span', {class: 's-ok', text: 'Ready for approval'}) : h('a', {href: '#/review/queue', class: 's-warn', text: plural(blockers, 'blocker') + ' to clear'})),
+      h('dt', {text: 'Review'}), h('dd', {}, draft.readiness.ready ? h('span', {class: 's-ok', text: 'Ready for approval'}) : h('a', {href: at('review/queue'), class: 's-warn', text: plural(blockers, 'blocker') + ' to clear'})),
       draft.redline ? [h('dt', {text: 'Tracked changes'}), h('dd', {class: 'num', text: draft.docx.insertions + ' insertions · ' + draft.docx.deletions + ' deletions'})] : null));
   }
   if (changes) {
@@ -699,7 +808,7 @@ function draftSection(doc, drafting, changes) {
   parts.push(h('div', {class: 'actions'}, update,
     draft ? download(docRoute(doc) + '/files/' + doc + '.docx', 'Word') : null,
     draft ? download(docRoute(doc) + '/files/' + doc + '.md', 'Markdown') : null,
-    draft ? link('#/review/queue', 'Review', 'btn quiet') : null, redraft), confirm, status);
+    draft ? link(at('review/queue'), 'Review', !behind && draft.readiness.blockers.length ? 'btn primary' : 'btn quiet') : null, redraft), confirm, status);
   box.append(...parts.flat().filter(Boolean));
   return box;
 }
@@ -711,9 +820,9 @@ async function tracePage(tab) {
   const {trace, groups} = await api(base() + '/traceability');
   const title = head('Traceability', 'Requirement → architecture → design → code → tests → results → risk controls, computed from the evidence.',
     trace.rows.length ? download(base() + '/rtm.csv', 'Export RTM (CSV)') : null, trace.rows.length ? external(base() + '/evidence', 'Open trace graph') : null);
-  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Traceability views'}, Object.entries(TRACE).map(([key, label]) => h('a', {href: '#/traceability/' + key, text: label, 'aria-current': key === tab ? 'page' : null})));
+  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Traceability views'}, Object.entries(TRACE).map(([key, label]) => h('a', {href: at('traceability/') + key, text: label, 'aria-current': key === tab ? 'page' : null})));
   if (tab === 'gaps') return [title, tabs, gapView(groups)];
-  if (!trace.rows.length) return [title, tabs, empty('No requirements yet', 'Fetch requirements from Azure DevOps, or add an SRD, PRD or software specification to a document.', link('#/documents/sad', 'Add inputs', 'btn primary'))];
+  if (!trace.rows.length) return [title, tabs, empty('No requirements yet', 'Fetch requirements from Azure DevOps, or add an SRD, PRD or software specification to a document.', link(at('documents/sad'), 'Add inputs', 'btn primary'))];
   const levels = {requirements: null, design: ['architecture', 'design'], code: ['code'], verification: ['verification'], risk: ['risk']}[tab];
   const coverage = trace.coverage.filter(c => !levels || levels.includes(c.id));
   const blind = coverage.filter(c => !c.assessable);
@@ -764,10 +873,10 @@ async function reviewPage(tab) {
   if (!REVIEW[tab]) tab = 'suggestions';
   const data = await api(base() + '/review');
   const title = head('Review', 'AI never overwrites a document. Reviewers decide each suggestion, write what only a person can, and record the eQMS approval.');
-  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Review views'}, Object.entries(REVIEW).map(([key, label]) => h('a', {href: '#/review/' + key, text: label, 'aria-current': key === tab ? 'page' : null})));
+  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Review views'}, Object.entries(REVIEW).map(([key, label]) => h('a', {href: at('review/') + key, text: label, 'aria-current': key === tab ? 'page' : null})));
   const shown = flash ? note(flash.text, flash.tone) : null;
   flash = null;
-  if (!data.queue.length) return [title, tabs, empty('Nothing to review yet', 'Generate a draft on a document page; its suggestions and review tasks appear here.', link('#/documents/sstr', 'Open a document', 'btn primary'))];
+  if (!data.queue.length) return [title, tabs, empty('Nothing to review yet', 'Generate a draft on a document page; its suggestions and review tasks appear here.', link(at('documents/sstr'), 'Open a document', 'btn primary'))];
   return [title, tabs, shown, {suggestions: suggestionsView, queue: queueView, changes: changesView, approval: approvalView}[tab](data)];
 }
 const DONE = {suggestion: p => (p.decision === 'accepted' ? 'Accepted' : 'Rejected') + ' the suggestion.', section: () => 'Section saved.', validation: () => 'Rejection marked reviewed.'};
@@ -846,9 +955,9 @@ function queueView(data) {
     const reasons = Object.entries(q.blockers);
     return section(q.document_title + ' (' + SHORT[q.document] + ') · v' + q.version, (STAGE[q.stage] || [q.stage])[0],
       reasons.length ? h('ul', {class: 'rows'}, reasons.map(([reason, n]) => h('li', {}, h('span', {text: REASON[reason] || reason}), h('span', {class: 'num s-warn', text: String(n)})))) : note('No review blockers. Record the approval next.', 'ok'),
-      q.blockers.unresolved_suggestion ? h('p', {style: 'margin-top:8px'}, link('#/review/suggestions', 'Decide AI suggestions', 'btn quiet')) : null,
+      q.blockers.unresolved_suggestion ? h('p', {style: 'margin-top:8px'}, link(at('review/suggestions'), 'Decide AI suggestions', 'btn quiet')) : null,
       sections.map(s => sectionEditor(q.document, s)), rejections.map(r => rejectionItem(q.document, r)),
-      h('div', {class: 'actions', style: 'margin-top:12px'}, download(docRoute(q.document) + '/files/' + q.document + '.docx', 'Word'), link('#/documents/' + q.document, 'Open document', 'btn quiet'), !reasons.length && q.stage !== 'approved' ? link('#/review/approval', 'Record approval', 'btn primary') : null));
+      h('div', {class: 'actions', style: 'margin-top:12px'}, download(docRoute(q.document) + '/files/' + q.document + '.docx', 'Word'), link(at('documents/') + q.document, 'Open document', 'btn quiet'), !reasons.length && q.stage !== 'approved' ? link(at('review/approval'), 'Record approval', 'btn primary') : null));
   });
 }
 function sectionEditor(doc, s) {
@@ -902,16 +1011,28 @@ function approvalView(data) {
         h('div', {class: 'fields'}, h('div', {class: 'field'}, h('label', {for: refId, text: 'eQMS reference (required)'}), reference), h('div', {class: 'field wide'}, h('label', {for: noteId, text: 'Comment'}), comment)),
         h('div', {class: 'actions'}, record), status)
         : q.stage === 'approved' ? note('v' + q.version + ' is the approved baseline.', 'ok')
-        : h('p', {class: 'muted', style: 'margin-top:8px'}, 'Clear the review blockers first. ', h('a', {href: '#/review/queue', text: 'Open the review queue'})),
+        : h('p', {class: 'muted', style: 'margin-top:8px'}, 'Clear the review blockers first. ', h('a', {href: at('review/queue'), text: 'Open the review queue'})),
       q.approvals.length ? h('div', {style: 'margin-top:12px'}, table(['Version', 'eQMS reference', 'Recorded by', 'Date', 'Comment'], q.approvals.map(a => h('tr', {}, h('td', {class: 'num', text: 'v' + a.version}), h('td', {class: 'id', text: a.reference}), h('td', {text: a.approver}), h('td', {class: 'num', text: when(a.approved_at)}), h('td', {text: a.comment || '—'}))))) : null);
   });
 }
 
 /* settings */
 async function settingsPage(tab) {
-  if (!['azure', 'ai'].includes(tab)) tab = 'azure';
+  if (!['azure', 'ai', 'project'].includes(tab)) tab = 'azure';
   const data = await api(base() + '/settings');
-  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Settings'}, [['azure', 'Azure DevOps'], ['ai', 'AI drafting']].map(([key, label]) => h('a', {href: '#/settings/' + key, text: label, 'aria-current': key === tab ? 'page' : null})));
+  const tabs = h('nav', {class: 'tabs', 'aria-label': 'Settings'}, [['azure', 'Azure DevOps'], ['ai', 'AI drafting'], ['project', 'Project']].map(([key, label]) => h('a', {href: at('settings/' + key), text: label, 'aria-current': key === tab ? 'page' : null})));
+  if (tab === 'project') {
+    const d = ctx.project.details;
+    const shown = flash ? note(flash.text, flash.tone) : null;
+    flash = null;
+    const archive = btn(d.archived ? 'Restore project' : 'Archive project', event => act(event.currentTarget, async () => {
+      await api(base() + '/archive', send('POST', {archived: !d.archived}));
+      location.hash = '#/projects';
+    }), d.archived ? '' : 'danger');
+    return [head('Settings', 'Details for this project. Name and release are required; the rest is for reference.'), tabs, shown,
+      section('Project details', null, projectForm(d)),
+      section(d.archived ? 'Restore' : 'Archive', null, h('p', {class: 'lead', text: 'Archiving hides the project from the switcher. Its evidence, drafts and approvals stay on this computer, and All projects can restore it.'}), d.release ? archive : h('p', {class: 'muted', text: 'Save the project details first.'}))];
+  }
   if (tab === 'ai') {
     const ai = data.ai, b = ai.budget || {};
     const budget = 'remaining_credits' in b ? b.remaining_credits.toFixed(1) + ' of ' + b.hard_cap_credits + ' credits left' : 'remaining_usd' in b ? '$' + b.remaining_usd.toFixed(2) + ' of $' + b.hard_cap_usd.toFixed(2) + ' left' : '—';
@@ -933,7 +1054,7 @@ async function settingsPage(tab) {
     h('div', {class: 'cols'},
       section('Azure DevOps connection', 'read-only', connectionForm(null, connection, () => render(false))),
       h('div', {},
-        section('Document connections', null, overrides.length ? h('ul', {class: 'rows'}, overrides.map(c => h('li', {}, h('a', {href: '#/documents/' + c.document_type, text: SHORT[c.document_type]}), h('span', {class: 'muted', text: c.org_url.replace(/^https:\/\//, '') + ' · ' + c.project_name})))) : h('p', {class: 'muted', text: 'None. A document page can switch to its own connection.'})),
+        section('Document connections', null, overrides.length ? h('ul', {class: 'rows'}, overrides.map(c => h('li', {}, h('a', {href: at('documents/') + c.document_type, text: SHORT[c.document_type]}), h('span', {class: 'muted', text: c.org_url.replace(/^https:\/\//, '') + ' · ' + c.project_name})))) : h('p', {class: 'muted', text: 'None. A document page can switch to its own connection.'})),
         section('PAT activity', 'never the token itself', data.audit.length ? h('ul', {class: 'rows'}, data.audit.map(e => h('li', {}, h('span', {text: e.action.replaceAll('_', ' ') + ' · ' + e.actor}), h('span', {class: 'num muted', text: when(e.at)})))) : h('p', {class: 'muted', text: 'No activity yet.'})),
         section('Other sources', null, h('p', {class: 'muted', text: 'Requirements, tests and code links come from Azure DevOps and uploaded files. GitHub and SharePoint connections are not available in this version.'}))))];
 }
@@ -950,7 +1071,7 @@ async function start() {
   setTheme(theme);
   const grant = new URLSearchParams(location.hash.slice(1)).get('access');
   if (grant) {
-    history.replaceState(null, '', location.pathname + '#/overview');
+    history.replaceState(null, '', location.pathname + '#/projects');
     await api('/api/session', {method: 'POST', headers: {Authorization: 'Bearer ' + grant}});
   }
   ctx.session = await api('/api/session');
@@ -959,14 +1080,18 @@ async function start() {
   let saved = null;
   try { saved = localStorage.getItem('dhf-project'); } catch {}
   choose(ctx.projects.some(p => p.id === saved) ? saved : ctx.session.project_id);
-  $('project-select').addEventListener('change', event => { choose(event.target.value); if (location.hash === '#/overview') render(); else location.hash = '#/overview'; });
+  document.addEventListener('click', event => { if ($('picker').open && !$('picker').contains(event.target)) $('picker').open = false; });
   $('theme').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
   $('menu').addEventListener('click', () => { const open = $('rail').classList.toggle('open'); $('menu').setAttribute('aria-expanded', String(open)); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && $('rail').classList.contains('open')) { $('rail').classList.remove('open'); $('menu').setAttribute('aria-expanded', 'false'); $('menu').focus(); } });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    if ($('picker').open) { $('picker').open = false; $('picker-label').focus(); }
+    else if ($('rail').classList.contains('open')) { $('rail').classList.remove('open'); $('menu').setAttribute('aria-expanded', 'false'); $('menu').focus(); }
+  });
   // A new access link pasted into an open tab must start a fresh session.
   window.addEventListener('hashchange', () => location.hash.includes('access=') ? location.reload() : render());
   $('startup').hidden = true; $('app').hidden = false;
-  if (!location.hash.startsWith('#/')) history.replaceState(null, '', '#/overview');
+  if (!location.hash.startsWith('#/')) history.replaceState(null, '', '#/projects');
   render(false);
 }
 start().catch(error => { $('startup-text').textContent = error.status === 401 ? 'Open the one-time access link that dhf serve printed.' : error.message; });

@@ -99,12 +99,33 @@ def make_workspace_server(
         with lock:
             return projects.setdefault(pid, workspace)
 
-    def project_list() -> list[dict]:
+    def project_list(actor: str) -> list[dict]:
+        """Every project with its documents' stages, for the projects dashboard."""
         rows = []
         for pid in discover():
             workspace = open_project(pid)
             details = workspace.details()
-            rows.append({**details, "name": details.get("name") or pid})
+            documents = [
+                {
+                    "type": d["type"],
+                    "stage": d["stage"],
+                    "future": d["future"],
+                    "version": d["draft"]["version"] if d["draft"] else None,
+                    "blockers": len(d["draft"]["readiness"]["blockers"]) if d["draft"] else 0,
+                    "approval": d["approvals"][0]["reference"] if d["approvals"] else None,
+                }
+                for d in workspace.documents(actor)
+            ]
+            provenance = workspace.provenance()
+            rows.append(
+                {
+                    **details,
+                    "name": details.get("name") or pid,
+                    "documents": documents,
+                    "fetched_at": provenance["fetched_at"],
+                    "uploads": provenance["uploads"],
+                }
+            )
         return rows
 
     def start_draft(pid: str, workspace: Workspace, actor: str, doc: str, fresh: bool) -> dict:
@@ -254,7 +275,7 @@ def make_workspace_server(
                 )
             if self.path == "/api/projects":
                 if self.command == "GET":
-                    return self.json(200, {"projects": project_list()})
+                    return self.json(200, {"projects": project_list(actor)})
                 if self.command == "POST":
                     change = ProjectInput.model_validate(self.json_body())
                     # Folder names count too: a new project never opens an existing folder.

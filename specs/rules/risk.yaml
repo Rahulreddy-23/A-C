@@ -1,10 +1,13 @@
 rules:
 - id: F01
   op: missing_control
+  title: Hazard has no risk control
   action: Record and trace a risk control for the failure mode.
 - id: F02
   op: missing_verification
+  title: Hazard or risk control has no verification
   action: Record a requirement and verifying test for this control.
 - id: F03
   op: missing_confirmed_mode
+  title: Hazard has no confirmed failure-mode analysis
   action: Review proposed failure modes and record a confirmed analysis for this hazard.

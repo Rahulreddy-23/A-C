@@ -24,7 +24,7 @@ from dhf.review import (
 )
 from dhf.trace import coverage, rtm
 from dhf.workspace import Workspace
-from dhf.workspace.insights import dashboard, gap_groups, requirement_trace
+from dhf.workspace.insights import dashboard, describe, gap_groups, requirement_trace
 from dhf.workspace.server import cell_text, make_workspace_server
 from dhf.workspace.sources import ProjectInput, WorkspaceError
 
@@ -79,6 +79,8 @@ def test_trace_dashboard_and_gap_groups_agree_with_the_rtm() -> None:
     groups = gap_groups(findings, blind, [r for group in rules.values() for r in group])
     assert sum(len(g["findings"]) for g in groups) == len(findings)
     assert "other" not in {g["id"] for g in groups}
+    shown = [f for g in groups for f in g["findings"]]
+    assert all(f["message"] and f["action"] for f in shown)  # no blank gap-table rows
     view = dashboard(trace, groups, [], graph)
     complete = sum(bool(r["architecture"] and r["verification"]) for r in trace["rows"])
     assert view["traceability"]["complete"] == complete
@@ -221,6 +223,19 @@ def test_browser_projects_drafts_review_approval_and_redline(tmp_path, monkeypat
             assert approval.status_code == 201 and approval.json()["approver"] == "owner"
             documents = {d["type"]: d for d in client.get(API).json()["documents"]}
             assert documents["sdd"]["stage"] == "approved"
+            # The projects dashboard lists each project's documents with their stages.
+            listed = {p["id"]: p for p in client.get("/api/projects").json()["projects"]}
+            cells = {d["type"]: d for d in listed["design"]["documents"]}
+            assert cells["sdd"] == {
+                "type": "sdd",
+                "stage": "approved",
+                "future": False,
+                "version": 1,
+                "blockers": 0,
+                "approval": "DCR-7",
+            }
+            assert cells["sad"]["stage"] == "no_inputs" and cells["drr"]["future"]
+            assert listed["design"]["uploads"] == 2 and listed["pump-platform"]["documents"]
             assert (root / "sdd" / "baselines" / "sdd-v1.md").is_file()
             other = {**upload, "X-Input-Filename": quote("two.docx")}
             body = sdd_document("Write", "plain text only")
@@ -406,3 +421,44 @@ def test_safety_classification_csv_unblocks_sfmea_without_guessing() -> None:
         if a["type"] == "software_unit" and a["attributes"].get("component") == components[0]["id"]
     }
     assert units and not units & in_b
+
+
+def test_consistency_and_risk_findings_read_as_full_rows() -> None:
+    titles = {"C01": "Component inventory differs", "C02": "Citation is absent or stale"}
+    stale = describe(
+        {
+            "rule": "C02",
+            "document": "sstr",
+            "section": "references",
+            "artifact": "SRS-021",
+            "reason": "stale",
+        },
+        titles,
+    )
+    assert stale["artifact_id"] == "SRS-021"
+    assert stale["message"] == (
+        "Citation is absent or stale: SSTR · references · cites SRS-021 at an older revision"
+    )
+    assert stale["action"] == "Update the draft so it cites the current revision."
+    inventory = describe(
+        {"rule": "C01", "document": "sad", "missing": ["COMP-06"], "unexpected": ["COMP-9"]},
+        titles,
+    )
+    assert inventory["artifact_id"] is None
+    assert inventory["message"].endswith("missing COMP-06; not in the evidence COMP-9")
+    summary = describe(
+        {
+            "rule": "C03",
+            "document": "sstr",
+            "recorded": None,
+            "current": {"total": 40, "passed": 39},
+        },
+        titles,
+    )
+    assert summary["message"].endswith("records nothing; the evidence has 39 of 40 passed")
+    risk = describe({"rule": "F01", "artifact": "HAZ-01", "action": "Record a control."}, {})
+    assert (risk["artifact_id"], risk["message"], risk["action"]) == (
+        "HAZ-01",
+        "F01",
+        "Record a control.",
+    )

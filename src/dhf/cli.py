@@ -931,6 +931,48 @@ def refresh_command(
     typer.echo(f"Explorer → {Path(output_dir) / 'explorer.html'}; log → refresh_log.jsonl")
 
 
+@app.command("setup")
+def setup_command() -> None:
+    """Prepare this computer: create .env from .env.example and a key for saved PATs."""
+    import os
+    import re
+    from pathlib import Path
+
+    from cryptography.fernet import Fernet
+
+    env, template = Path(os.environ.get("DHF_ENV_FILE", ".env")), Path(".env.example")
+    if not env.exists():
+        if not template.is_file():
+            typer.echo("Run this from the A-C folder, where .env.example is.", err=True)
+            raise typer.Exit(1)
+        env.write_text(template.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
+        typer.echo(f"Created {env} from {template}.")
+    text = env.read_text(encoding="utf-8-sig")
+    line = re.search(r"(?m)^APP_ENCRYPTION_KEY=(.*)$", text)
+    current = line[1].strip().strip('"').strip("'") if line else ""
+    if current:
+        try:
+            Fernet(current.encode())
+        except ValueError:
+            typer.echo(
+                "APP_ENCRYPTION_KEY in .env is not a valid key. Empty it and run setup again; "
+                "PATs saved with the old key must then be entered again.",
+                err=True,
+            )
+            raise typer.Exit(1) from None
+        typer.echo("APP_ENCRYPTION_KEY is already set and was left unchanged.")
+    else:
+        entry = "APP_ENCRYPTION_KEY=" + Fernet.generate_key().decode()
+        if line:
+            text = re.sub(r"(?m)^APP_ENCRYPTION_KEY=.*$", lambda _: entry, text, count=1)
+        else:
+            text = text.rstrip("\n") + "\n" + entry + "\n"
+        env.write_text(text, encoding="utf-8", newline="\n")
+        # The key itself is never printed: it decrypts every saved PAT.
+        typer.echo(f"Saved a new APP_ENCRYPTION_KEY in {env}. Keep it; saved PATs need it.")
+    typer.echo("Ready. Start the workspace with: uv run dhf serve --project-id my-project")
+
+
 @app.command("serve")
 def serve_command(
     db: str | None = None,

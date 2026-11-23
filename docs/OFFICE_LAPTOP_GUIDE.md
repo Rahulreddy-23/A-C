@@ -160,7 +160,7 @@ If step 1 prints skipped classes (unmapped types, out-of-scope results), fix the
 
 ## Part 6. Build the Copilot flow (in the BD sandbox)
 
-Work in the **Copilot Studio Citizen Development Sandbox** environment, not BD (Default). Pick it with the environment selector at the top right of Copilot Studio and Power Automate.
+Work in the **Copilot Studio Citizen Development Sandbox** environment, not the tenant's default environment. Pick it with the environment selector at the top right of Copilot Studio and Power Automate.
 
 **6a. The prompt.** Create one prompt named `DHF section drafter`. If you build the agent first (Part 11), add it there under **Tools → Add a tool → New tool → Prompt**; otherwise create it from the **Run a prompt** action in 6b. Prompts belong to the environment, so the flow's **Run a prompt** list should show it either way.
 1. Choose the approved **Basic GPT** model, with temperature 0 if offered.
@@ -310,7 +310,7 @@ Reviewers ask the agent about gaps and drafts in Teams. It answers only from the
    - **Model:** the approved **Basic** GPT. Turn off web search and general knowledge.
 3. Attach fictional data first. After 6d, run `uv run dhf gaps` and `uv run dhf rtm`, then upload `out/gaps.md`, `out/rtm.md` and `out/documents/sstr.docx` under **Knowledge → Add knowledge**. Company outputs from `out/real/` go in only under the clearance reference; then also change "synthetic Kestrel" in the description to the real product.
 4. In the test pane, ask **Which requirements have no verifying test?** The answer must be SRS-012, SRS-032, SRS-034 and SRS-035 (rule G01). If the agent adds other IDs, tighten its instructions before publishing.
-5. **Publish**, then add the **Teams** channel. Share with at most five named people, never a group, and republish after every change. Check credits on the **Monitor** tab: the sandbox allows 600 Copilot credits per agent per month.
+5. **Publish**, then add the **Teams** channel. Share it only with named reviewers, as the sandbox rules allow, and republish after every change. Check credits on the **Monitor** tab; the sandbox has a monthly credit limit.
 
 ## Troubleshooting
 
@@ -331,6 +331,6 @@ Reviewers ask the agent about gaps and drafts in Teams. It answers only from the
 - [ ] Full run (Part 8) done; drafts open in Word
 - [ ] Review sheet scored; numbers on one slide
 - [ ] Change story ready (Part 10)
-- [ ] Agent passes the Part 11 test question and is shared with at most five named people
+- [ ] Agent passes the Part 11 test question and is shared only with named reviewers
 - [ ] Screen recording of a full run, as a backup if anything fails live
 - [ ] `out/real/` stays on the laptop; company outputs are never committed

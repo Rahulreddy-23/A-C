@@ -1034,11 +1034,12 @@ def serve_command(
         )
         raise typer.Exit(1) from None
     typer.echo("Workspace is running on this laptop. Press Ctrl+C to stop.")
+    # Always shown: a browser that opens elsewhere, or not at all, must not leave the owner
+    # without a way in. The link works once, so printing it here exposes nothing reusable.
+    once = " (it works once)" if "#access=" in url else ""
+    typer.echo(f"Open this link in your browser{once}: {url}")
     if open_browser:
-        if not webbrowser.open(url):
-            typer.echo(f"Open {url} in your browser.")
-    else:
-        typer.echo(f"Open {url} in your browser.")
+        webbrowser.open(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

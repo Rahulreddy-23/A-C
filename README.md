@@ -58,7 +58,7 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 uv run dhf serve --project-id my-project
 ```
 
-- **Browser:** your default browser opens the workspace on a one-time link.
+- **Browser:** your default browser opens the workspace. The PowerShell window also shows the access link (`Open this link in your browser (it works once): …`). If the page asks for it, or you use another browser, copy that link into the address bar.
 - **Stopping:** keep the PowerShell window open while you work, and press **Ctrl+C** in it to stop.
 - **Restarting:** run the same command again. Each start opens a new one-time link in a new tab, and a link works only once, so close tabs from earlier starts.
 - **This computer only:** the workspace listens only on this computer (`http://127.0.0.1:8765`). If Windows asks whether Python may use networks, you can choose **Cancel**.
@@ -99,7 +99,9 @@ Your `.env` and everything under `out\` are kept.
 | `running scripts is disabled on this system` | Run the script as shown: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`. |
 | `uv sync` fails with a certificate error, such as `UnknownIssuer` | Your network inspects HTTPS. Run `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -NativeTls`. |
 | `Access is denied` for a file in `.venv` | Stop any running workspace (Ctrl+C) and keep the folder out of OneDrive. |
-| The page says "This access link was already used, or the workspace restarted." | Close that tab. In the window running `dhf serve`, press Ctrl+C and start it again; it opens a new link. |
+| The page says "Open the access link shown in the window running dhf serve to sign in." | Copy the link from the PowerShell window running `dhf serve` into the browser's address bar. |
+| The page says "This access link was already used, or the workspace restarted." | Each link works once. Close the tab. In the window running `dhf serve`, press Ctrl+C, start it again, and use the new link. |
+| The page shows any other sign-in message, such as "Open the one-time access link that dhf serve printed" | That page comes from older code. Stop every window running `dhf serve`, then [update to the latest version](#update-to-the-latest-version) and start once. |
 | "Port 8765 is already in use, probably by another DHF workspace." | A workspace is still running, for example from `setup.ps1 -Start` in another window. Stop it with Ctrl+C there, or add `--port 8766`. |
 | "Saving a PAT needs APP_ENCRYPTION_KEY in .env" | Stop the workspace, run `uv run dhf setup`, then start it again. |
 | "The saved PAT cannot be decrypted. Save a replacement." | The key in `.env` changed. Enter the PAT again under **Settings → Azure DevOps**. |

@@ -1078,11 +1078,15 @@ async function start() {
   try { theme = localStorage.getItem('dhf-theme') === 'dark' ? 'dark' : 'light'; } catch {}
   setTheme(theme);
   const grant = new URLSearchParams(location.hash.slice(1)).get('access');
+  let refused = null;
   if (grant) {
     history.replaceState(null, '', location.pathname + '#/projects');
-    await api('/api/session', {method: 'POST', headers: {Authorization: 'Bearer ' + grant}});
+    try { await api('/api/session', {method: 'POST', headers: {Authorization: 'Bearer ' + grant}}); }
+    catch (error) { if (error.status !== 401) throw error; refused = error; }
   }
-  ctx.session = await api('/api/session');
+  // A used link is harmless while this browser still has a session; say why only if it has none.
+  try { ctx.session = await api('/api/session'); }
+  catch (error) { throw refused || error; }
   $('who').textContent = ctx.session.actor;
   await loadProjects();
   let saved = null;
@@ -1096,13 +1100,16 @@ async function start() {
     if ($('picker').open) { $('picker').open = false; $('picker-label').focus(); }
     else if ($('rail').classList.contains('open')) { $('rail').classList.remove('open'); $('menu').setAttribute('aria-expanded', 'false'); $('menu').focus(); }
   });
-  // A new access link pasted into an open tab must start a fresh session.
-  window.addEventListener('hashchange', () => location.hash.includes('access=') ? location.reload() : render());
+  window.addEventListener('hashchange', () => { if (!location.hash.includes('access=')) render(); });
   $('startup').hidden = true; $('app').hidden = false;
   if (!location.hash.startsWith('#/')) history.replaceState(null, '', '#/projects');
   render(false);
 }
-start().catch(error => { $('startup-text').textContent = error.status === 401 ? 'This access link was already used, or the workspace restarted. Press Ctrl+C in the window running dhf serve and start it again; it opens a new link.' : error.message; });
+// A link pasted into an open tab changes only the #fragment, which does not reload the page.
+// Reload so start() signs in with it, also when the page is showing a sign-in message.
+window.addEventListener('hashchange', () => { if (location.hash.includes('access=')) location.reload(); });
+// The server says which case applies; no status means the workspace is not running at all.
+start().catch(error => { $('startup-text').textContent = error.status ? error.message : 'The workspace is not running. Start it with: uv run dhf serve --project-id my-project'; });
 })();
 </script>
 </body>

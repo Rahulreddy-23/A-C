@@ -27,10 +27,11 @@ from dhf.workspace.insights import dashboard, review_items
 from dhf.workspace.sources import ConnectionInput, ProjectInput, WorkspaceError, now
 from dhf.workspace.uploads import ALLOWED_TYPES, MAX_FILE_BYTES
 
-EXPIRED_LINK = (
-    "This access link was already used, or the workspace restarted. Press Ctrl+C in the"
-    " window running dhf serve and start it again; it opens a new link."
+USED_LINK = (
+    "This access link was already used, or the workspace restarted. Open the newest link"
+    " shown in the window running dhf serve, or press Ctrl+C there and start it again."
 )
+NOT_SIGNED_IN = "Open the access link shown in the window running dhf serve to sign in."
 ROUTE = re.compile(r"/api/projects/([a-zA-Z0-9_-]{1,64})(/[^?#]*)?")
 JSON_LIMIT = 96 * 1024
 CID = r"[0-9a-f]{32}"
@@ -237,7 +238,7 @@ def make_workspace_server(
             with lock:
                 actor = grants.pop(grant, None)
                 if actor is None:
-                    raise WorkspaceError(401, EXPIRED_LINK)
+                    raise WorkspaceError(401, USED_LINK)
                 token = secrets.token_urlsafe(32)
                 sessions[token] = actor
             body = json.dumps({"project_id": project_id}).encode()
@@ -257,7 +258,7 @@ def make_workspace_server(
             with lock:
                 actor = sessions.get(session.value) if session else None
             if actor is None:
-                raise WorkspaceError(401, EXPIRED_LINK)
+                raise WorkspaceError(401, NOT_SIGNED_IN)
             first.require_member(actor)
             return actor
 

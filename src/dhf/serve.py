@@ -48,8 +48,10 @@ class LocalServer(ThreadingHTTPServer):
     allow_reuse_address = sys.platform != "win32"
 
     def server_bind(self) -> None:
-        if sys.platform == "win32":
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        # Without reuse a second bind already fails; exclusive use also blocks reuse requests.
+        exclusive = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+        if sys.platform == "win32" and exclusive is not None:
+            self.socket.setsockopt(socket.SOL_SOCKET, exclusive, 1)
         super().server_bind()
 
 

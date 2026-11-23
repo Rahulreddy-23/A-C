@@ -990,37 +990,49 @@ def serve_command(
     import webbrowser
     from pathlib import Path
 
-    if explorer_only or db is not None or documents is not None:
-        from dhf.serve import make_server
+    from dhf.serve import port_in_use
 
-        server = make_server(
-            Path(db or "out/evidence.sqlite"),
-            Path(documents or "out/documents"),
-            Path(output_dir),
-            port,
+    try:
+        if explorer_only or db is not None or documents is not None:
+            from dhf.serve import make_server
+
+            server = make_server(
+                Path(db or "out/evidence.sqlite"),
+                Path(documents or "out/documents"),
+                Path(output_dir),
+                port,
+            )
+            url = f"http://127.0.0.1:{server.server_address[1]}/"
+        else:
+            from dhf.workspace.server import make_workspace_server
+            from dhf.workspace.sources import WorkspaceError
+
+            if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", project_id):
+                raise typer.BadParameter(
+                    "Use letters, numbers, underscores or hyphens for --project-id."
+                )
+            owner = getpass.getuser()
+            members = [name for name in dict.fromkeys(member or []) if name != owner]
+            if any(not re.fullmatch(r"[A-Za-z0-9@_.-]{1,128}", name) for name in members):
+                raise typer.BadParameter("Use a username or email address for --member.")
+            try:
+                server, links = make_workspace_server(
+                    Path(output_dir) / "workspaces" / project_id, project_id, owner, members, port
+                )
+            except WorkspaceError as error:
+                raise typer.BadParameter(str(error)) from None
+            url = links.pop(owner)
+            for person, link in links.items():
+                typer.echo(f"One-time local access for {person}: {link}")
+    except OSError as error:
+        if not port_in_use(error):
+            raise
+        typer.echo(
+            f"Port {port} is already in use, probably by another DHF workspace. Stop it with "
+            f"Ctrl+C in its window, or start this one with --port {port + 1}.",
+            err=True,
         )
-        url = f"http://127.0.0.1:{server.server_address[1]}/"
-    else:
-        from dhf.workspace.server import make_workspace_server
-        from dhf.workspace.sources import WorkspaceError
-
-        if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", project_id):
-            raise typer.BadParameter(
-                "Use letters, numbers, underscores or hyphens for --project-id."
-            )
-        owner = getpass.getuser()
-        members = [name for name in dict.fromkeys(member or []) if name != owner]
-        if any(not re.fullmatch(r"[A-Za-z0-9@_.-]{1,128}", name) for name in members):
-            raise typer.BadParameter("Use a username or email address for --member.")
-        try:
-            server, links = make_workspace_server(
-                Path(output_dir) / "workspaces" / project_id, project_id, owner, members, port
-            )
-        except WorkspaceError as error:
-            raise typer.BadParameter(str(error)) from None
-        url = links.pop(owner)
-        for person, link in links.items():
-            typer.echo(f"One-time local access for {person}: {link}")
+        raise typer.Exit(1) from None
     typer.echo("Workspace is running on this laptop. Press Ctrl+C to stop.")
     if open_browser:
         if not webbrowser.open(url):

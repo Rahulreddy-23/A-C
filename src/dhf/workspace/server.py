@@ -20,13 +20,17 @@ from pydantic import ValidationError
 from dhf.config import setting
 from dhf.llm import LLM
 from dhf.render.explorer import create_explorer
-from dhf.serve import LoopbackHandler
+from dhf.serve import LocalServer, LoopbackHandler
 from dhf.trace import results_summary
 from dhf.workspace import Workspace
 from dhf.workspace.insights import dashboard, review_items
 from dhf.workspace.sources import ConnectionInput, ProjectInput, WorkspaceError, now
 from dhf.workspace.uploads import ALLOWED_TYPES, MAX_FILE_BYTES
 
+EXPIRED_LINK = (
+    "This access link was already used, or the workspace restarted. Press Ctrl+C in the"
+    " window running dhf serve and start it again; it opens a new link."
+)
 ROUTE = re.compile(r"/api/projects/([a-zA-Z0-9_-]{1,64})(/[^?#]*)?")
 JSON_LIMIT = 96 * 1024
 CID = r"[0-9a-f]{32}"
@@ -233,7 +237,7 @@ def make_workspace_server(
             with lock:
                 actor = grants.pop(grant, None)
                 if actor is None:
-                    raise WorkspaceError(401, "Open the access link issued for this workspace.")
+                    raise WorkspaceError(401, EXPIRED_LINK)
                 token = secrets.token_urlsafe(32)
                 sessions[token] = actor
             body = json.dumps({"project_id": project_id}).encode()
@@ -253,7 +257,7 @@ def make_workspace_server(
             with lock:
                 actor = sessions.get(session.value) if session else None
             if actor is None:
-                raise WorkspaceError(401, "Open the access link issued for this workspace.")
+                raise WorkspaceError(401, EXPIRED_LINK)
             first.require_member(actor)
             return actor
 
@@ -474,7 +478,7 @@ def make_workspace_server(
                 return self.json(200, {})
             raise WorkspaceError(404, "Document route not found.")
 
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = LocalServer(("127.0.0.1", port), Handler)
     host, port = server.server_address
     links = {
         actor: f"http://{host}:{port}/#access={quote(grant)}" for grant, actor in grants.items()

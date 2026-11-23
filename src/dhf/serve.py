@@ -1,6 +1,9 @@
 """Serve the selected explorer and its refresh action on loopback only."""
 
+import errno
 import json
+import socket
+import sys
 import threading
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -35,6 +38,26 @@ PAGE_POLICY = (
     "style-src 'unsafe-inline'; img-src data:; connect-src 'self'; "
     "base-uri 'none'; form-action 'none'"
 )
+
+
+class LocalServer(ThreadingHTTPServer):
+    """A loopback server that owns its port. On Windows, SO_REUSEADDR lets a second server
+    bind a port another server still listens on; the browser then reaches the old server and
+    the new one-time link fails. Exclusive use makes the second start fail instead."""
+
+    allow_reuse_address = sys.platform != "win32"
+
+    def server_bind(self) -> None:
+        # Without reuse a second bind already fails; exclusive use also blocks reuse requests.
+        exclusive = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+        if sys.platform == "win32" and exclusive is not None:
+            self.socket.setsockopt(socket.SOL_SOCKET, exclusive, 1)
+        super().server_bind()
+
+
+def port_in_use(error: OSError) -> bool:
+    # Windows reports WSAEADDRINUSE (10048), or WSAEACCES (10013) for a port held exclusively.
+    return error.errno == errno.EADDRINUSE or getattr(error, "winerror", None) in (10048, 10013)
 
 
 class LoopbackHandler(BaseHTTPRequestHandler):
@@ -113,4 +136,4 @@ def make_server(
                 lock.release()
             self.json(200, record)
 
-    return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    return LocalServer(("127.0.0.1", port), Handler)

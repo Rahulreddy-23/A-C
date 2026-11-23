@@ -1102,7 +1102,7 @@ async function start() {
   if (!location.hash.startsWith('#/')) history.replaceState(null, '', '#/projects');
   render(false);
 }
-start().catch(error => { $('startup-text').textContent = error.status === 401 ? 'Open the one-time access link that dhf serve printed.' : error.message; });
+start().catch(error => { $('startup-text').textContent = error.status === 401 ? 'This access link was already used, or the workspace restarted. Press Ctrl+C in the window running dhf serve and start it again; it opens a new link.' : error.message; });
 })();
 </script>
 </body>

@@ -1058,7 +1058,7 @@ async function settingsPage(tab) {
   const shown = flash ? note(flash.text, flash.tone) : null;
   flash = null;
   return [head('Settings', 'The project connection is shared by every document that does not use its own.'), tabs, shown,
-    data.encryption_configured ? null : note('Set APP_ENCRYPTION_KEY in .env before saving a PAT. The README shows how to generate one.', 'warn'),
+    data.encryption_configured ? null : note('Saving a PAT needs APP_ENCRYPTION_KEY in .env. Stop the workspace, run uv run dhf setup, then start it again.', 'warn'),
     h('div', {class: 'cols'},
       section('Azure DevOps connection', 'read-only', connectionForm(null, connection, () => render(false))),
       h('div', {},

@@ -13,27 +13,115 @@ The tool reads requirements, risks, tests and design documents from ADO (read-on
 - **Tracks change impact**: finds stale sections after evidence changes and regenerates only those sections.
 - **Exports**: an offline HTML evidence explorer and an audit pack with verified hashes.
 
-## Requirements
+## Set up on Windows
 
-| | macOS | Windows |
-|---|---|---|
-| Git | `xcode-select --install` | `winget install --id Git.Git -e` |
-| [uv](https://docs.astral.sh/uv/) | `brew install uv` | `winget install --id astral-sh.uv -e` |
+Use **Windows PowerShell** (Start menu → type *PowerShell*). Every command below runs there.
 
-uv installs Python 3.12 automatically. Without Homebrew or winget, use the [uv installer](https://docs.astral.sh/uv/getting-started/installation/) and [Git for Windows](https://git-scm.com/download/win). Open a new terminal after installing.
+### 1. Install Git and uv (once)
 
-## Quick start
+```powershell
+winget install --id Git.Git -e
+winget install --id astral-sh.uv -e
+```
 
-These commands are the same in macOS Terminal and Windows PowerShell:
+Close PowerShell and open a new window so both commands are found, then check:
 
-```bash
+```powershell
+git --version
+uv --version
+```
+
+uv installs Python 3.12 for the project, so you do not need to install Python. Without winget, use [Git for Windows](https://git-scm.com/download/win) and the [uv installer](https://docs.astral.sh/uv/getting-started/installation/).
+
+### 2. Get the code and run setup
+
+```powershell
+cd $HOME
 git clone https://github.com/Rahulreddy-23/A-C.git
 cd A-C
-uv sync
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+`setup.ps1`:
+- installs uv with winget if it is missing
+- installs Python and the project libraries (`uv sync`)
+- creates `.env` from `.env.example` with a key that encrypts saved Azure DevOps tokens (`uv run dhf setup`)
+
+`-ExecutionPolicy Bypass` lets this one script run without changing any Windows setting. Running setup again is safe: it never replaces an existing key.
+
+- **Folder:** clone into your home folder, as above, not into a OneDrive-synced Desktop or Documents folder. Syncing can lock files under `.venv` and `out`.
+- **Without the script:** `uv sync` then `uv run dhf setup` do the same steps.
+
+### 3. Start the workspace
+
+```powershell
 uv run dhf serve --project-id my-project
 ```
 
-`dhf serve` opens the DHF workspace in your browser. It runs only on this computer and starts with an empty project.
+- **Browser:** your default browser opens the workspace on a one-time link.
+- **Stopping:** keep the PowerShell window open while you work, and press **Ctrl+C** in it to stop.
+- **Restarting:** run the same command again. Each start opens a new one-time link in a new tab, and a link works only once, so close tabs from earlier starts.
+- **This computer only:** the workspace listens only on this computer (`http://127.0.0.1:8765`). If Windows asks whether Python may use networks, you can choose **Cancel**.
+- **Saved work:** projects, inputs and drafts are saved under `out\workspaces\`. They are still there after you stop, and the next start lists every project.
+
+### 4. Your first project
+
+1. The **Projects** page opens and lists `my-project`, with no release yet. Open it, then enter its name and release under **Settings → Project**, or select **Create project** for a new one. The release (for example `1.1`) decides which test results count.
+2. Under **Settings → Azure DevOps**, enter:
+   - the organization URL (`https://dev.azure.com/<org>`)
+   - the project name
+   - how to select requirements: a saved query, WIQL, an area path or work item IDs
+   - a PAT with **Work Items (Read)**, plus **Test Management (Read)** for the SSTR
+
+   Then **Save connection** and **Test connection**.
+3. Open a document from the left menu, or from a cell on the Projects page. Select **Fetch requirements**, then **Add files** for its inputs (see [Document inputs](#document-inputs)).
+4. Select **Generate draft**. It uses `DHF_PROVIDER` from `.env`: `mock` by default, which needs no keys.
+5. Under **Review**:
+   - decide the AI suggestions, one at a time or in bulk with one rationale
+   - write the sections only a person can write
+   - when the document is ready, record its eQMS approval reference
+
+### Update to the latest version
+
+```powershell
+cd $HOME\A-C
+git pull
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+Your `.env` and everything under `out\` are kept.
+
+### Troubleshooting on Windows
+
+| Problem | Fix |
+|---|---|
+| `git` or `uv` is not recognized | Open a new PowerShell window after installing. |
+| `running scripts is disabled on this system` | Run the script as shown: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`. |
+| `uv sync` fails with a certificate error, such as `UnknownIssuer` | Your network inspects HTTPS. Run `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -NativeTls`. |
+| `Access is denied` for a file in `.venv` | Stop any running workspace (Ctrl+C) and keep the folder out of OneDrive. |
+| The page says "Open the one-time access link that dhf serve printed." | The link was already used. Press Ctrl+C in PowerShell and start again. |
+| "Only one usage of each socket address … is normally permitted" | Another workspace is using port 8765. Stop it, or add `--port 8766`. |
+| "Saving a PAT needs APP_ENCRYPTION_KEY in .env" | Stop the workspace, run `uv run dhf setup`, then start it again. |
+| "The saved PAT cannot be decrypted. Save a replacement." | The key in `.env` changed. Enter the PAT again under **Settings → Azure DevOps**. |
+| `dhf` is not recognized | Run it through `uv run` from the `A-C` folder. |
+
+To run the real project from the command line on the office laptop (read-only Azure DevOps, drafting through the BD Copilot flow), follow [docs/OFFICE_LAPTOP_GUIDE.md](docs/OFFICE_LAPTOP_GUIDE.md).
+
+## Set up on macOS
+
+```bash
+xcode-select --install   # Git, once
+brew install uv          # once
+git clone https://github.com/Rahulreddy-23/A-C.git
+cd A-C
+uv sync
+uv run dhf setup
+uv run dhf serve --project-id my-project
+```
+
+Then follow [Your first project](#4-your-first-project). Press Ctrl+C in Terminal to stop the workspace.
+
+## The workspace
 
 It opens on **Projects**: one row per project and one cell per document (SAD, SDD, SSTR, DRR, sFMEA). Each cell shows the draft version, its review blockers and its status, and opens that document. Inside a project, the left rail names the project and its release. The address always carries the project (`#/p/<project>/documents/sstr`), so Back, bookmarks and shared links open the right one. Select the project name in the top bar to switch; you stay on the same page in the other project.
 
@@ -42,35 +130,47 @@ It opens on **Projects**: one row per project and one cell per document (SAD, SD
 | **Projects** | See every project and the state of each of its documents, create, open, archive and restore projects. Each keeps its own Azure DevOps connections, inputs, drafts and approvals. |
 | **Overview** | See one project's requirements, coverage at each trace level, latest results, documentation and traceability completeness, gaps by category, and each document's status. |
 | **Documents** | For SAD, SDD, SSTR, DRR and sFMEA: choose the requirements source, add existing documents and evidence, then **Generate draft** and download Word. DRR collects inputs only for now. |
-| **Traceability** | Check requirements, design, code, verification and risk coverage in a filterable RTM, gaps grouped by what is missing, and the trace graph. |
+| **Traceability** | Check requirements, design, code, verification and risk coverage in a filterable RTM, gaps grouped by what is missing, and the trace graph. Export the RTM as CSV. |
 | **Review** | Accept or reject AI suggestions one at a time or in bulk with one rationale, write the sections only people can write, see tracked changes, and record the eQMS approval. |
 | **Settings** | Set the project's Azure DevOps connection and PAT, check the AI configuration, and edit or archive the project. |
 
-1. To save a PAT, generate a Fernet key and set `APP_ENCRYPTION_KEY` to that value in the ignored `.env` file or process environment. Keep the key stable across launches.
+### Document inputs
 
-   ```bash
-   uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-   ```
+Each input accepts multiple files, including multiple existing SDDs. Word `.docx` and the listed UTF-8 text, code and CSV formats are supported, up to 40 MB per file. The workspace warns when it redacts a likely secret.
 
-2. Under **Projects**, enter the project name and release. The release selects which test results count.
-3. Under **Settings → Azure DevOps**, enter the organization URL, project name, PAT and requirements selector, then **Test connection**. Use **Work Items (Read)**, plus **Test Management (Read)** for SSTR, which can also read selected Test Plan or Test Run IDs. A document can use its own connection instead.
-4. On each document page, **Fetch requirements** and add files to its checklist. Each input accepts multiple files, including multiple existing SDDs. SAD, SDD and sFMEA accept an SRD or PRD in place of Azure requirements. Word `.docx` and the listed UTF-8 text, code and CSV formats are supported, up to 40 MB per file. The workspace warns when it redacts a likely secret. For SSTR results, CSV accepts `Test Case ID`, `Outcome`, and optional `Release` and `Completed Date` columns. sFMEA analyses only Class C units, so every unit needs a recorded IEC 62304 class; when the design documents do not state one, add a **Safety classification** CSV with `Item` (unit or component ID or title) and `Safety class` (`A`, `B` or `C`) columns. The file fills only classes the evidence does not state, and a unit's own class wins over its component's. Drafting stops and names the units still missing a class; it never guesses.
-5. Select **Generate draft**. Drafting uses `DHF_PROVIDER` from `.env` (`mock` by default) through the same guarded AI layer as the CLI. Drafts are saved under `out/workspaces/<project-id>/<document>/drafts/`.
-6. In the **Review Center**, resolve every suggestion, write the human sections and review any validator rejections. When the document is ready, record its eQMS approval reference; that version becomes the baseline. The document page lists which sections an evidence change made stale, and why. **Update draft** redrafts only those sections, and the Word file shows the changes as tracked changes. After a release change, **Update draft** redrafts every section; **Redraft from scratch** does the same on demand, as a new version. The Traceability page exports the RTM as CSV.
+- **SAD, SDD and sFMEA** accept an SRD or PRD in place of Azure requirements.
+- **SSTR:** a results CSV with `Test Case ID` and `Outcome` columns, and optional `Release` and `Completed Date` columns.
+- **sFMEA:** it analyses only Class C units, so every unit needs a recorded IEC 62304 class.
+  - When the design documents do not state one, add a **Safety classification** CSV with `Item` (unit or component ID or title) and `Safety class` (`A`, `B` or `C`) columns.
+  - The file fills only classes the evidence does not state, and a unit's own class wins over its component's.
+  - Drafting stops and names the units still missing a class; it never guesses.
 
-The browser shows verified access and an expiry when you supplied one from Azure DevOps. Reading PAT lifecycle metadata requires a separate user-delegated Microsoft Entra credential. The local workspace uses a one-time access link for the owner. The owner can add local members with repeated `--member` flags. PAT changes are attributed to the signed-in local session. Hosted organization sign-in and Key Vault integration are future deployment work. [Microsoft PAT documentation](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops)
+### Keeping drafts current
+
+Drafts are saved under `out/workspaces/<project-id>/<document>/drafts/`. After evidence changes, the document page lists which sections went stale, and why.
+
+- **Update draft** redrafts only the stale sections, and the Word file shows the changes as tracked changes.
+- **After a release change,** **Update draft** redrafts every section. **Redraft from scratch** does the same on demand, as a new version.
+- **Approval:** a recorded eQMS reference makes that version the baseline. A later change needs approval again.
+
+### Access and tokens
+
+- **Access link:** the local workspace uses a one-time access link for the owner. Add local members with repeated `--member` flags; each member gets their own link.
+- **PATs:** they are encrypted with `APP_ENCRYPTION_KEY` and never shown again. PAT changes are attributed to the signed-in local session, and the browser shows an expiry when you supply one from Azure DevOps.
+- **Future work:** hosted organization sign-in and Key Vault integration. See the [Microsoft PAT documentation](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate?view=azure-devops).
 
 ## Configuration
 
-Settings are read from `.env`, which git ignores. Create it from the template:
+Settings are read from `.env`, which git ignores and `dhf setup` creates. The defaults work for the browser workspace with the mock AI provider.
 
-| macOS | Windows (PowerShell) |
+| Setting | Purpose |
 |---|---|
-| `cp .env.example .env` | `Copy-Item .env.example .env` |
+| `APP_ENCRYPTION_KEY` | Encrypts saved PATs. `dhf setup` fills it in; keep it unchanged. |
+| `APP_ADO_MAPPING` | Optional custom Azure DevOps work-item mapping for the browser workspace. |
+| `DHF_PROVIDER` | The AI provider for drafting (see [AI providers](#ai-providers)). |
+| `ADO_*`, `APP_ADO_PAT` | Command-line ingest only. The defaults point at the local Azure DevOps mock. |
 
-The browser reads `APP_ENCRYPTION_KEY` and optionally `APP_ADO_MAPPING` from configuration. Enter its Azure credential in the browser form. The CLI development defaults point at the local ADO mock. Store AI credentials in `.env`.
-
-To run the real project on the office laptop (read-only ADO, drafting through the BD Copilot flow), follow [docs/OFFICE_LAPTOP_GUIDE.md](docs/OFFICE_LAPTOP_GUIDE.md).
+Enter Azure DevOps credentials in the browser, never in `.env`. AI credentials go in `.env`.
 
 ## Commands
 
@@ -91,6 +191,7 @@ Run every command from the repository root. `uv run dhf --help` lists all comman
 | `uv run dhf regenerate --stale --open-pr` | Regenerates only the stale sections. |
 | `uv run dhf explore` | Writes the offline evidence explorer to `out/explorer.html`. |
 | `uv run dhf refresh` | Reads ADO again, records changes and stale sections, and updates the gap reports and explorer. |
+| `uv run dhf setup` | Creates `.env` from `.env.example` with a PAT encryption key; never replaces an existing key. |
 | `uv run dhf serve` | Opens the DHF workspace in the browser: projects, documents, traceability, review and settings. |
 | `uv run dhf serve --explorer-only` | Opens the existing CLI evidence explorer and its **Refresh from ADO** action. |
 | `uv run dhf audit-pack` | Exports drafts, provenance and verified hashes as a ZIP. |
@@ -124,6 +225,8 @@ Paid calls go through a cost ledger (`out/ledger.json`) with per-run and total s
 For direct CLI ingest from a real organization, set `ADO_BASE_URL`, `ADO_PROJECT`, `APP_ADO_PAT` and `ADO_SCOPE` in `.env`. Real organizations are read-only by default. `uv run dhf discover` drafts a field mapping for review. Company data is processed on your machine and stays under `out/`. [Onboard a real project](docs/REAL_DATA_ONBOARDING.md)
 
 ## Development
+
+These commands are the same in PowerShell and macOS Terminal:
 
 ```bash
 uv run pytest

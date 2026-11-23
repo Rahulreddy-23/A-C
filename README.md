@@ -99,8 +99,8 @@ Your `.env` and everything under `out\` are kept.
 | `running scripts is disabled on this system` | Run the script as shown: `powershell -ExecutionPolicy Bypass -File .\setup.ps1`. |
 | `uv sync` fails with a certificate error, such as `UnknownIssuer` | Your network inspects HTTPS. Run `powershell -ExecutionPolicy Bypass -File .\setup.ps1 -NativeTls`. |
 | `Access is denied` for a file in `.venv` | Stop any running workspace (Ctrl+C) and keep the folder out of OneDrive. |
-| The page says "Open the one-time access link that dhf serve printed." | The link was already used. Press Ctrl+C in PowerShell and start again. |
-| "Only one usage of each socket address … is normally permitted" | Another workspace is using port 8765. Stop it, or add `--port 8766`. |
+| The page says "This access link was already used, or the workspace restarted." | Close that tab. In the window running `dhf serve`, press Ctrl+C and start it again; it opens a new link. |
+| "Port 8765 is already in use, probably by another DHF workspace." | A workspace is still running, for example from `setup.ps1 -Start` in another window. Stop it with Ctrl+C there, or add `--port 8766`. |
 | "Saving a PAT needs APP_ENCRYPTION_KEY in .env" | Stop the workspace, run `uv run dhf setup`, then start it again. |
 | "The saved PAT cannot be decrypted. Save a replacement." | The key in `.env` changed. Enter the PAT again under **Settings → Azure DevOps**. |
 | `dhf` is not recognized | Run it through `uv run` from the `A-C` folder. |
